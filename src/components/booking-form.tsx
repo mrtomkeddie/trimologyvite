@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { format } from 'date-fns';
-import { CalendarIcon, Loader2, User, Phone, Mail, Sparkles, Clock } from 'lucide-react';
+import { CalendarIcon, Loader2, User, Phone, Mail, Search, Clock } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -35,7 +35,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import type { Service, Staff } from '@/lib/types';
 import { getSuggestedTimes, createBooking } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
-import { RadioGroup, RadioGroupItem } from './ui/radio-group';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const BookingFormSchema = z.object({
   serviceId: z.string({ required_error: 'Please select a service.' }),
@@ -105,7 +105,7 @@ export function BookingForm({ services, staff }: BookingFormProps) {
           variant: 'destructive',
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
         description: "An unexpected error occurred.",
@@ -121,7 +121,7 @@ export function BookingForm({ services, staff }: BookingFormProps) {
     try {
       await createBooking(data);
       // The redirect is handled by the server action
-    } catch(e) {
+    } catch(e: any) {
       toast({
         title: "Booking Failed",
         description: "Something went wrong. Please try again.",
@@ -175,7 +175,7 @@ export function BookingForm({ services, staff }: BookingFormProps) {
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Any Staff Member" />
-                        </SelectTrigger>
+                        </Trigger>
                       </FormControl>
                       <SelectContent>
                          <SelectItem value="any">Any Staff Member</SelectItem>
@@ -231,8 +231,8 @@ export function BookingForm({ services, staff }: BookingFormProps) {
                       )}
                     />
                     <Button type="button" onClick={handleSuggestTimes} disabled={!selectedDate || isLoadingTimes} className="h-10">
-                      {isLoadingTimes ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                      {isLoadingTimes ? 'Finding Times...' : 'Suggest Times with AI'}
+                      {isLoadingTimes ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
+                      {isLoadingTimes ? 'Finding Times...' : 'Find Available Times'}
                     </Button>
                 </div>
                 {suggestedTimes.length > 0 && (

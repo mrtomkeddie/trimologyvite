@@ -1,29 +1,52 @@
-"use server";
+'use server';
 
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
 
 import { BookingFormSchema } from './types';
-import { suggestAvailableTimes } from '@/ai/flows/suggest-available-times';
 
 export async function getSuggestedTimes(serviceDuration: number, preferredDate: string) {
-    // In a real app, staff availability would be fetched from your database
-    // based on the selected staff member (or all staff if 'any' is selected).
-    const staffAvailability = JSON.stringify([
-      { start: '09:00', end: '12:00' },
-      { start: '13:00', end: '17:30' },
-    ]);
-
     try {
-        const result = await suggestAvailableTimes({
-            serviceDuration,
-            staffAvailability,
-            preferredDate,
+        // In a real app, staff availability would be fetched from your database
+        // based on the selected staff member (or all staff if 'any' is selected).
+        const staffAvailability = [
+          { start: '09:00', end: '12:00' },
+          { start: '13:00', end: '17:30' },
+        ];
+        // In a real app, you would also check for existing bookings on the preferredDate.
+
+        const parseTime = (time: string): number => {
+            const [hours, minutes] = time.split(':').map(Number);
+            return hours * 60 + minutes;
+        };
+
+        const formatTime = (totalMinutes: number): string => {
+            const hours = Math.floor(totalMinutes / 60).toString().padStart(2, '0');
+            const minutes = (totalMinutes % 60).toString().padStart(2, '0');
+            return `${hours}:${minutes}`;
+        };
+
+        const availableTimeSlots: string[] = [];
+        const slotInterval = 15; // Propose a new slot every 15 minutes
+
+        staffAvailability.forEach(window => {
+            let currentMin = parseTime(window.start);
+            const endMin = parseTime(window.end);
+
+            while (currentMin + serviceDuration <= endMin) {
+                availableTimeSlots.push(formatTime(currentMin));
+                currentMin += slotInterval;
+            }
         });
-        return { success: true, times: result.availableTimeSlots };
+
+        // Simulate a slight delay to mimic a real API call
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        return { success: true, times: availableTimeSlots };
+
     } catch (error) {
-        console.error('Error suggesting times:', error);
-        return { success: false, error: 'Failed to suggest available times. Please try again.' };
+        console.error('Error getting times:', error);
+        return { success: false, error: 'Failed to find available times. Please try again.' };
     }
 }
 
