@@ -96,7 +96,7 @@ export function BookingForm({ services, staff }: BookingFormProps) {
           variant: 'destructive',
         });
       }
-    } catch (error: unknown) {
+    } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
       toast({
         title: "Error",
@@ -111,9 +111,20 @@ export function BookingForm({ services, staff }: BookingFormProps) {
   async function onSubmit(data: BookingFormValues) {
     setIsSubmitting(true);
     try {
-      await createBooking(data);
+      const formData = new FormData();
+      formData.append('serviceId', data.serviceId);
+      formData.append('staffId', data.staffId || 'any');
+      formData.append('date', data.date.toISOString());
+      formData.append('time', data.time);
+      formData.append('clientName', data.clientName);
+      formData.append('clientPhone', data.clientPhone);
+      if (data.clientEmail) {
+        formData.append('clientEmail', data.clientEmail);
+      }
+
+      await createBooking(formData);
       // The redirect is handled by the server action
-    } catch(e: unknown) {
+    } catch(e) {
       const errorMessage = e instanceof Error ? e.message : "Something went wrong. Please try again.";
       toast({
         title: "Booking Failed",
@@ -242,7 +253,7 @@ export function BookingForm({ services, staff }: BookingFormProps) {
                             className="grid grid-cols-3 gap-2"
                           >
                             {suggestedTimes.map((time) => {
-                              const timeId = `time-${time}`;
+                              const timeId = `time-${time.replace(':', '')}`;
                               return (
                               <FormItem key={timeId} className="flex items-center space-x-3 space-y-0">
                                 <FormControl>
