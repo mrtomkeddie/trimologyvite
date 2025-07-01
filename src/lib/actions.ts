@@ -17,30 +17,24 @@ export async function getSuggestedTimes(serviceDuration: number, preferredDate: 
     };
 }
 
-export async function createBooking(formData: FormData): Promise<{ success: boolean; error?: string }> {
-    try {
-        const bookingData = {
-            serviceId: formData.get('serviceId'),
-            staffId: formData.get('staffId'),
-            date: formData.get('date'),
-            time: formData.get('time'),
-            clientName: formData.get('clientName'),
-            clientPhone: formData.get('clientPhone'),
-            clientEmail: formData.get('clientEmail'),
-        };
-        
-        if (!bookingData.serviceId || !bookingData.date || !bookingData.time || !bookingData.clientName || !bookingData.clientPhone) {
-            return { success: false, error: "Missing required booking information." };
-        }
+type BookingData = {
+    serviceId: string;
+    staffId: string;
+    date: string;
+    time: string;
+    clientName: string;
+    clientPhone: string;
+    clientEmail?: string;
+};
 
-        // In a real app, you would save this to a database.
-        console.log("Booking created successfully (mock):", bookingData);
 
-        return { success: true };
-
-    } catch (error) {
-        console.error("Booking creation failed:", error);
-        const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
-        return { success: false, error: errorMessage };
+export async function createBooking(bookingData: BookingData) {
+    if (!bookingData.serviceId || !bookingData.date || !bookingData.time || !bookingData.clientName || !bookingData.clientPhone) {
+        throw new Error("Missing required booking information.");
     }
+
+    // In a real app, you would save this to a database.
+    console.log("Booking created successfully (mock):", bookingData);
+
+    return { success: true };
 }
