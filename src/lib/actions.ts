@@ -29,9 +29,9 @@ export async function getSuggestedTimes(serviceDuration: number, preferredDate: 
         const availableTimeSlots: string[] = [];
         const slotInterval = 15; // Propose a new slot every 15 minutes
 
-        staffAvailability.forEach(window => {
-            let currentMin = parseTime(window.start);
-            const endMin = parseTime(window.end);
+        staffAvailability.forEach(availabilityWindow => {
+            let currentMin = parseTime(availabilityWindow.start);
+            const endMin = parseTime(availabilityWindow.end);
 
             while (currentMin + serviceDuration <= endMin) {
                 availableTimeSlots.push(formatTime(currentMin));

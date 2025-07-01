@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
+import type { z } from 'zod';
 import { format } from 'date-fns';
 import { CalendarIcon, Loader2, User, Phone, Mail, Search, Clock } from 'lucide-react';
 
@@ -32,20 +32,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import type { Service, Staff } from '@/lib/types';
+import { BookingFormSchema, type Service, type Staff } from '@/lib/types';
 import { getSuggestedTimes, createBooking } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-
-const BookingFormSchema = z.object({
-  serviceId: z.string({ required_error: 'Please select a service.' }),
-  staffId: z.string().optional(),
-  date: z.date({ required_error: 'Please select a date.' }),
-  time: z.string({ required_error: 'Please select a time.' }),
-  clientName: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
-  clientPhone: z.string().min(10, { message: 'Please enter a valid phone number.' }),
-  clientEmail: z.string().email({ message: 'Please enter a valid email.' }).optional().or(z.literal('')),
-});
 
 type BookingFormProps = {
   services: Service[];
@@ -105,7 +95,7 @@ export function BookingForm({ services, staff }: BookingFormProps) {
           variant: 'destructive',
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
         description: "An unexpected error occurred.",
@@ -121,7 +111,7 @@ export function BookingForm({ services, staff }: BookingFormProps) {
     try {
       await createBooking(data);
       // The redirect is handled by the server action
-    } catch(e: any) {
+    } catch(e: unknown) {
       toast({
         title: "Booking Failed",
         description: "Something went wrong. Please try again.",
