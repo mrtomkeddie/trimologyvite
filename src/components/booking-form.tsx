@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import type { z } from 'zod';
+import { z } from 'zod';
 import { format } from 'date-fns';
 import { CalendarIcon, Loader2, User, Phone, Mail, Search, Clock } from 'lucide-react';
 
@@ -37,6 +37,8 @@ import { getSuggestedTimes, createBooking } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
+type BookingFormValues = z.infer<typeof BookingFormSchema>;
+
 type BookingFormProps = {
   services: Service[];
   staff: Staff[];
@@ -44,33 +46,32 @@ type BookingFormProps = {
 
 export function BookingForm({ services, staff }: BookingFormProps) {
   const { toast } = useToast();
-  const [selectedService, setSelectedService] = React.useState<Service | null>(null);
   const [suggestedTimes, setSuggestedTimes] = React.useState<string[]>([]);
   const [isLoadingTimes, setIsLoadingTimes] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  
-  const form = useForm<z.infer<typeof BookingFormSchema>>({
+
+  const form = useForm<BookingFormValues>({
     resolver: zodResolver(BookingFormSchema),
     defaultValues: {
       clientName: '',
       clientPhone: '',
       clientEmail: '',
+      staffId: 'any',
     },
   });
 
+  const serviceId = form.watch('serviceId');
   const selectedDate = form.watch('date');
 
-  React.useEffect(() => {
-    // Reset times when service or date changes
-    setSuggestedTimes([]);
-    form.resetField('time');
-  }, [selectedService, selectedDate, form]);
+  const selectedService = React.useMemo(() => {
+    if (!serviceId) return null;
+    return services.find((s) => s.id === serviceId) || null;
+  }, [serviceId, services]);
 
-  const handleServiceChange = (serviceId: string) => {
-    const service = services.find((s) => s.id === serviceId) || null;
-    setSelectedService(service);
-    form.setValue('serviceId', serviceId);
-  };
+  React.useEffect(() => {
+    setSuggestedTimes([]);
+    form.resetField('time', { defaultValue: undefined });
+  }, [serviceId, selectedDate, form]);
 
   const handleSuggestTimes = async () => {
     if (!selectedService || !selectedDate) return;
@@ -96,9 +97,10 @@ export function BookingForm({ services, staff }: BookingFormProps) {
         });
       }
     } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
       toast({
         title: "Error",
-        description: "An unexpected error occurred.",
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
@@ -106,15 +108,16 @@ export function BookingForm({ services, staff }: BookingFormProps) {
     }
   };
 
-  async function onSubmit(data: z.infer<typeof BookingFormSchema>) {
+  async function onSubmit(data: BookingFormValues) {
     setIsSubmitting(true);
     try {
       await createBooking(data);
       // The redirect is handled by the server action
     } catch(e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : "Something went wrong. Please try again.";
       toast({
         title: "Booking Failed",
-        description: "Something went wrong. Please try again.",
+        description: errorMessage,
         variant: 'destructive',
       })
     } finally {
@@ -138,7 +141,7 @@ export function BookingForm({ services, staff }: BookingFormProps) {
                 name="serviceId"
                 render={({ field }) => (
                   <FormItem>
-                    <Select onValueChange={handleServiceChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Choose a service..." />
@@ -182,7 +185,7 @@ export function BookingForm({ services, staff }: BookingFormProps) {
               />
             </div>
             
-            {selectedService && (
+            {serviceId && (
               <div className="space-y-4">
                 <h3 className="font-headline text-xl">2. Choose Date & Time</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -211,7 +214,7 @@ export function BookingForm({ services, staff }: BookingFormProps) {
                                 mode="single"
                                 selected={field.value}
                                 onSelect={field.onChange}
-                                disabled={(date) => date < new Date() || date < new Date("1900-01-01")}
+                                disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                                 initialFocus
                               />
                             </PopoverContent>
@@ -243,7 +246,7 @@ export function BookingForm({ services, staff }: BookingFormProps) {
                                 <FormControl>
                                   <RadioGroupItem value={time} id={time} className="sr-only peer" />
                                 </FormControl>
-                                <FormLabel htmlFor={time} className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary w-full cursor-pointer">
+                                <FormLabel htmlFor={time} className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary w-full cursor-pointer">
                                   <Clock className="mb-1 h-5 w-5"/>
                                   {time}
                                 </FormLabel>
