@@ -25,7 +25,14 @@ export const BookingFormSchema = z.object({
     clientEmail: z.string().email({ message: 'Please enter a valid email.' }).optional().or(z.literal('')),
   });
 
-export type Booking = z.infer<typeof BookingFormSchema> & {
+export type Booking = {
     id: string;
+    serviceId: string;
+    staffId?: string;
+    date: Date;
+    time: string;
+    clientName: string;
+    clientPhone: string;
+    clientEmail?: string;
     status: 'Confirmed' | 'Attended' | 'No-Show';
 };

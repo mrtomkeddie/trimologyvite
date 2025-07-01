@@ -241,17 +241,20 @@ export function BookingForm({ services, staff }: BookingFormProps) {
                             defaultValue={field.value}
                             className="grid grid-cols-3 gap-2"
                           >
-                            {suggestedTimes.map((time) => (
-                              <FormItem key={time} className="flex items-center space-x-3 space-y-0">
+                            {suggestedTimes.map((time) => {
+                              const timeId = `time-${time}`;
+                              return (
+                              <FormItem key={timeId} className="flex items-center space-x-3 space-y-0">
                                 <FormControl>
-                                  <RadioGroupItem value={time} id={time} className="sr-only peer" />
+                                  <RadioGroupItem value={time} id={timeId} className="sr-only peer" />
                                 </FormControl>
-                                <FormLabel htmlFor={time} className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary w-full cursor-pointer">
+                                <FormLabel htmlFor={timeId} className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary w-full cursor-pointer">
                                   <Clock className="mb-1 h-5 w-5"/>
                                   {time}
                                 </FormLabel>
                               </FormItem>
-                            ))}
+                              );
+                            })}
                           </RadioGroup>
                         </FormControl>
                         <FormMessage />
