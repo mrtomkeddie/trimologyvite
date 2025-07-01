@@ -23,16 +23,4 @@ export const BookingFormSchema = z.object({
     clientName: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
     clientPhone: z.string().min(10, { message: 'Please enter a valid phone number.' }),
     clientEmail: z.string().email({ message: 'Please enter a valid email.' }).optional().or(z.literal('')),
-  });
-
-export type Booking = {
-    id: string;
-    serviceId: string;
-    staffId?: string;
-    date: Date;
-    time: string;
-    clientName: string;
-    clientPhone: string;
-    clientEmail?: string;
-    status: 'Confirmed' | 'Attended' | 'No-Show';
-};
+});

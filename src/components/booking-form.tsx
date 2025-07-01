@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -45,6 +46,7 @@ type BookingFormProps = {
 };
 
 export function BookingForm({ services, staff }: BookingFormProps) {
+  const router = useRouter();
   const { toast } = useToast();
   const [suggestedTimes, setSuggestedTimes] = React.useState<string[]>([]);
   const [isLoadingTimes, setIsLoadingTimes] = React.useState(false);
@@ -122,8 +124,17 @@ export function BookingForm({ services, staff }: BookingFormProps) {
         formData.append('clientEmail', data.clientEmail);
       }
 
-      await createBooking(formData);
-      // The redirect is handled by the server action
+      const result = await createBooking(formData);
+
+      if (result.success) {
+        router.push('/booking-confirmation');
+      } else {
+        toast({
+            title: "Booking Failed",
+            description: result.error || "Something went wrong. Please try again.",
+            variant: 'destructive',
+        });
+      }
     } catch(e) {
       const errorMessage = e instanceof Error ? e.message : "Something went wrong. Please try again.";
       toast({
