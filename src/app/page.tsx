@@ -19,9 +19,6 @@ export default async function Home() {
             className="mb-4"
             priority
           />
-          <p className="font-body text-muted-foreground mt-2 text-lg max-w-prose">
-            Get the best haircut and beauty services from our award-winning team.
-          </p>
         </header>
         <div className="w-full max-w-2xl">
           <BookingForm services={services} staff={staff} />
