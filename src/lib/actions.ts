@@ -20,7 +20,7 @@ export async function getSuggestedTimes(serviceDuration: number, preferredDate: 
 type BookingData = {
     serviceId: string;
     staffId: string;
-    date: string;
+    date: Date;
     time: string;
     clientName: string;
     clientPhone: string;

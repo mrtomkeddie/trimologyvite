@@ -1,6 +1,6 @@
 import { BookingForm } from '@/components/booking-form';
-import { Icons } from '@/components/icons';
 import { getServices, getStaff } from '@/lib/data';
+import Image from 'next/image';
 
 export default async function Home() {
   const services = await getServices();
@@ -11,7 +11,14 @@ export default async function Home() {
        <div className="absolute top-0 left-0 w-full h-full bg-accent/20 blur-3xl -z-10" />
       <main className="w-full max-w-5xl flex flex-col items-center">
         <header className="w-full flex flex-col items-center text-center mb-8">
-          <Icons.logo className="h-20 w-20 mb-4 text-primary" />
+          <Image 
+            src="/trimology-logo.png" 
+            alt="Trimology Logo" 
+            width={500} 
+            height={380}
+            className="mb-4"
+            priority
+          />
           <h1 className="font-headline text-4xl sm:text-5xl md:text-6xl font-bold text-foreground">
             Trimology
           </h1>
