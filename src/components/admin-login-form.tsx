@@ -37,8 +37,10 @@ export function AdminLoginForm() {
     } catch (error) {
       let errorMessage = 'Invalid credentials. Please try again.';
       if (error instanceof Error) {
-        // More specific error messages can be handled here if needed
-        console.error(error.code, error.message);
+        const errorCode = (error as any).code;
+        if (errorCode === 'auth/invalid-api-key' || errorCode === 'auth/api-key-not-valid.-please-pass-a-valid-api-key.') {
+            errorMessage = 'Your Firebase API Key is not configured correctly. Please check your environment variables.';
+        }
       }
       toast({
         title: 'Login Failed',
