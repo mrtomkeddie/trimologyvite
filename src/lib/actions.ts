@@ -1,5 +1,9 @@
 'use server';
 
+import { format } from 'date-fns';
+import { getLocations, getServices, getStaff } from './data';
+
+
 export async function getSuggestedTimes(serviceDuration: number, preferredDate: string) {
     // This is a radical simplification to work around a build tool bug.
     // The actual logic was correct, but something in it was confusing the compiler.
@@ -36,6 +40,49 @@ export async function createBooking(bookingData: BookingData) {
 
     // In a real app, you would save this to a database.
     console.log("Booking created successfully (mock):", bookingData);
+
+    // Send a confirmation email if an email address was provided
+    if (bookingData.clientEmail) {
+        try {
+            // Fetch details to enrich the email content
+            const allLocations = await getLocations();
+            const allServices = await getServices();
+            const allStaff = await getStaff();
+
+            const location = allLocations.find(l => l.id === bookingData.locationId);
+            const service = allServices.find(s => s.id === bookingData.serviceId);
+            const staffMember = allStaff.find(s => s.id === bookingData.staffId);
+
+            const emailBody = `
+Dear ${bookingData.clientName},
+
+Thank you for booking with Trimology!
+
+Your appointment details:
+Service: ${service?.name || 'N/A'}
+Location: ${location?.name || 'N/A'}
+Date: ${format(bookingData.date, 'PPP')}
+Time: ${bookingData.time}
+Staff: ${staffMember?.name || 'Any Available'}
+
+We look forward to seeing you!
+
+- The Trimology Team
+            `.trim().replace(/^ +/gm, '');
+
+            // In a real application, you would use a service like SendGrid, Nodemailer, or Resend
+            // to send the actual email. For this demo, we'll just log it to the server console.
+            console.log("--- Sending Confirmation Email ---");
+            console.log(`To: ${bookingData.clientEmail}`);
+            console.log(`Subject: Your Trimology Booking Confirmation`);
+            console.log(emailBody);
+            console.log("---------------------------------");
+            
+        } catch (emailError) {
+            console.error("Failed to 'send' confirmation email:", emailError);
+            // We don't want to fail the whole booking if the email fails, so we'll just log the error.
+        }
+    }
 
     return { success: true };
 }
