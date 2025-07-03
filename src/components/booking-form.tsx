@@ -356,7 +356,7 @@ export function BookingForm({ locations, services, staff }: BookingFormProps) {
             )}
           </CardContent>
           <CardFooter>
-            <Button type="submit" className="w-full" size="lg" disabled={!form.formState.isValid || isSubmitting}>
+            <Button type="submit" className="w-full font-bold" size="lg" disabled={!form.formState.isValid || isSubmitting}>
               {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {isSubmitting ? 'Booking...' : 'Confirm Booking'}
             </Button>
