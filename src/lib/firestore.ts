@@ -81,13 +81,13 @@ export async function getStaffFromFirestore(): Promise<Staff[]> {
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Staff));
 }
 
-export async function addStaff(data: { name: string; specialization: string; }) {
+export async function addStaff(data: { name: string; specialization: string; locationId: string; locationName: string; }) {
     await addDoc(staffCollection, data);
     revalidatePath('/admin/staff');
     revalidatePath('/');
 }
 
-export async function updateStaff(id: string, data: { name: string; specialization: string; }) {
+export async function updateStaff(id: string, data: { name: string; specialization: string; locationId: string; locationName: string; }) {
     const staffDoc = doc(db, 'staff', id);
     await updateDoc(staffDoc, data);
     revalidatePath('/admin/staff');

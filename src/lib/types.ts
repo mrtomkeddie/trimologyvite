@@ -22,6 +22,8 @@ export const StaffSchema = z.object({
   id: z.string(),
   name: z.string(),
   specialization: z.string(),
+  locationId: z.string(),
+  locationName: z.string(),
 });
 export type Staff = z.infer<typeof StaffSchema>;
 
@@ -68,4 +70,5 @@ export const ServiceFormSchema = z.object({
 export const StaffFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
   specialization: z.string().min(3, 'Specialization must be at least 3 characters.'),
+  locationId: z.string({ required_error: 'Please assign a location.' }),
 });

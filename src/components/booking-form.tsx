@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -76,6 +77,19 @@ export function BookingForm({ locations, services, staff }: BookingFormProps) {
     if (!serviceId) return null;
     return services.find((s) => s.id === serviceId) || null;
   }, [serviceId, services]);
+
+  const filteredStaff = React.useMemo(() => {
+    if (!locationId) return [];
+    return staff.filter((s) => s.locationId === locationId);
+  }, [locationId, staff]);
+
+  React.useEffect(() => {
+    form.resetField('serviceId', { defaultValue: undefined });
+    form.resetField('staffId', { defaultValue: 'any' });
+    form.resetField('date', { defaultValue: undefined });
+    setSuggestedTimes([]);
+    form.resetField('time', { defaultValue: undefined });
+  }, [locationId, form]);
 
   React.useEffect(() => {
     setSuggestedTimes([]);
@@ -224,7 +238,7 @@ export function BookingForm({ locations, services, staff }: BookingFormProps) {
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="any">Any Staff Member</SelectItem>
-                            {staff.map((staffMember) => (
+                            {filteredStaff.map((staffMember) => (
                               <SelectItem key={staffMember.id} value={staffMember.id}>
                                 {staffMember.name} ({staffMember.specialization})
                               </SelectItem>

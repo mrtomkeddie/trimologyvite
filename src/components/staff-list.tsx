@@ -1,6 +1,7 @@
+
 'use client';
 import * as React from 'react';
-import type { Staff } from '@/lib/types';
+import type { Staff, Location } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { StaffForm } from './staff-form';
@@ -17,13 +18,14 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash2, Edit, Loader2, Star } from 'lucide-react';
+import { PlusCircle, Trash2, Edit, Loader2, Star, MapPin } from 'lucide-react';
 
 type StaffListProps = {
     initialStaff: Staff[];
+    locations: Location[];
 };
 
-export function StaffList({ initialStaff }: StaffListProps) {
+export function StaffList({ initialStaff, locations }: StaffListProps) {
     const [staff, setStaff] = React.useState(initialStaff);
     const [isFormOpen, setIsFormOpen] = React.useState(false);
     const [editingStaff, setEditingStaff] = React.useState<Staff | null>(null);
@@ -63,16 +65,20 @@ export function StaffList({ initialStaff }: StaffListProps) {
     return (
         <div className="w-full max-w-6xl mx-auto">
             <div className="flex justify-end mb-4">
-                <Button onClick={handleAddClick}>
+                <Button onClick={handleAddClick} disabled={locations.length === 0}>
                     <PlusCircle className="mr-2" />
                     Add Staff
                 </Button>
             </div>
+             {locations.length === 0 && (
+                <p className="text-center text-muted-foreground mb-4">You must add a location before you can add staff.</p>
+            )}
             
             <StaffForm
                 isOpen={isFormOpen}
                 setIsOpen={setIsFormOpen}
                 staffMember={editingStaff}
+                locations={locations}
                 onSubmitted={handleFormSubmit}
             />
 
@@ -82,6 +88,7 @@ export function StaffList({ initialStaff }: StaffListProps) {
                         <TableRow>
                             <TableHead>Name</TableHead>
                             <TableHead>Specialization</TableHead>
+                            <TableHead>Location</TableHead>
                             <TableHead className="text-right w-[120px]">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -94,6 +101,12 @@ export function StaffList({ initialStaff }: StaffListProps) {
                                         <div className="flex items-center gap-2">
                                             <Star className="h-4 w-4 text-muted-foreground" />
                                             {staffMember.specialization}
+                                        </div>
+                                    </TableCell>
+                                     <TableCell>
+                                        <div className="flex items-center gap-2">
+                                            <MapPin className="h-4 w-4 text-muted-foreground" />
+                                            {staffMember.locationName}
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-right">
@@ -129,7 +142,7 @@ export function StaffList({ initialStaff }: StaffListProps) {
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={3} className="text-center h-24">
+                                <TableCell colSpan={4} className="text-center h-24">
                                     No staff found. Add your first one!
                                 </TableCell>
                             </TableRow>
