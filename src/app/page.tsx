@@ -1,6 +1,7 @@
 import { BookingForm } from '@/components/booking-form';
 import { getServices, getStaff, getLocations } from '@/lib/data';
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default async function Home() {
   const locations = await getLocations();
@@ -17,7 +18,7 @@ export default async function Home() {
             alt="Trimology Logo" 
             width={300} 
             height={228}
-            className="w-48 h-auto sm:w-72 mb-4"
+            className="w-48 h-auto sm:w-64 mb-4"
             priority
           />
         </header>
@@ -27,6 +28,11 @@ export default async function Home() {
         <footer className="w-full text-center mt-12 text-muted-foreground text-sm">
           <p>&copy; {new Date().getFullYear()} Trimology. All rights reserved.</p>
           <p>123 Style Street, Barberville, 12345</p>
+           <p className="mt-4">
+            <Link href="/admin" className="hover:text-primary transition-colors">
+              Admin Login
+            </Link>
+          </p>
         </footer>
       </main>
     </div>
