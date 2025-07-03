@@ -15,6 +15,8 @@ export const ServiceSchema = z.object({
   name: z.string(),
   duration: z.coerce.number(), // in minutes
   price: z.coerce.number(),
+  locationId: z.string(),
+  locationName: z.string(),
 });
 export type Service = z.infer<typeof ServiceSchema>;
 
@@ -65,6 +67,7 @@ export const ServiceFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
   duration: z.coerce.number().positive('Duration must be a positive number.'),
   price: z.coerce.number().positive('Price must be a positive number.'),
+  locationId: z.string({ required_error: 'Please assign a location.' }),
 });
 
 export const StaffFormSchema = z.object({

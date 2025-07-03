@@ -1,5 +1,6 @@
 
-import { getServicesFromFirestore } from "@/lib/firestore";
+
+import { getServicesFromFirestore, getLocationsFromFirestore } from "@/lib/firestore";
 import { ServicesList } from "@/components/services-list";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -7,6 +8,7 @@ import { Button } from "@/components/ui/button";
 
 export default async function ManageServicesPage() {
     const services = await getServicesFromFirestore();
+    const locations = await getLocationsFromFirestore();
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -20,7 +22,7 @@ export default async function ManageServicesPage() {
                 <h1 className="font-headline text-xl font-semibold">Manage Services</h1>
             </header>
             <main className="flex-1 p-4 sm:p-6 lg:p-8">
-                <ServicesList initialServices={services} />
+                <ServicesList initialServices={services} locations={locations} />
             </main>
         </div>
     );

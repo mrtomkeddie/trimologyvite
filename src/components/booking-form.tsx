@@ -77,6 +77,11 @@ export function BookingForm({ locations, services, staff }: BookingFormProps) {
     if (!serviceId) return null;
     return services.find((s) => s.id === serviceId) || null;
   }, [serviceId, services]);
+  
+  const filteredServices = React.useMemo(() => {
+    if (!locationId) return [];
+    return services.filter((s) => s.locationId === locationId);
+  }, [locationId, services]);
 
   const filteredStaff = React.useMemo(() => {
     if (!locationId) return [];
@@ -180,7 +185,7 @@ export function BookingForm({ locations, services, staff }: BookingFormProps) {
                         <SelectTrigger>
                           <div className="flex items-center gap-2">
                               <MapPin className="h-4 w-4 text-muted-foreground" />
-                              {selectedLocation ? <span>{selectedLocation.name}</span> : <span className="text-muted-foreground">Choose a location...</span>}
+                               {selectedLocation ? <span>{selectedLocation.name}</span> : <span className="text-muted-foreground">Choose a location...</span>}
                           </div>
                         </SelectTrigger>
                       </FormControl>
@@ -207,14 +212,14 @@ export function BookingForm({ locations, services, staff }: BookingFormProps) {
                     name="serviceId"
                     render={({ field }) => (
                       <FormItem>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={filteredServices.length === 0}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Choose a service..." />
+                              <SelectValue placeholder={filteredServices.length === 0 ? "No services at this location" : "Choose a service..."} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {services.map((service) => (
+                            {filteredServices.map((service) => (
                               <SelectItem key={service.id} value={service.id}>
                                 {service.name} - £{service.price.toFixed(2)} ({service.duration} min)
                               </SelectItem>

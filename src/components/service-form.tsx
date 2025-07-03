@@ -9,9 +9,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { addService, updateService } from '@/lib/firestore';
-import { ServiceFormSchema, type Service } from '@/lib/types';
+import { ServiceFormSchema, type Service, type Location } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
 type ServiceFormValues = z.infer<typeof ServiceFormSchema>;
@@ -20,10 +21,11 @@ type ServiceFormProps = {
     isOpen: boolean;
     setIsOpen: (isOpen: boolean) => void;
     service: Service | null;
+    locations: Location[];
     onSubmitted: () => void;
 };
 
-export function ServiceForm({ isOpen, setIsOpen, service, onSubmitted }: ServiceFormProps) {
+export function ServiceForm({ isOpen, setIsOpen, service, locations, onSubmitted }: ServiceFormProps) {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const { toast } = useToast();
     
@@ -33,6 +35,7 @@ export function ServiceForm({ isOpen, setIsOpen, service, onSubmitted }: Service
             name: '',
             duration: 0,
             price: 0,
+            locationId: '',
         }
     });
 
@@ -43,12 +46,14 @@ export function ServiceForm({ isOpen, setIsOpen, service, onSubmitted }: Service
                     name: service.name,
                     duration: service.duration,
                     price: service.price,
+                    locationId: service.locationId,
                 });
             } else {
                 form.reset({
                     name: '',
                     duration: 30,
                     price: 50,
+                    locationId: '',
                 });
             }
         }
@@ -56,12 +61,24 @@ export function ServiceForm({ isOpen, setIsOpen, service, onSubmitted }: Service
 
     const onSubmit = async (data: ServiceFormValues) => {
         setIsSubmitting(true);
+        const location = locations.find(l => l.id === data.locationId);
+        if (!location) {
+            toast({ title: 'Error', description: 'Invalid location selected.', variant: 'destructive' });
+            setIsSubmitting(false);
+            return;
+        }
+
+        const submissionData = {
+            ...data,
+            locationName: location.name,
+        };
+
         try {
             if (service) {
-                await updateService(service.id, data);
+                await updateService(service.id, submissionData);
                 toast({ title: 'Success', description: 'Service updated successfully.' });
             } else {
-                await addService(data);
+                await addService(submissionData);
                 toast({ title: 'Success', description: 'Service added successfully.' });
             }
             onSubmitted();
@@ -88,6 +105,30 @@ export function ServiceForm({ isOpen, setIsOpen, service, onSubmitted }: Service
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
+                        <FormField
+                            control={form.control}
+                            name="locationId"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Location</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                        <SelectValue placeholder="Assign to a location..." />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {locations.map((location) => (
+                                        <SelectItem key={location.id} value={location.id}>
+                                            {location.name}
+                                        </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                         <FormField
                             control={form.control}
                             name="name"

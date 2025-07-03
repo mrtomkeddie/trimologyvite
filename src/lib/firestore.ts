@@ -51,13 +51,13 @@ export async function getServicesFromFirestore(): Promise<Service[]> {
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Service));
 }
 
-export async function addService(data: { name: string; duration: number; price: number; }) {
+export async function addService(data: { name: string; duration: number; price: number; locationId: string; locationName: string; }) {
     await addDoc(servicesCollection, data);
     revalidatePath('/admin/services');
     revalidatePath('/');
 }
 
-export async function updateService(id: string, data: { name: string; duration: number; price: number; }) {
+export async function updateService(id: string, data: { name: string; duration: number; price: number; locationId: string; locationName: string; }) {
     const serviceDoc = doc(db, 'services', id);
     await updateDoc(serviceDoc, data);
     revalidatePath('/admin/services');
