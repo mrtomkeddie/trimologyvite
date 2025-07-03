@@ -197,7 +197,7 @@ export function BookingForm({ locations, services, staff }: BookingFormProps) {
                           <SelectContent>
                             {services.map((service) => (
                               <SelectItem key={service.id} value={service.id}>
-                                {service.name} - ${service.price} ({service.duration} min)
+                                {service.name} - £{service.price.toFixed(2)} ({service.duration} min)
                               </SelectItem>
                             ))}
                           </SelectContent>

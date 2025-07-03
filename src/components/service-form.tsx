@@ -119,7 +119,7 @@ export function ServiceForm({ isOpen, setIsOpen, service, onSubmitted }: Service
                             name="price"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Price ($)</FormLabel>
+                                    <FormLabel>Price (£)</FormLabel>
                                     <FormControl>
                                         <Input type="number" placeholder="e.g., 50" {...field} />
                                     </FormControl>

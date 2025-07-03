@@ -18,7 +18,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash2, Edit, Loader2, Clock, DollarSign } from 'lucide-react';
+import { PlusCircle, Trash2, Edit, Loader2, Clock, PoundSterling } from 'lucide-react';
 
 type ServicesListProps = {
     initialServices: Service[];
@@ -100,7 +100,7 @@ export function ServicesList({ initialServices }: ServicesListProps) {
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-2">
-                                            <DollarSign className="h-4 w-4 text-muted-foreground" />
+                                            <PoundSterling className="h-4 w-4 text-muted-foreground" />
                                             {service.price.toFixed(2)}
                                         </div>
                                     </TableCell>
