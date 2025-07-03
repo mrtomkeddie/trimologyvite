@@ -2,10 +2,6 @@
 
 import { format } from 'date-fns';
 import { getLocations, getServices, getStaff } from './data';
-import { Resend } from 'resend';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 
 export async function getSuggestedTimes(serviceDuration: number, preferredDate: string) {
     // This is a radical simplification to work around a build tool bug.
@@ -44,7 +40,7 @@ export async function createBooking(bookingData: BookingData) {
     // In a real app, you would save this to a database.
     console.log("Booking created successfully (mock):", bookingData);
 
-    // Send a confirmation email if an email address was provided
+    // "Send" a confirmation email if an email address was provided
     if (bookingData.clientEmail) {
         try {
             // Fetch details to enrich the email content
@@ -73,15 +69,14 @@ We look forward to seeing you!
 - The Trimology Team
             `.trim().replace(/^ +/gm, '');
 
-            await resend.emails.send({
-                from: 'Trimology <onboarding@resend.dev>', // IMPORTANT: Replace with your verified sender email from Resend
-                to: bookingData.clientEmail,
-                subject: 'Your Trimology Booking Confirmation',
-                text: emailBody,
-            });
+            console.log("--- Sending Confirmation Email ---");
+            console.log(`To: ${bookingData.clientEmail}`);
+            console.log(`Subject: Your Trimology Booking Confirmation`);
+            console.log(emailBody);
+            console.log("---------------------------------");
 
-        } catch (emailError) {
-            console.error("Failed to 'send' confirmation email:", emailError);
+        } catch (error) {
+            console.error("Failed to prepare confirmation email content:", error);
             // We don't want to fail the whole booking if the email fails, so we'll just log the error.
         }
     }
