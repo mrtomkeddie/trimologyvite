@@ -1,11 +1,11 @@
 {
-  "name": "SalonFlow",
-  "short_name": "SalonFlow",
-  "description": "Effortless booking for your moment of beauty.",
+  "name": "Trimology",
+  "short_name": "Trimology",
+  "description": "Get the best haircut and beauty services from our award-winning team.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F5F5DC",
-  "theme_color": "#E3B7A1",
+  "background_color": "#111113",
+  "theme_color": "#D5B56E",
   "icons": [
     {
       "src": "/icon-192x192.png",

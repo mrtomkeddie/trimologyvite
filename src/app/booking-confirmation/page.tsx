@@ -13,7 +13,7 @@ export default function BookingConfirmationPage() {
                     </div>
                     <CardTitle className="font-headline text-3xl mt-6">Booking Confirmed!</CardTitle>
                     <CardDescription className="text-base">
-                        Thank you for choosing SalonFlow. We look forward to seeing you!
+                        Thank you for choosing Trimology. We look forward to seeing you!
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="px-8">
@@ -23,7 +23,7 @@ export default function BookingConfirmationPage() {
                 </CardContent>
                 <CardFooter className="p-8 pt-4">
                      <Button asChild className="w-full" size="lg">
-                        <Link href="/">Book Another Appointment</Link>
+                        <Link href="/">Book Another Service</Link>
                     </Button>
                 </CardFooter>
             </Card>
