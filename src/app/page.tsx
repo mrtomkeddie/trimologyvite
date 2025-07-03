@@ -14,8 +14,8 @@ export default async function Home() {
           <Image 
             src="/trimology-logo.png" 
             alt="Trimology Logo" 
-            width={500} 
-            height={380}
+            width={300} 
+            height={228}
             className="mb-4"
             priority
           />
