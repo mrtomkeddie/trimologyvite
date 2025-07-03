@@ -1,5 +1,12 @@
 import { z } from 'zod';
 
+export const LocationSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  address: z.string(),
+});
+export type Location = z.infer<typeof LocationSchema>;
+
 export const ServiceSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -16,6 +23,7 @@ export const StaffSchema = z.object({
 export type Staff = z.infer<typeof StaffSchema>;
 
 export const BookingFormSchema = z.object({
+    locationId: z.string({ required_error: 'Please select a location.' }),
     serviceId: z.string({ required_error: 'Please select a service.' }),
     staffId: z.string().optional(),
     date: z.date({ required_error: 'Please select a date.' }),

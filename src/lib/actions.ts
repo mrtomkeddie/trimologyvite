@@ -18,6 +18,7 @@ export async function getSuggestedTimes(serviceDuration: number, preferredDate: 
 }
 
 type BookingData = {
+    locationId: string;
     serviceId: string;
     staffId: string;
     date: Date;
@@ -29,7 +30,7 @@ type BookingData = {
 
 
 export async function createBooking(bookingData: BookingData) {
-    if (!bookingData.serviceId || !bookingData.date || !bookingData.time || !bookingData.clientName || !bookingData.clientPhone) {
+    if (!bookingData.locationId || !bookingData.serviceId || !bookingData.date || !bookingData.time || !bookingData.clientName || !bookingData.clientPhone) {
         throw new Error("Missing required booking information.");
     }
 

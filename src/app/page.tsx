@@ -1,8 +1,9 @@
 import { BookingForm } from '@/components/booking-form';
-import { getServices, getStaff } from '@/lib/data';
+import { getServices, getStaff, getLocations } from '@/lib/data';
 import Image from 'next/image';
 
 export default async function Home() {
+  const locations = await getLocations();
   const services = await getServices();
   const staff = await getStaff();
 
@@ -21,7 +22,7 @@ export default async function Home() {
           />
         </header>
         <div className="w-full max-w-2xl">
-          <BookingForm services={services} staff={staff} />
+          <BookingForm locations={locations} services={services} staff={staff} />
         </div>
         <footer className="w-full text-center mt-12 text-muted-foreground text-sm">
           <p>&copy; {new Date().getFullYear()} Trimology. All rights reserved.</p>
