@@ -17,7 +17,7 @@ export default async function Home() {
             alt="Trimology Logo" 
             width={300} 
             height={228}
-            className="mb-4"
+            className="w-48 h-auto sm:w-72 mb-4"
             priority
           />
         </header>
