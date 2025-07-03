@@ -25,6 +25,22 @@ export const StaffSchema = z.object({
 });
 export type Staff = z.infer<typeof StaffSchema>;
 
+export const BookingSchema = z.object({
+    id: z.string(),
+    locationId: z.string(),
+    locationName: z.string(),
+    serviceId: z.string(),
+    serviceName: z.string(),
+    staffId: z.string(),
+    staffName: z.string(),
+    bookingTimestamp: z.string(), // Stored as ISO string
+    clientName: z.string(),
+    clientPhone: z.string(),
+    clientEmail: z.string().optional(),
+});
+export type Booking = z.infer<typeof BookingSchema>;
+export type NewBooking = Omit<Booking, 'id'>;
+
 export const BookingFormSchema = z.object({
     locationId: z.string({ required_error: 'Please select a location.' }),
     serviceId: z.string({ required_error: 'Please select a service.' }),

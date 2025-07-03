@@ -2,13 +2,14 @@
 'use server';
 
 import { db } from './firebase';
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, orderBy, query } from 'firebase/firestore';
-import type { Location, Service, Staff } from './types';
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, orderBy, query, Timestamp } from 'firebase/firestore';
+import type { Location, Service, Staff, Booking, NewBooking } from './types';
 import { revalidatePath } from 'next/cache';
 
 const locationsCollection = collection(db, 'locations');
 const servicesCollection = collection(db, 'services');
 const staffCollection = collection(db, 'staff');
+const bookingsCollection = collection(db, 'bookings');
 
 // Locations
 export async function getLocationsFromFirestore(): Promise<Location[]> {
@@ -98,4 +99,37 @@ export async function deleteStaff(id: string) {
     await deleteDoc(staffDoc);
     revalidatePath('/admin/staff');
     revalidatePath('/');
+}
+
+// Bookings
+export async function getBookingsFromFirestore(): Promise<Booking[]> {
+    const q = query(bookingsCollection, orderBy('bookingTimestamp', 'desc'));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+        return [];
+    }
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        // Firestore Timestamps need to be converted to a serializable format (ISO string)
+        const booking: Booking = {
+            id: doc.id,
+            ...data,
+            bookingTimestamp: (data.bookingTimestamp as any), // Already a string from our action
+        } as Booking;
+        return booking;
+    });
+}
+
+export async function addBooking(data: NewBooking) {
+    await addDoc(bookingsCollection, {
+        ...data,
+        createdAt: Timestamp.now(),
+    });
+    revalidatePath('/admin/bookings');
+}
+
+export async function deleteBooking(id: string) {
+    const bookingDoc = doc(db, 'bookings', id);
+    await deleteDoc(bookingDoc);
+    revalidatePath('/admin/bookings');
 }

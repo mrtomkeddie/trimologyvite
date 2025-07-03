@@ -2,6 +2,8 @@
 
 import { format } from 'date-fns';
 import { getLocations, getServices, getStaff } from './data';
+import type { Booking, NewBooking } from './types';
+import { addBooking } from './firestore';
 
 export async function getSuggestedTimes(serviceDuration: number, preferredDate: string) {
     // This is a radical simplification to work around a build tool bug.
@@ -36,22 +38,42 @@ export async function createBooking(bookingData: BookingData) {
     if (!bookingData.locationId || !bookingData.serviceId || !bookingData.date || !bookingData.time || !bookingData.clientName || !bookingData.clientPhone) {
         throw new Error("Missing required booking information.");
     }
+     
+    // Fetch details to enrich the booking document
+    const allLocations = await getLocations();
+    const allServices = await getServices();
+    const allStaff = await getStaff();
 
-    // In a real app, you would save this to a database.
-    console.log("Booking created successfully (mock):", bookingData);
+    const location = allLocations.find(l => l.id === bookingData.locationId);
+    const service = allServices.find(s => s.id === bookingData.serviceId);
+    const staffMember = allStaff.find(s => s.id === bookingData.staffId);
+    
+    if (!location || !service) {
+        throw new Error("Invalid location or service selected.");
+    }
+
+    const [hours, minutes] = bookingData.time.split(':').map(Number);
+    const bookingTimestamp = new Date(bookingData.date);
+    bookingTimestamp.setHours(hours, minutes);
+
+    const newBooking: NewBooking = {
+        locationId: bookingData.locationId,
+        locationName: location.name,
+        serviceId: bookingData.serviceId,
+        serviceName: service.name,
+        staffId: bookingData.staffId || 'any',
+        staffName: staffMember?.name || 'Any Available',
+        bookingTimestamp: bookingTimestamp.toISOString(),
+        clientName: bookingData.clientName,
+        clientPhone: bookingData.clientPhone,
+        clientEmail: bookingData.clientEmail || '',
+    };
+
+    await addBooking(newBooking);
 
     // "Send" a confirmation email if an email address was provided
     if (bookingData.clientEmail) {
         try {
-            // Fetch details to enrich the email content
-            const allLocations = await getLocations();
-            const allServices = await getServices();
-            const allStaff = await getStaff();
-
-            const location = allLocations.find(l => l.id === bookingData.locationId);
-            const service = allServices.find(s => s.id === bookingData.serviceId);
-            const staffMember = allStaff.find(s => s.id === bookingData.staffId);
-
             const emailBody = `
 Dear ${bookingData.clientName},
 

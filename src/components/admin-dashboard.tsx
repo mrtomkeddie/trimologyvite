@@ -4,7 +4,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import type { User } from 'firebase/auth';
-import { LogOut, Scissors, Users, MapPin, ArrowRight, Key } from 'lucide-react';
+import { LogOut, Scissors, Users, MapPin, ArrowRight, Key, CalendarDays } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 
@@ -33,6 +33,22 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
         </header>
         <main className="flex-1 p-4 sm:px-6 space-y-8">
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                 <Link href="/admin/bookings" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
+                    <div className="p-6 flex flex-col justify-between h-full">
+                        <div>
+                            <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <h3 className="tracking-tight font-semibold">View Bookings</h3>
+                                <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                                See and manage all upcoming appointments.
+                            </p>
+                        </div>
+                        <div className="mt-4 text-primary font-semibold flex items-center">
+                            Go to Bookings <ArrowRight className="ml-2 h-4 w-4" />
+                        </div>
+                    </div>
+                </Link>
                 <Link href="/admin/services" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
                     <div className="p-6 flex flex-col justify-between h-full">
                         <div>
