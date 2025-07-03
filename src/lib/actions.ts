@@ -2,6 +2,9 @@
 
 import { format } from 'date-fns';
 import { getLocations, getServices, getStaff } from './data';
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 
 export async function getSuggestedTimes(serviceDuration: number, preferredDate: string) {
@@ -70,14 +73,13 @@ We look forward to seeing you!
 - The Trimology Team
             `.trim().replace(/^ +/gm, '');
 
-            // In a real application, you would use a service like SendGrid, Nodemailer, or Resend
-            // to send the actual email. For this demo, we'll just log it to the server console.
-            console.log("--- Sending Confirmation Email ---");
-            console.log(`To: ${bookingData.clientEmail}`);
-            console.log(`Subject: Your Trimology Booking Confirmation`);
-            console.log(emailBody);
-            console.log("---------------------------------");
-            
+            await resend.emails.send({
+                from: 'Trimology <onboarding@resend.dev>', // IMPORTANT: Replace with your verified sender email from Resend
+                to: bookingData.clientEmail,
+                subject: 'Your Trimology Booking Confirmation',
+                text: emailBody,
+            });
+
         } catch (emailError) {
             console.error("Failed to 'send' confirmation email:", emailError);
             // We don't want to fail the whole booking if the email fails, so we'll just log the error.
