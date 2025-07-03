@@ -14,6 +14,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, Trash2, Edit, Loader2 } from 'lucide-react';
@@ -27,7 +28,6 @@ export function LocationsList({ initialLocations }: LocationsListProps) {
     const [isFormOpen, setIsFormOpen] = React.useState(false);
     const [editingLocation, setEditingLocation] = React.useState<Location | null>(null);
     const [isDeleting, setIsDeleting] = React.useState<string | null>(null);
-    const [isTriggered, setIsTriggered] = React.useState(false);
     const { toast } = useToast();
 
     const handleFormSubmit = () => {
@@ -48,7 +48,8 @@ export function LocationsList({ initialLocations }: LocationsListProps) {
         setIsDeleting(id);
         try {
             await deleteLocation(id);
-            setLocations(locations.filter(l => l.id !== id));
+            // Revalidation from the server action will trigger a re-render with fresh data.
+            // No need to manually update state here.
             toast({ title: 'Success', description: 'Location deleted successfully.' });
         } catch (error) {
             toast({ title: 'Error', description: 'Failed to delete location.', variant: 'destructive' });
@@ -100,7 +101,7 @@ export function LocationsList({ initialLocations }: LocationsListProps) {
                                             
                                             <AlertDialog>
                                                  <AlertDialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon" disabled={isDeleting === location.id} onClick={() => setIsTriggered(true)}>
+                                                    <Button variant="ghost" size="icon" disabled={isDeleting === location.id}>
                                                         {isDeleting === location.id ? <Loader2 className="animate-spin" /> : <Trash2 className="h-4 w-4 text-destructive" />}
                                                     </Button>
                                                 </AlertDialogTrigger>
