@@ -32,3 +32,8 @@ export const BookingFormSchema = z.object({
     clientPhone: z.string().min(10, { message: 'Please enter a valid phone number.' }),
     clientEmail: z.string().email({ message: 'Please enter a valid email.' }).optional().or(z.literal('')),
 });
+
+export const LocationFormSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters.'),
+  address: z.string().min(5, 'Address must be at least 5 characters.'),
+});
