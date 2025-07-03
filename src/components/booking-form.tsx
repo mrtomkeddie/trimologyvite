@@ -67,6 +67,11 @@ export function BookingForm({ locations, services, staff }: BookingFormProps) {
   const serviceId = form.watch('serviceId');
   const selectedDate = form.watch('date');
 
+  const selectedLocation = React.useMemo(() => {
+    if (!locationId) return null;
+    return locations.find((l) => l.id === locationId) || null;
+  }, [locationId, locations]);
+
   const selectedService = React.useMemo(() => {
     if (!serviceId) return null;
     return services.find((s) => s.id === serviceId) || null;
@@ -161,7 +166,7 @@ export function BookingForm({ locations, services, staff }: BookingFormProps) {
                         <SelectTrigger>
                           <div className="flex items-center gap-2">
                               <MapPin className="h-4 w-4 text-muted-foreground" />
-                              <SelectValue placeholder="Choose a location..." />
+                              {selectedLocation ? <span>{selectedLocation.name}</span> : <span className="text-muted-foreground">Choose a location...</span>}
                           </div>
                         </SelectTrigger>
                       </FormControl>
