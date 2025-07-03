@@ -3,11 +3,12 @@
 
 import { db } from './firebase';
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, orderBy, query } from 'firebase/firestore';
-import type { Location, Service } from './types';
+import type { Location, Service, Staff } from './types';
 import { revalidatePath } from 'next/cache';
 
 const locationsCollection = collection(db, 'locations');
 const servicesCollection = collection(db, 'services');
+const staffCollection = collection(db, 'staff');
 
 // Locations
 export async function getLocationsFromFirestore(): Promise<Location[]> {
@@ -66,5 +67,35 @@ export async function deleteService(id: string) {
     const serviceDoc = doc(db, 'services', id);
     await deleteDoc(serviceDoc);
     revalidatePath('/admin/services');
+    revalidatePath('/');
+}
+
+// Staff
+export async function getStaffFromFirestore(): Promise<Staff[]> {
+    const q = query(staffCollection, orderBy('name'));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+        return [];
+    }
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Staff));
+}
+
+export async function addStaff(data: { name: string; specialization: string; }) {
+    await addDoc(staffCollection, data);
+    revalidatePath('/admin/staff');
+    revalidatePath('/');
+}
+
+export async function updateStaff(id: string, data: { name: string; specialization: string; }) {
+    const staffDoc = doc(db, 'staff', id);
+    await updateDoc(staffDoc, data);
+    revalidatePath('/admin/staff');
+    revalidatePath('/');
+}
+
+export async function deleteStaff(id: string) {
+    const staffDoc = doc(db, 'staff', id);
+    await deleteDoc(staffDoc);
+    revalidatePath('/admin/staff');
     revalidatePath('/');
 }

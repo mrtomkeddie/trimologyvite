@@ -48,3 +48,8 @@ export const ServiceFormSchema = z.object({
   duration: z.coerce.number().positive('Duration must be a positive number.'),
   price: z.coerce.number().positive('Price must be a positive number.'),
 });
+
+export const StaffFormSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters.'),
+  specialization: z.string().min(3, 'Specialization must be at least 3 characters.'),
+});

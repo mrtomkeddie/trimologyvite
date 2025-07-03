@@ -46,16 +46,22 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
                     </Link>
                 </div>
                  <div className="rounded-xl border bg-card text-card-foreground shadow">
-                    <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
-                        <h3 className="tracking-tight font-semibold">Manage Staff</h3>
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <div className="p-6 pt-0">
-                        <p className="text-sm text-muted-foreground">
-                            Add or remove staff members and their specializations.
-                        </p>
-                         <Button className="mt-4" disabled>Coming Soon</Button>
-                    </div>
+                    <Link href="/admin/staff" className="block hover:bg-accent/50 rounded-xl transition-colors">
+                        <div className="p-6">
+                            <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <h3 className="tracking-tight font-semibold">Manage Staff</h3>
+                                <Users className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <div className="pt-0">
+                                <p className="text-sm text-muted-foreground">
+                                    Add or remove staff members and their specializations.
+                                </p>
+                                 <div className="mt-4 text-primary font-semibold flex items-center">
+                                    Go to Staff <ArrowRight className="ml-2 h-4 w-4" />
+                                </div>
+                            </div>
+                        </div>
+                    </Link>
                 </div>
                  <div className="rounded-xl border bg-card text-card-foreground shadow">
                     <Link href="/admin/locations" className="block hover:bg-accent/50 rounded-xl transition-colors">
