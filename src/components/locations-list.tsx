@@ -17,7 +17,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash2, Edit, Loader2 } from 'lucide-react';
+import { PlusCircle, Trash2, Edit, Loader2, Phone, Mail } from 'lucide-react';
 
 type LocationsListProps = {
     initialLocations: Location[];
@@ -63,7 +63,7 @@ export function LocationsList({ initialLocations }: LocationsListProps) {
     }, [initialLocations]);
 
     return (
-        <div className="w-full max-w-4xl mx-auto">
+        <div className="w-full max-w-6xl mx-auto">
             <div className="flex justify-end mb-4">
                 <Button onClick={handleAddClick}>
                     <PlusCircle className="mr-2" />
@@ -84,6 +84,8 @@ export function LocationsList({ initialLocations }: LocationsListProps) {
                         <TableRow>
                             <TableHead>Name</TableHead>
                             <TableHead>Address</TableHead>
+                            <TableHead>Phone</TableHead>
+                            <TableHead>Email</TableHead>
                             <TableHead className="text-right w-[120px]">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -93,6 +95,26 @@ export function LocationsList({ initialLocations }: LocationsListProps) {
                                 <TableRow key={location.id}>
                                     <TableCell className="font-medium">{location.name}</TableCell>
                                     <TableCell>{location.address}</TableCell>
+                                    <TableCell>
+                                        {location.phone ? (
+                                             <a href={`tel:${location.phone}`} className="flex items-center gap-2 hover:text-primary">
+                                                <Phone className="h-3 w-3" />
+                                                {location.phone}
+                                             </a>
+                                        ) : (
+                                            <span className="text-muted-foreground">N/A</span>
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {location.email ? (
+                                            <a href={`mailto:${location.email}`} className="flex items-center gap-2 hover:text-primary">
+                                                <Mail className="h-3 w-3" />
+                                                {location.email}
+                                            </a>
+                                        ) : (
+                                            <span className="text-muted-foreground">N/A</span>
+                                        )}
+                                    </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex gap-2 justify-end">
                                             <Button variant="ghost" size="icon" onClick={() => handleEditClick(location)}>
@@ -110,7 +132,7 @@ export function LocationsList({ initialLocations }: LocationsListProps) {
                                                         <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                                         <AlertDialogDescription>
                                                             This action cannot be undone. This will permanently delete the location.
-                                                        </AlertDialogDescription>
+                                                        </ADCription>
                                                     </AlertDialogHeader>
                                                     <AlertDialogFooter>
                                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -126,7 +148,7 @@ export function LocationsList({ initialLocations }: LocationsListProps) {
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={3} className="text-center h-24">
+                                <TableCell colSpan={5} className="text-center h-24">
                                     No locations found. Add your first one!
                                 </TableCell>
                             </TableRow>

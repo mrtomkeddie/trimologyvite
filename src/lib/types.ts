@@ -4,6 +4,8 @@ export const LocationSchema = z.object({
   id: z.string(),
   name: z.string(),
   address: z.string(),
+  phone: z.string().optional(),
+  email: z.string().email().optional().or(z.literal('')),
 });
 export type Location = z.infer<typeof LocationSchema>;
 
@@ -36,4 +38,6 @@ export const BookingFormSchema = z.object({
 export const LocationFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
   address: z.string().min(5, 'Address must be at least 5 characters.'),
+  phone: z.string().optional(),
+  email: z.string().email({ message: 'Please enter a valid email.' }).optional().or(z.literal('')),
 });

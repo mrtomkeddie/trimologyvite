@@ -30,7 +30,9 @@ export function LocationForm({ isOpen, setIsOpen, location, onSubmitted }: Locat
         resolver: zodResolver(LocationFormSchema),
         defaultValues: {
             name: '',
-            address: ''
+            address: '',
+            phone: '',
+            email: ''
         }
     });
 
@@ -40,11 +42,15 @@ export function LocationForm({ isOpen, setIsOpen, location, onSubmitted }: Locat
                 form.reset({
                     name: location.name,
                     address: location.address,
+                    phone: location.phone || '',
+                    email: location.email || '',
                 });
             } else {
                 form.reset({
                     name: '',
                     address: '',
+                    phone: '',
+                    email: '',
                 });
             }
         }
@@ -53,11 +59,17 @@ export function LocationForm({ isOpen, setIsOpen, location, onSubmitted }: Locat
     const onSubmit = async (data: LocationFormValues) => {
         setIsSubmitting(true);
         try {
+            const submissionData = {
+                ...data,
+                phone: data.phone || undefined,
+                email: data.email || undefined,
+            };
+
             if (location) {
-                await updateLocation(location.id, data);
+                await updateLocation(location.id, submissionData);
                 toast({ title: 'Success', description: 'Location updated successfully.' });
             } else {
-                await addLocation(data);
+                await addLocation(submissionData);
                 toast({ title: 'Success', description: 'Location added successfully.' });
             }
             onSubmitted();
@@ -105,6 +117,32 @@ export function LocationForm({ isOpen, setIsOpen, location, onSubmitted }: Locat
                                     <FormLabel>Address</FormLabel>
                                     <FormControl>
                                         <Input placeholder="e.g., 123 Main St, Barberville" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="phone"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Phone Number</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="e.g., (123) 456-7890" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="email"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Email Address</FormLabel>
+                                    <FormControl>
+                                        <Input type="email" placeholder="e.g., contact@downtown.co" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>

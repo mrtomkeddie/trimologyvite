@@ -19,13 +19,13 @@ export async function getLocationsFromFirestore(): Promise<Location[]> {
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Location));
 }
 
-export async function addLocation(data: { name: string; address: string }) {
+export async function addLocation(data: { name: string; address: string; phone?: string; email?: string; }) {
     await addDoc(locationsCollection, data);
     revalidatePath('/admin/locations');
     revalidatePath('/');
 }
 
-export async function updateLocation(id: string, data: { name: string; address: string }) {
+export async function updateLocation(id: string, data: { name: string; address: string; phone?: string; email?: string; }) {
     const locationDoc = doc(db, 'locations', id);
     await updateDoc(locationDoc, data);
     revalidatePath('/admin/locations');
