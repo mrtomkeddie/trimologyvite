@@ -1,3 +1,4 @@
+
 'use client';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -27,16 +28,22 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
         <main className="flex-1 p-4 sm:px-6 space-y-8">
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 <div className="rounded-xl border bg-card text-card-foreground shadow">
-                    <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
-                        <h3 className="tracking-tight font-semibold">Manage Services</h3>
-                        <Scissors className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <div className="p-6 pt-0">
-                        <p className="text-sm text-muted-foreground">
-                            Add, edit, or remove salon services.
-                        </p>
-                         <Button className="mt-4" disabled>Coming Soon</Button>
-                    </div>
+                    <Link href="/admin/services" className="block hover:bg-accent/50 rounded-xl transition-colors">
+                        <div className="p-6">
+                            <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <h3 className="tracking-tight font-semibold">Manage Services</h3>
+                                <Scissors className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <div className="pt-0">
+                                <p className="text-sm text-muted-foreground">
+                                    Add, edit, or remove salon services.
+                                </p>
+                                <div className="mt-4 text-primary font-semibold flex items-center">
+                                    Go to Services <ArrowRight className="ml-2 h-4 w-4" />
+                                </div>
+                            </div>
+                        </div>
+                    </Link>
                 </div>
                  <div className="rounded-xl border bg-card text-card-foreground shadow">
                     <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">

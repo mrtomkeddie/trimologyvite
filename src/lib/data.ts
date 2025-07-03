@@ -1,17 +1,9 @@
+
 import type { Service, Staff, Location } from './types';
-import { getLocationsFromFirestore } from './firestore';
+import { getLocationsFromFirestore, getServicesFromFirestore } from './firestore';
 
 // In a real application, this data would be fetched from your Firestore database.
 // For demonstration purposes, we're using a mock dataset for some parts.
-
-const MOCK_SERVICES: Service[] = [
-  { id: '1', name: 'Classic Haircut', duration: 45, price: 50 },
-  { id: '2', name: 'Beard Trim & Shape-up', duration: 30, price: 35 },
-  { id: '3', name: 'Hot Towel Shave', duration: 45, price: 45 },
-  { id: '4', name: 'Fade & Taper', duration: 60, price: 60 },
-  { id: '5', name: 'Hair Color/Gray Blending', duration: 90, price: 100 },
-  { id: '6', name: 'The Full Service (Cut & Shave)', duration: 90, price: 90 },
-];
 
 const MOCK_STAFF: Staff[] = [
   { id: '1', name: 'Alex "The Razor" Johnson', specialization: 'Master Barber' },
@@ -26,9 +18,8 @@ export async function getLocations(): Promise<Location[]> {
 }
 
 export async function getServices(): Promise<Service[]> {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 250));
-  return MOCK_SERVICES;
+  // Data is now fetched from Firestore
+  return await getServicesFromFirestore();
 }
 
 export async function getStaff(): Promise<Staff[]> {

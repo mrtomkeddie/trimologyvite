@@ -1,3 +1,4 @@
+
 import { z } from 'zod';
 
 export const LocationSchema = z.object({
@@ -12,8 +13,8 @@ export type Location = z.infer<typeof LocationSchema>;
 export const ServiceSchema = z.object({
   id: z.string(),
   name: z.string(),
-  duration: z.number(), // in minutes
-  price: z.number(),
+  duration: z.coerce.number(), // in minutes
+  price: z.coerce.number(),
 });
 export type Service = z.infer<typeof ServiceSchema>;
 
@@ -40,4 +41,10 @@ export const LocationFormSchema = z.object({
   address: z.string().min(5, 'Address must be at least 5 characters.'),
   phone: z.string().optional(),
   email: z.string().email({ message: 'Please enter a valid email.' }).optional().or(z.literal('')),
+});
+
+export const ServiceFormSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters.'),
+  duration: z.coerce.number().positive('Duration must be a positive number.'),
+  price: z.coerce.number().positive('Price must be a positive number.'),
 });
