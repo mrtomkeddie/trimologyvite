@@ -19,6 +19,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, Trash2, Edit, Loader2, Star, MapPin, KeyRound, User } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type StaffListProps = {
     initialStaff: Staff[];
@@ -30,6 +31,7 @@ export function StaffList({ initialStaff, locations, onDataChange }: StaffListPr
     const [isFormOpen, setIsFormOpen] = React.useState(false);
     const [editingStaff, setEditingStaff] = React.useState<Staff | null>(null);
     const [isDeleting, setIsDeleting] = React.useState<string | null>(null);
+    const [selectedLocation, setSelectedLocation] = React.useState<string>('all');
     const { toast } = useToast();
     
     const handleAddClick = () => {
@@ -55,9 +57,32 @@ export function StaffList({ initialStaff, locations, onDataChange }: StaffListPr
         }
     };
 
+    const filteredStaff = React.useMemo(() => {
+        if (selectedLocation === 'all') {
+            return initialStaff;
+        }
+        return initialStaff.filter(s => s.locationId === selectedLocation);
+    }, [initialStaff, selectedLocation]);
+
     return (
         <div className="w-full max-w-6xl mx-auto">
-            <div className="flex justify-end mb-4">
+            <div className="flex justify-between items-center mb-4">
+                 <div className="w-full max-w-xs">
+                    <Select onValueChange={setSelectedLocation} value={selectedLocation}>
+                        <SelectTrigger>
+                            <div className="flex items-center gap-2">
+                                <MapPin className="h-4 w-4 text-muted-foreground" />
+                                <SelectValue placeholder="Filter by location..." />
+                            </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Locations</SelectItem>
+                            {locations.map(location => (
+                                <SelectItem key={location.id} value={location.id}>{location.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
                 <Button onClick={handleAddClick} disabled={locations.length === 0}>
                     <PlusCircle className="mr-2" />
                     Add Staff
@@ -87,8 +112,8 @@ export function StaffList({ initialStaff, locations, onDataChange }: StaffListPr
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {initialStaff.length > 0 ? (
-                            initialStaff.map(staffMember => (
+                        {filteredStaff.length > 0 ? (
+                            filteredStaff.map(staffMember => (
                                 <TableRow key={staffMember.id}>
                                     <TableCell className="font-medium">
                                         <div className="flex items-center gap-3">
@@ -157,7 +182,7 @@ export function StaffList({ initialStaff, locations, onDataChange }: StaffListPr
                         ) : (
                             <TableRow>
                                 <TableCell colSpan={5} className="text-center h-24">
-                                    No staff found. Add your first one!
+                                     {selectedLocation === 'all' && initialStaff.length === 0 ? 'No staff found. Add your first one!' : 'No staff found for this location.'}
                                 </TableCell>
                             </TableRow>
                         )}
