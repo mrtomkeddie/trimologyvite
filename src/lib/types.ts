@@ -26,6 +26,8 @@ export const StaffSchema = z.object({
   specialization: z.string(),
   locationId: z.string(),
   locationName: z.string(),
+  uid: z.string().optional(),
+  email: z.string().email().optional().or(z.literal('')),
 });
 export type Staff = z.infer<typeof StaffSchema>;
 
@@ -83,6 +85,8 @@ export const StaffFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
   specialization: z.string().min(3, 'Specialization must be at least 3 characters.'),
   locationId: z.string({ required_error: 'Please assign a location.' }),
+  uid: z.string().optional(),
+  email: z.string().email('Please enter a valid email.').optional().or(z.literal('')),
 });
 
 export const AdminFormSchema = z.object({

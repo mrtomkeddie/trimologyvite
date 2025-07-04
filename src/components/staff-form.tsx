@@ -8,7 +8,7 @@ import type { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription as FormDesc } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { addStaff, updateStaff } from '@/lib/firestore';
@@ -35,6 +35,8 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
             name: '',
             specialization: '',
             locationId: '',
+            uid: '',
+            email: ''
         }
     });
 
@@ -45,12 +47,16 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                     name: staffMember.name,
                     specialization: staffMember.specialization,
                     locationId: staffMember.locationId,
+                    uid: staffMember.uid || '',
+                    email: staffMember.email || ''
                 });
             } else {
                 form.reset({
                     name: '',
                     specialization: '',
                     locationId: '',
+                    uid: '',
+                    email: ''
                 });
             }
         }
@@ -68,6 +74,8 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
         const submissionData = {
             ...data,
             locationName: location.name,
+            uid: data.uid || undefined,
+            email: data.email || undefined,
         };
         
         try {
@@ -93,7 +101,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>{staffMember ? 'Edit Staff Member' : 'Add New Staff Member'}</DialogTitle>
                     <DialogDescription>
@@ -152,6 +160,37 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                                 </FormItem>
                             )}
                         />
+                        <div className='space-y-2 rounded-md border border-input p-4'>
+                             <h4 className="text-sm font-medium">Staff Login (Optional)</h4>
+                             <p className="text-xs text-muted-foreground pb-2">Create a user in Firebase Authentication first, then add their details here to grant them login access.</p>
+                             <FormField
+                                control={form.control}
+                                name="email"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Email</FormLabel>
+                                        <FormControl>
+                                            <Input type="email" placeholder="staff@example.com" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="uid"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>User ID (UID)</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="UID from Firebase Authentication" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+
                         <div className="flex justify-end pt-4">
                              <Button type="submit" disabled={isSubmitting}>
                                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from './firebase';
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, orderBy, query, Timestamp, where, getDoc, setDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, orderBy, query, Timestamp, where, getDoc, setDoc, limit } from 'firebase/firestore';
 import type { Location, Service, Staff, Booking, NewBooking, AdminUser } from './types';
 import { revalidatePath } from 'next/cache';
 
@@ -130,13 +130,13 @@ export async function getStaffFromFirestore(locationId?: string): Promise<Staff[
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Staff));
 }
 
-export async function addStaff(data: { name: string; specialization: string; locationId: string; locationName: string; }) {
+export async function addStaff(data: Partial<Staff>) {
     await addDoc(staffCollection, data);
     revalidatePath('/admin/staff');
     revalidatePath('/');
 }
 
-export async function updateStaff(id: string, data: { name: string; specialization: string; locationId: string; locationName: string; }) {
+export async function updateStaff(id: string, data: Partial<Staff>) {
     const staffDoc = doc(db, 'staff', id);
     await updateDoc(staffDoc, data);
     revalidatePath('/admin/staff');
@@ -149,6 +149,17 @@ export async function deleteStaff(id: string) {
     revalidatePath('/admin/staff');
     revalidatePath('/');
 }
+
+export async function getStaffByUid(uid: string): Promise<Staff | null> {
+    const q = query(staffCollection, where('uid', '==', uid), limit(1));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+        return null;
+    }
+    const doc = snapshot.docs[0];
+    return { id: doc.id, ...doc.data() } as Staff;
+}
+
 
 // Bookings
 export async function getBookingsFromFirestore(locationId?: string): Promise<Booking[]> {
@@ -167,6 +178,18 @@ export async function getBookingsFromFirestore(locationId?: string): Promise<Boo
     });
 }
 
+export async function getBookingsByStaffId(staffId: string): Promise<Booking[]> {
+    const q = query(
+        bookingsCollection, 
+        where('staffId', '==', staffId),
+        where('bookingTimestamp', '>=', new Date().toISOString()),
+        orderBy('bookingTimestamp', 'asc')
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Booking));
+}
+
+
 export async function addBooking(data: NewBooking) {
     await addDoc(bookingsCollection, {
         ...data,
@@ -179,4 +202,5 @@ export async function deleteBooking(id: string) {
     const bookingDoc = doc(db, 'bookings', id);
     await deleteDoc(bookingDoc);
     revalidatePath('/admin/bookings');
+    revalidatePath('/my-schedule');
 }

@@ -1,3 +1,4 @@
+
 import { BookingForm } from '@/components/booking-form';
 import { getServices, getStaff, getLocations } from '@/lib/data';
 import Image from 'next/image';
@@ -28,11 +29,15 @@ export default async function Home() {
         <footer className="w-full text-center mt-12 text-muted-foreground text-sm">
           <p>&copy; {new Date().getFullYear()} Trimology. All rights reserved.</p>
           <p>123 Style Street, Barberville, 12345</p>
-           <p className="mt-4">
+           <div className="mt-4 flex justify-center gap-4">
             <Link href="/admin" className="hover:text-primary transition-colors">
               Admin Login
             </Link>
-          </p>
+            <span className="text-muted-foreground/50">|</span>
+            <Link href="/staff/login" className="hover:text-primary transition-colors">
+              Staff Login
+            </Link>
+          </div>
         </footer>
       </main>
     </div>

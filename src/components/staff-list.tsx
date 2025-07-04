@@ -18,7 +18,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash2, Edit, Loader2, Star, MapPin } from 'lucide-react';
+import { PlusCircle, Trash2, Edit, Loader2, Star, MapPin, KeyRound } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 type StaffListProps = {
     initialStaff: Staff[];
@@ -87,6 +88,7 @@ export function StaffList({ initialStaff, locations }: StaffListProps) {
                     <TableHeader>
                         <TableRow>
                             <TableHead>Name</TableHead>
+                            <TableHead>Email</TableHead>
                             <TableHead>Specialization</TableHead>
                             <TableHead>Location</TableHead>
                             <TableHead className="text-right w-[120px]">Actions</TableHead>
@@ -97,6 +99,16 @@ export function StaffList({ initialStaff, locations }: StaffListProps) {
                             staff.map(staffMember => (
                                 <TableRow key={staffMember.id}>
                                     <TableCell className="font-medium">{staffMember.name}</TableCell>
+                                     <TableCell>
+                                        {staffMember.email ? (
+                                            <div className='flex items-center gap-2'>
+                                                {staffMember.uid && <KeyRound className="h-4 w-4 text-primary" title="Login Enabled" />}
+                                                {staffMember.email}
+                                            </div>
+                                        ) : (
+                                            <span className='text-muted-foreground'>N/A</span>
+                                        )}
+                                     </TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-2">
                                             <Star className="h-4 w-4 text-muted-foreground" />
@@ -142,7 +154,7 @@ export function StaffList({ initialStaff, locations }: StaffListProps) {
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={4} className="text-center h-24">
+                                <TableCell colSpan={5} className="text-center h-24">
                                     No staff found. Add your first one!
                                 </TableCell>
                             </TableRow>
