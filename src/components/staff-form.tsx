@@ -258,7 +258,12 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                                             <FormItem>
                                                 <FormLabel>Temporary Password</FormLabel>
                                                 <FormControl>
-                                                    <Input type="password" placeholder="Min. 6 characters" {...field} />
+                                                    <Input 
+                                                        type="password"
+                                                        placeholder="Min. 6 characters"
+                                                        required={!!form.watch('email')}
+                                                        {...field}
+                                                    />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
