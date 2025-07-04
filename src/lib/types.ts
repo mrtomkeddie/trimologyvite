@@ -102,9 +102,19 @@ export const StaffFormSchema = z.object({
         "Only .jpg, .jpeg, .png and .webp formats are supported."
     ),
   locationId: z.string({ required_error: 'Please assign a location.' }),
-  uid: z.string().optional(),
   email: z.string().email('Please enter a valid email.').optional().or(z.literal('')),
+  password: z.string().optional(),
+}).refine(data => {
+    // If email is provided, password must be provided and be at least 6 characters
+    if (data.email && (!data.password || data.password.length < 6)) {
+      return false;
+    }
+    return true;
+}, {
+    message: "Password must be at least 6 characters.",
+    path: ["password"],
 });
+
 
 export const AdminFormSchema = z.object({
   uid: z.string().min(1, 'UID is required.'),

@@ -40,10 +40,10 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
             name: '',
             specialization: '',
             locationId: '',
-            uid: '',
             email: '',
             imageUrl: '',
             imageFile: undefined,
+            password: '',
         }
     });
 
@@ -54,20 +54,20 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                     name: staffMember.name,
                     specialization: staffMember.specialization,
                     locationId: staffMember.locationId,
-                    uid: staffMember.uid || '',
                     email: staffMember.email || '',
                     imageUrl: staffMember.imageUrl || '',
                     imageFile: undefined,
+                    password: '',
                 });
             } else {
                 form.reset({
                     name: '',
                     specialization: '',
                     locationId: '',
-                    uid: '',
                     email: '',
                     imageUrl: '',
                     imageFile: undefined,
+                    password: '',
                 });
             }
         }
@@ -96,9 +96,9 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                     specialization: data.specialization,
                     locationId: data.locationId,
                     locationName: location.name,
-                    uid: data.uid || undefined,
                     email: data.email || undefined,
                     imageUrl: finalImageUrl,
+                    password: data.password || undefined,
                 };
                 await updateStaff(staffMember.id, submissionData);
                 toast({ title: 'Success', description: 'Staff member updated successfully.' });
@@ -116,9 +116,9 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                     specialization: data.specialization,
                     locationId: data.locationId,
                     locationName: location.name,
-                    uid: data.uid || undefined,
                     email: data.email || undefined,
                     imageUrl: finalImageUrl,
+                    password: data.password || undefined,
                 };
                 await addStaff(newStaffId, submissionData);
                 toast({ title: 'Success', description: 'Staff member added successfully.' });
@@ -128,9 +128,10 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
             setIsOpen(false);
         } catch (error) {
             console.error("Form submission error:", error);
+            const errorMessage = error instanceof Error ? error.message : 'Something went wrong. Please check the console for details.';
             toast({
                 title: 'Error',
-                description: 'Something went wrong. Please check the console for details and try again.',
+                description: errorMessage,
                 variant: 'destructive',
             });
         } finally {
@@ -139,6 +140,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
     };
 
     const currentImageUrl = form.watch('imageUrl');
+    const showLoginFields = !staffMember?.uid;
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -231,36 +233,58 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                                     </FormItem>
                                 )}
                             />
-                            <div className='space-y-2 rounded-md border border-input p-4'>
-                                 <h4 className="text-sm font-medium">Staff Login (Optional)</h4>
-                                 <p className="text-xs text-muted-foreground pb-2">Create a user in Firebase Authentication first, then add their details here to grant them login access.</p>
-                                 <FormField
-                                    control={form.control}
-                                    name="email"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Email</FormLabel>
-                                            <FormControl>
-                                                <Input type="email" placeholder="staff@example.com" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="uid"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>User ID (UID)</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="UID from Firebase Authentication" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
+                            
+                            {showLoginFields ? (
+                                <div className='space-y-2 rounded-md border border-input p-4'>
+                                    <h4 className="text-sm font-medium">Create Staff Login</h4>
+                                    <p className="text-xs text-muted-foreground pb-2">Provide an email and temporary password to allow this staff member to log in and see their schedule.</p>
+                                    <FormField
+                                        control={form.control}
+                                        name="email"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Login Email</FormLabel>
+                                                <FormControl>
+                                                    <Input type="email" placeholder="staff@example.com" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="password"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Temporary Password</FormLabel>
+                                                <FormControl>
+                                                    <Input type="password" placeholder="Min. 6 characters" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+                            ) : (
+                                <div className='space-y-2 rounded-md border border-input p-4 bg-muted/50'>
+                                     <h4 className="text-sm font-medium">Staff Login Enabled</h4>
+                                     <p className="text-xs text-muted-foreground pb-2">This staff member can log in with their email. To change their password, they must use the "Forgot Password" link on the login page.</p>
+                                     <FormField
+                                        control={form.control}
+                                        name="email"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Login Email</FormLabel>
+                                                <FormControl>
+                                                    <Input type="email" {...field} disabled />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+                            )}
+                            
 
                             <div className="flex justify-end pt-4">
                                  <Button type="submit" disabled={isSubmitting}>

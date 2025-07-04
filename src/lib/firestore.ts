@@ -27,7 +27,6 @@ const dummyServices: Service[] = [
 ];
 
 const dummyStaff: Staff[] = [
-    // IMPORTANT: To test staff login, replace 'staff-uid-alex' with a real UID from Firebase Auth.
     { id: 'staff-1', name: 'Alex Smith', specialization: 'Master Barber', locationId: 'downtown-1', locationName: 'Downtown Barbers', uid: 'staff-uid-alex', email: 'alex@trimology.com', imageUrl: 'https://placehold.co/100x100.png' },
     { id: 'staff-2', name: 'Maria Garcia', specialization: 'Senior Stylist', locationId: 'downtown-1', locationName: 'Downtown Barbers', imageUrl: 'https://placehold.co/100x100.png' },
     { id: 'staff-3', name: 'John Doe', specialization: 'Stylist', locationId: 'uptown-2', locationName: 'Uptown Cuts', imageUrl: 'https://placehold.co/100x100.png' },
@@ -42,7 +41,6 @@ const dummyBookings: Booking[] = [
 ];
 
 const dummyAdmins: AdminUser[] = [
-    // IMPORTANT: To test admin login, replace the UIDs with real ones from Firebase Auth.
     { uid: 'super-admin-uid', email: 'owner@trimology.com' },
     { uid: 'branch-admin-uid', email: 'manager@trimology.com', locationId: 'downtown-1', locationName: 'Downtown Barbers' },
 ];
@@ -57,15 +55,11 @@ const adminsCollection = collection(db, 'admins');
 // Admins
 export async function getAdminUser(uid: string): Promise<AdminUser | null> {
     if (USE_DUMMY_DATA) {
-        const superAdmin = dummyAdmins.find(a => !a.locationId);
-        if (superAdmin) {
-            return {
-                ...superAdmin,
-                uid: uid,
-                email: 'test.super.admin@example.com',
-            };
-        }
-        return null;
+        // In dummy mode, any logged-in user is treated as a Super Admin for easy testing.
+        return {
+            uid: uid,
+            email: 'dummy.super.admin@example.com',
+        };
     }
     const adminDocRef = doc(db, 'admins', uid);
     const adminDoc = await getDoc(adminDocRef);
@@ -205,24 +199,95 @@ export async function getStaffFromFirestore(locationId?: string): Promise<Staff[
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Staff));
 }
 
-export async function addStaff(id: string, data: Partial<Staff>) {
-    if (USE_DUMMY_DATA) { console.log('DUMMY: addStaff', id, data); revalidatePath('/admin/staff'); revalidatePath('/'); return; }
-    const staffDoc = doc(db, 'staff', id);
-    await setDoc(staffDoc, data);
+async function createFirebaseUser(email: string, password_do_not_log: string): Promise<string> {
+    // THIS IS A MOCK FUNCTION.
+    // In a real app, this would be a Firebase Cloud Function using the Admin SDK.
+    // It would be called securely from the server to create a user.
+    console.log(`
+    =====================================================================
+    [SERVER-SIDE MOCK] Creating Firebase Auth user for: ${email}
+    This would normally happen in a secure backend environment.
+    A real UID would be returned from firebase.auth().createUser()
+    =====================================================================
+    `);
+    // Return a predictable mock UID for dummy mode
+    return `mock-uid-for-${email.split('@')[0]}`;
+}
+
+
+export async function addStaff(id: string, data: Partial<Omit<Staff, 'id' | 'uid'>> & { email?: string, password?: string }) {
+    if (data.password && data.email) {
+        if (USE_DUMMY_DATA) {
+            console.log("DUMMY: addStaff with login creation", data);
+            const newUid = await createFirebaseUser(data.email, data.password);
+            const newStaffMember = { ...data, id, uid: newUid };
+            delete newStaffMember.password;
+            dummyStaff.push(newStaffMember as Staff);
+            revalidatePath('/admin/staff');
+            revalidatePath('/');
+            return;
+        }
+
+        // REAL IMPLEMENTATION NOTE:
+        // You would call a Cloud Function here to create the user with the Admin SDK.
+        // The Cloud Function would return the new user's UID.
+        // For now, this will throw an error because the client can't create users.
+        throw new Error("User creation must be handled by a secure backend function.");
+        // const newUid = await callCreateUserCloudFunction(data.email, data.password);
+        // const staffDoc = doc(db, 'staff', id);
+        // await setDoc(staffDoc, { ...data, uid: newUid });
+
+    } else {
+         if (USE_DUMMY_DATA) {
+            console.log('DUMMY: addStaff (no login)', data);
+            const newStaffMember = { ...data, id };
+            delete newStaffMember.password;
+            dummyStaff.push(newStaffMember as Staff);
+            revalidatePath('/admin/staff'); revalidatePath('/'); return;
+        }
+        const staffDoc = doc(db, 'staff', id);
+        await setDoc(staffDoc, data);
+    }
     revalidatePath('/admin/staff');
     revalidatePath('/');
 }
 
-export async function updateStaff(id: string, data: Partial<Staff>) {
-    if (USE_DUMMY_DATA) { console.log('DUMMY: updateStaff', id, data); revalidatePath('/admin/staff'); revalidatePath('/'); return; }
-    const staffDoc = doc(db, 'staff', id);
-    await updateDoc(staffDoc, data);
-    revalidatePath('/admin/staff');
-    revalidatePath('/');
+export async function updateStaff(id: string, data: Partial<Omit<Staff, 'id' | 'uid'>> & { email?: string, password?: string }) {
+    if (data.password && data.email) {
+        // This logic path is for adding a login to an existing staff member.
+        if (USE_DUMMY_DATA) {
+            console.log("DUMMY: updateStaff with login creation", data);
+            const newUid = await createFirebaseUser(data.email, data.password);
+            const staffIndex = dummyStaff.findIndex(s => s.id === id);
+            if (staffIndex > -1) {
+                dummyStaff[staffIndex] = { ...dummyStaff[staffIndex], ...data, uid: newUid };
+                 delete (dummyStaff[staffIndex] as any).password;
+            }
+            revalidatePath('/admin/staff');
+            revalidatePath('/');
+            return;
+        }
+         // REAL IMPLEMENTATION NOTE (same as above)
+        throw new Error("User creation must be handled by a secure backend function.");
+    } else {
+        if (USE_DUMMY_DATA) {
+            console.log('DUMMY: updateStaff (no login)', id, data);
+            const staffIndex = dummyStaff.findIndex(s => s.id === id);
+            if (staffIndex > -1) {
+                dummyStaff[staffIndex] = { ...dummyStaff[staffIndex], ...data };
+            }
+            revalidatePath('/admin/staff'); revalidatePath('/'); return;
+        }
+        const staffDoc = doc(db, 'staff', id);
+        await updateDoc(staffDoc, data);
+    }
+     revalidatePath('/admin/staff');
+     revalidatePath('/');
 }
 
 export async function deleteStaff(id: string) {
     if (USE_DUMMY_DATA) { console.log('DUMMY: deleteStaff', id); revalidatePath('/admin/staff'); revalidatePath('/'); return; }
+    // In a real app, you would also want a Cloud Function to delete the corresponding Firebase Auth user.
     const staffDoc = doc(db, 'staff', id);
     await deleteDoc(staffDoc);
     revalidatePath('/admin/staff');
@@ -231,12 +296,12 @@ export async function deleteStaff(id: string) {
 
 export async function getStaffByUid(uid: string): Promise<Staff | null> {
     if (USE_DUMMY_DATA) {
-        // Any authenticated user can see Alex's schedule in dummy mode
+        // Any authenticated user can see Alex's schedule in dummy mode for easy testing.
         return dummyStaff.find(s => s.id === 'staff-1') || null;
     }
     const q = query(staffCollection, where('uid', '==', uid), limit(1));
     const snapshot = await getDocs(q);
-    if (snapshot.empty) {
+if (snapshot.empty) {
         return null;
     }
     const doc = snapshot.docs[0];
