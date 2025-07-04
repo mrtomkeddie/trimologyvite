@@ -101,76 +101,37 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md flex flex-col max-h-[90vh]">
                 <DialogHeader>
                     <DialogTitle>{staffMember ? 'Edit Staff Member' : 'Add New Staff Member'}</DialogTitle>
                     <DialogDescription>
                         {staffMember ? 'Update the details of this staff member.' : 'Fill in the details for a new staff member.'}
                     </DialogDescription>
                 </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
-                        <FormField
-                            control={form.control}
-                            name="name"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Full Name</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="e.g., Alex Johnson" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                         <FormField
-                            control={form.control}
-                            name="specialization"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Specialization</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="e.g., Master Barber" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="locationId"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Location</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl>
-                                        <SelectTrigger>
-                                        <SelectValue placeholder="Assign to a location..." />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        {locations.map((location) => (
-                                        <SelectItem key={location.id} value={location.id}>
-                                            {location.name}
-                                        </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <div className='space-y-2 rounded-md border border-input p-4'>
-                             <h4 className="text-sm font-medium">Staff Login (Optional)</h4>
-                             <p className="text-xs text-muted-foreground pb-2">Create a user in Firebase Authentication first, then add their details here to grant them login access.</p>
-                             <FormField
+                <div className="flex-grow overflow-y-auto -mr-6 pr-6">
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
+                            <FormField
                                 control={form.control}
-                                name="email"
+                                name="name"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Email</FormLabel>
+                                        <FormLabel>Full Name</FormLabel>
                                         <FormControl>
-                                            <Input type="email" placeholder="staff@example.com" {...field} />
+                                            <Input placeholder="e.g., Alex Johnson" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                             <FormField
+                                control={form.control}
+                                name="specialization"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Specialization</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="e.g., Master Barber" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -178,27 +139,68 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                             />
                             <FormField
                                 control={form.control}
-                                name="uid"
+                                name="locationId"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>User ID (UID)</FormLabel>
+                                        <FormLabel>Location</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
                                         <FormControl>
-                                            <Input placeholder="UID from Firebase Authentication" {...field} />
+                                            <SelectTrigger>
+                                            <SelectValue placeholder="Assign to a location..." />
+                                            </SelectTrigger>
                                         </FormControl>
+                                        <SelectContent>
+                                            {locations.map((location) => (
+                                            <SelectItem key={location.id} value={location.id}>
+                                                {location.name}
+                                            </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                        </Select>
                                         <FormMessage />
                                     </FormItem>
                                 )}
                             />
-                        </div>
+                            <div className='space-y-2 rounded-md border border-input p-4'>
+                                 <h4 className="text-sm font-medium">Staff Login (Optional)</h4>
+                                 <p className="text-xs text-muted-foreground pb-2">Create a user in Firebase Authentication first, then add their details here to grant them login access.</p>
+                                 <FormField
+                                    control={form.control}
+                                    name="email"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Email</FormLabel>
+                                            <FormControl>
+                                                <Input type="email" placeholder="staff@example.com" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="uid"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>User ID (UID)</FormLabel>
+                                            <FormControl>
+                                                <Input placeholder="UID from Firebase Authentication" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
 
-                        <div className="flex justify-end pt-4">
-                             <Button type="submit" disabled={isSubmitting}>
-                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                {staffMember ? 'Save Changes' : 'Add Staff Member'}
-                            </Button>
-                        </div>
-                    </form>
-                </Form>
+                            <div className="flex justify-end pt-4">
+                                 <Button type="submit" disabled={isSubmitting}>
+                                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    {staffMember ? 'Save Changes' : 'Add Staff Member'}
+                                </Button>
+                            </div>
+                        </form>
+                    </Form>
+                </div>
             </DialogContent>
         </Dialog>
     );
