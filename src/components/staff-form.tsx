@@ -36,7 +36,8 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
             specialization: '',
             locationId: '',
             uid: '',
-            email: ''
+            email: '',
+            imageUrl: '',
         }
     });
 
@@ -48,7 +49,8 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                     specialization: staffMember.specialization,
                     locationId: staffMember.locationId,
                     uid: staffMember.uid || '',
-                    email: staffMember.email || ''
+                    email: staffMember.email || '',
+                    imageUrl: staffMember.imageUrl || '',
                 });
             } else {
                 form.reset({
@@ -56,7 +58,8 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                     specialization: '',
                     locationId: '',
                     uid: '',
-                    email: ''
+                    email: '',
+                    imageUrl: '',
                 });
             }
         }
@@ -76,6 +79,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
             locationName: location.name,
             uid: data.uid || undefined,
             email: data.email || undefined,
+            imageUrl: data.imageUrl || undefined,
         };
         
         try {
@@ -132,6 +136,19 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                                         <FormLabel>Specialization</FormLabel>
                                         <FormControl>
                                             <Input placeholder="e.g., Master Barber" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                             <FormField
+                                control={form.control}
+                                name="imageUrl"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Image URL</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="https://example.com/photo.png" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>

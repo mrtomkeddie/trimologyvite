@@ -11,6 +11,7 @@ import { getStaffByUid, getBookingsByStaffId } from '@/lib/firestore';
 import type { Staff, Booking } from '@/lib/types';
 import { format } from 'date-fns';
 import Link from 'next/link';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function MySchedulePage() {
     const [user, setUser] = React.useState<User | null>(null);
@@ -76,9 +77,15 @@ export default function MySchedulePage() {
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
              <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b bg-background px-4 sm:px-6">
-                <div className="flex flex-col">
-                    <h1 className="font-headline text-xl font-semibold">My Schedule</h1>
-                    <p className="text-sm text-muted-foreground">Welcome back, {staff.name}!</p>
+                <div className="flex items-center gap-3">
+                    <Avatar>
+                        <AvatarImage src={staff.imageUrl} alt={staff.name} data-ai-hint="person portrait" />
+                        <AvatarFallback>{staff.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col">
+                        <h1 className="font-headline text-xl font-semibold">My Schedule</h1>
+                        <p className="text-sm text-muted-foreground">Welcome back, {staff.name}!</p>
+                    </div>
                 </div>
                 <Button onClick={handleLogout} variant="outline" size="sm">
                     <LogOut className="mr-2 h-4 w-4" />

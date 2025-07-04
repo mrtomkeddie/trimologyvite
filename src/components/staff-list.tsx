@@ -18,8 +18,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash2, Edit, Loader2, Star, MapPin, KeyRound } from 'lucide-react';
+import { PlusCircle, Trash2, Edit, Loader2, Star, MapPin, KeyRound, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 type StaffListProps = {
     initialStaff: Staff[];
@@ -98,7 +99,17 @@ export function StaffList({ initialStaff, locations }: StaffListProps) {
                         {staff.length > 0 ? (
                             staff.map(staffMember => (
                                 <TableRow key={staffMember.id}>
-                                    <TableCell className="font-medium">{staffMember.name}</TableCell>
+                                    <TableCell className="font-medium">
+                                        <div className="flex items-center gap-3">
+                                            <Avatar>
+                                                <AvatarImage src={staffMember.imageUrl} alt={staffMember.name} data-ai-hint="person portrait" />
+                                                <AvatarFallback>
+                                                     <User className="h-5 w-5 text-muted-foreground" />
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            {staffMember.name}
+                                        </div>
+                                    </TableCell>
                                      <TableCell>
                                         {staffMember.email ? (
                                             <div className='flex items-center gap-2'>

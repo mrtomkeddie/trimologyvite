@@ -17,9 +17,10 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, Loader2, MapPin, PoundSterling } from 'lucide-react';
+import { Trash2, Loader2, MapPin, PoundSterling, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 type BookingsListProps = {
     initialBookings: Booking[];
@@ -116,7 +117,23 @@ export function BookingsList({ initialBookings, locations }: BookingsListProps) 
                                             </div>
                                         )}
                                     </TableCell>
-                                    <TableCell className="hidden lg:table-cell">{booking.staffName}</TableCell>
+                                    <TableCell className="hidden lg:table-cell">
+                                        <div className="flex items-center gap-2">
+                                            {booking.staffImageUrl ? (
+                                                <Avatar className="h-6 w-6">
+                                                    <AvatarImage src={booking.staffImageUrl} alt={booking.staffName} data-ai-hint="person portrait" />
+                                                    <AvatarFallback>{booking.staffName?.charAt(0) ?? 'S'}</AvatarFallback>
+                                                </Avatar>
+                                            ) : (
+                                                <Avatar className="h-6 w-6">
+                                                    <AvatarFallback>
+                                                         <User className="h-4 w-4 text-muted-foreground" />
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                            )}
+                                            {booking.staffName}
+                                        </div>
+                                    </TableCell>
                                     <TableCell className="hidden xl:table-cell">{booking.locationName}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex gap-2 justify-end">

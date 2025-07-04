@@ -65,6 +65,7 @@ export async function createBooking(bookingData: BookingData) {
         servicePrice: service.price,
         staffId: bookingData.staffId || 'any',
         staffName: staffMember?.name || 'Any Available',
+        staffImageUrl: staffMember?.imageUrl || '',
         bookingTimestamp: bookingTimestamp.toISOString(),
         clientName: bookingData.clientName,
         clientPhone: bookingData.clientPhone,

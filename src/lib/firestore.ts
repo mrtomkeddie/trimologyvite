@@ -28,17 +28,17 @@ const dummyServices: Service[] = [
 
 const dummyStaff: Staff[] = [
     // IMPORTANT: To test staff login, replace 'staff-uid-alex' with a real UID from Firebase Auth.
-    { id: 'staff-1', name: 'Alex Smith', specialization: 'Master Barber', locationId: 'downtown-1', locationName: 'Downtown Barbers', uid: 'staff-uid-alex', email: 'alex@trimology.com' },
-    { id: 'staff-2', name: 'Maria Garcia', specialization: 'Senior Stylist', locationId: 'downtown-1', locationName: 'Downtown Barbers' },
-    { id: 'staff-3', name: 'John Doe', specialization: 'Stylist', locationId: 'uptown-2', locationName: 'Uptown Cuts' },
-    { id: 'staff-4', name: 'Jane Roe', specialization: 'Color Specialist', locationId: 'uptown-2', locationName: 'Uptown Cuts', uid: 'staff-uid-jane', email: 'jane@trimology.com' },
+    { id: 'staff-1', name: 'Alex Smith', specialization: 'Master Barber', locationId: 'downtown-1', locationName: 'Downtown Barbers', uid: 'staff-uid-alex', email: 'alex@trimology.com', imageUrl: 'https://placehold.co/100x100.png' },
+    { id: 'staff-2', name: 'Maria Garcia', specialization: 'Senior Stylist', locationId: 'downtown-1', locationName: 'Downtown Barbers', imageUrl: 'https://placehold.co/100x100.png' },
+    { id: 'staff-3', name: 'John Doe', specialization: 'Stylist', locationId: 'uptown-2', locationName: 'Uptown Cuts', imageUrl: 'https://placehold.co/100x100.png' },
+    { id: 'staff-4', name: 'Jane Roe', specialization: 'Color Specialist', locationId: 'uptown-2', locationName: 'Uptown Cuts', uid: 'staff-uid-jane', email: 'jane@trimology.com', imageUrl: 'https://placehold.co/100x100.png' },
 ];
 
 const dummyBookings: Booking[] = [
-    { id: 'book-1', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, staffId: 'staff-1', staffName: 'Alex Smith', bookingTimestamp: addDays(new Date(), 1).toISOString(), clientName: 'Bob Johnson', clientPhone: '555-1111', clientEmail: 'bob@example.com' },
-    { id: 'book-2', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-2', serviceName: 'Beard Trim', servicePrice: 15, staffId: 'staff-1', staffName: 'Alex Smith', bookingTimestamp: addDays(new Date(), 2).toISOString(), clientName: 'Charlie Brown', clientPhone: '555-2222' },
-    { id: 'book-3', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-5', serviceName: 'Color & Cut', servicePrice: 90, staffId: 'staff-4', staffName: 'Jane Roe', bookingTimestamp: addDays(new Date(), 3).toISOString(), clientName: 'Diana Prince', clientPhone: '555-3333', clientEmail: 'diana@example.com' },
-    { id: 'book-4', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, staffId: 'staff-2', staffName: 'Maria Garcia', bookingTimestamp: addDays(new Date(), 1).toISOString(), clientName: 'Peter Parker', clientPhone: '555-4444' },
+    { id: 'book-1', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: addDays(new Date(), 1).toISOString(), clientName: 'Bob Johnson', clientPhone: '555-1111', clientEmail: 'bob@example.com' },
+    { id: 'book-2', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-2', serviceName: 'Beard Trim', servicePrice: 15, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: addDays(new Date(), 2).toISOString(), clientName: 'Charlie Brown', clientPhone: '555-2222' },
+    { id: 'book-3', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-5', serviceName: 'Color & Cut', servicePrice: 90, staffId: 'staff-4', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: addDays(new Date(), 3).toISOString(), clientName: 'Diana Prince', clientPhone: '555-3333', clientEmail: 'diana@example.com' },
+    { id: 'book-4', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, staffId: 'staff-2', staffName: 'Maria Garcia', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: addDays(new Date(), 1).toISOString(), clientName: 'Peter Parker', clientPhone: '555-4444' },
 ];
 
 const dummyAdmins: AdminUser[] = [
@@ -57,14 +57,14 @@ const adminsCollection = collection(db, 'admins');
 // Admins
 export async function getAdminUser(uid: string): Promise<AdminUser | null> {
     if (USE_DUMMY_DATA) {
-        // In dummy mode, to provide a good testing experience for admin login,
-        // we'll return the first super admin from the list, allowing any authenticated
-        // user to see the admin dashboard.
+        // In dummy mode, any authenticated user will be treated as the super-admin
+        // to allow for easy testing of the admin dashboard.
         const superAdmin = dummyAdmins.find(a => !a.locationId);
         if (superAdmin) {
             return {
                 ...superAdmin,
                 uid: uid, // Use the actual user's UID to make it feel real
+                email: 'test.super.admin@example.com', // Use a consistent dummy email
             };
         }
         return null;
@@ -232,10 +232,8 @@ export async function deleteStaff(id: string) {
 
 export async function getStaffByUid(uid: string): Promise<Staff | null> {
     if (USE_DUMMY_DATA) {
-        // In dummy mode, we can't rely on the UID matching.
-        // To provide a good testing experience for the staff login, we'll return
-        // the first staff member who has a UID defined in the dummy data (Alex),
-        // regardless of the actual UID passed in. This avoids manual code editing for the user.
+        // In dummy mode, any authenticated user will be treated as the first staff member with a UID
+        // to allow for easy testing of the staff schedule page.
         const staffMember = dummyStaff.find(s => !!s.uid);
         return staffMember || null;
     }
@@ -305,5 +303,3 @@ export async function deleteBooking(id: string) {
     revalidatePath('/admin/bookings');
     revalidatePath('/my-schedule');
 }
-
-    
