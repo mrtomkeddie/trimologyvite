@@ -1,4 +1,3 @@
-
 'use client';
 import * as React from 'react';
 import { getStaffFromFirestore, getLocationsFromFirestore, getAdminUser } from "@/lib/firestore";
@@ -6,7 +5,7 @@ import { StaffList } from "@/components/staff-list";
 import { ArrowLeft, Loader2, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import type { Staff, Location, AdminUser } from '@/lib/types';
 
@@ -18,29 +17,35 @@ export default function ManageStaffPage() {
     const [error, setError] = React.useState<string | null>(null);
     const [adminUser, setAdminUser] = React.useState<AdminUser | null>(null);
 
+    const fetchData = React.useCallback(async (user: User) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const fetchedAdminUser = await getAdminUser(user.uid);
+            if (!fetchedAdminUser) {
+                throw new Error("You are not authorized to view this page.");
+            }
+            setAdminUser(fetchedAdminUser);
+
+            const userLocationId = fetchedAdminUser.locationId;
+            const [fetchedStaff, fetchedLocations] = await Promise.all([
+                getStaffFromFirestore(userLocationId),
+                getLocationsFromFirestore(userLocationId)
+            ]);
+            setStaff(fetchedStaff);
+            setLocations(fetchedLocations);
+        } catch (e) {
+            setError(e instanceof Error ? e.message : "Failed to fetch staff data.");
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
     React.useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
-                try {
-                    const fetchedAdminUser = await getAdminUser(user.uid);
-                    if (!fetchedAdminUser) {
-                        throw new Error("You are not authorized to view this page.");
-                    }
-                    setAdminUser(fetchedAdminUser);
-
-                    const userLocationId = fetchedAdminUser.locationId;
-                    const [fetchedStaff, fetchedLocations] = await Promise.all([
-                        getStaffFromFirestore(userLocationId),
-                        getLocationsFromFirestore(userLocationId)
-                    ]);
-                    setStaff(fetchedStaff);
-                    setLocations(fetchedLocations);
-                } catch (e) {
-                    setError(e instanceof Error ? e.message : "Failed to fetch staff data.");
-                    console.error(e);
-                } finally {
-                    setLoading(false);
-                }
+                await fetchData(user);
             } else {
                 setLoading(false);
                 setError("Please log in to continue.");
@@ -48,7 +53,13 @@ export default function ManageStaffPage() {
         });
 
         return () => unsubscribe();
-    }, []);
+    }, [fetchData]);
+    
+    const handleDataChange = () => {
+        if (auth.currentUser) {
+            fetchData(auth.currentUser);
+        }
+    };
 
     if (loading) {
         return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
@@ -83,7 +94,7 @@ export default function ManageStaffPage() {
                 <h1 className="font-headline text-xl font-semibold">Manage Staff</h1>
             </header>
             <main className="flex-1 p-4 sm:p-6 lg:p-8">
-                <StaffList initialStaff={staff} locations={locations} />
+                <StaffList initialStaff={staff} locations={locations} onDataChange={handleDataChange} />
             </main>
         </div>
     );

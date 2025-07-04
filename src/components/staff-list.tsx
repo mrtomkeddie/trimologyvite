@@ -1,6 +1,5 @@
 'use client';
 import * as React from 'react';
-import { useRouter } from 'next/navigation';
 import type { Staff, Location } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -19,17 +18,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, Trash2, Edit, Loader2, Star, MapPin, KeyRound, User } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 type StaffListProps = {
     initialStaff: Staff[];
     locations: Location[];
+    onDataChange: () => void;
 };
 
-export function StaffList({ initialStaff, locations }: StaffListProps) {
-    const router = useRouter();
-    const [staff, setStaff] = React.useState(initialStaff);
+export function StaffList({ initialStaff, locations, onDataChange }: StaffListProps) {
     const [isFormOpen, setIsFormOpen] = React.useState(false);
     const [editingStaff, setEditingStaff] = React.useState<Staff | null>(null);
     const [isDeleting, setIsDeleting] = React.useState<string | null>(null);
@@ -50,17 +47,13 @@ export function StaffList({ initialStaff, locations }: StaffListProps) {
         try {
             await deleteStaff(id);
             toast({ title: 'Success', description: 'Staff member deleted successfully.' });
-            router.refresh();
+            onDataChange();
         } catch (error) {
             toast({ title: 'Error', description: 'Failed to delete staff member.', variant: 'destructive' });
         } finally {
             setIsDeleting(null);
         }
     };
-    
-    React.useEffect(() => {
-        setStaff(initialStaff);
-    }, [initialStaff]);
 
     return (
         <div className="w-full max-w-6xl mx-auto">
@@ -79,6 +72,7 @@ export function StaffList({ initialStaff, locations }: StaffListProps) {
                 setIsOpen={setIsFormOpen}
                 staffMember={editingStaff}
                 locations={locations}
+                onSubmitted={onDataChange}
             />
 
             <div className="rounded-lg border bg-card">
@@ -93,8 +87,8 @@ export function StaffList({ initialStaff, locations }: StaffListProps) {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {staff.length > 0 ? (
-                            staff.map(staffMember => (
+                        {initialStaff.length > 0 ? (
+                            initialStaff.map(staffMember => (
                                 <TableRow key={staffMember.id}>
                                     <TableCell className="font-medium">
                                         <div className="flex items-center gap-3">

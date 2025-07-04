@@ -1,6 +1,5 @@
 'use client';
 import * as React from 'react';
-import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
@@ -27,10 +26,10 @@ type StaffFormProps = {
     setIsOpen: (isOpen: boolean) => void;
     staffMember: Staff | null;
     locations: Location[];
+    onSubmitted: () => void;
 };
 
-export function StaffForm({ isOpen, setIsOpen, staffMember, locations }: StaffFormProps) {
-    const router = useRouter();
+export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitted }: StaffFormProps) {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const { toast } = useToast();
     
@@ -91,7 +90,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations }: StaffFo
                     finalImageUrl = await uploadStaffImage(staffMember.id, imageFile);
                 }
 
-                const submissionData = {
+                const submissionData: Partial<Staff> & {password?: string} = {
                     name: data.name,
                     specialization: data.specialization,
                     locationId: data.locationId,
@@ -100,6 +99,11 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations }: StaffFo
                     imageUrl: finalImageUrl,
                     password: data.password || undefined,
                 };
+
+                if (!submissionData.password) {
+                    delete submissionData.password;
+                }
+                
                 await updateStaff(staffMember.id, submissionData);
                 toast({ title: 'Success', description: 'Staff member updated successfully.' });
 
@@ -129,7 +133,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations }: StaffFo
                 toast({ title: 'Success', description: 'Staff member added successfully.' });
             }
             
-            router.refresh();
+            onSubmitted();
             setIsOpen(false);
         } catch (error) {
             console.error("Form submission error:", error);
