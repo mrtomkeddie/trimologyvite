@@ -29,6 +29,7 @@ export const StaffSchema = z.object({
   uid: z.string().optional(),
   email: z.string().email().optional().or(z.literal('')),
   imageUrl: z.string().url().optional().or(z.literal('')),
+  isBookable: z.boolean().optional(),
 });
 export type Staff = z.infer<typeof StaffSchema>;
 
@@ -104,6 +105,7 @@ export const StaffFormSchema = z.object({
   locationId: z.string({ required_error: 'Please assign a location.' }),
   email: z.string().email('Please enter a valid email.').optional().or(z.literal('')),
   password: z.string().optional(),
+  isBookable: z.boolean().optional(),
 }).refine(data => {
     // If a password is provided (not empty), it must be at least 6 characters.
     // This allows the password to be empty during an update if it's not being changed.

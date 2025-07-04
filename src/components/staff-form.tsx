@@ -1,3 +1,4 @@
+
 'use client';
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
@@ -17,6 +18,7 @@ import { uploadStaffImage } from '@/lib/storage';
 import { db } from '@/lib/firebase';
 import { doc, collection } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Switch } from './ui/switch';
 
 
 type StaffFormValues = z.infer<typeof StaffFormSchema>;
@@ -43,6 +45,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
             imageUrl: '',
             imageFile: undefined,
             password: '',
+            isBookable: true,
         }
     });
 
@@ -57,6 +60,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                     imageUrl: staffMember.imageUrl || '',
                     imageFile: undefined,
                     password: '',
+                    isBookable: staffMember.isBookable !== false, // default to true if undefined
                 });
             } else {
                 form.reset({
@@ -67,6 +71,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                     imageUrl: '',
                     imageFile: undefined,
                     password: '',
+                    isBookable: true,
                 });
             }
         }
@@ -98,6 +103,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                     email: data.email || undefined,
                     imageUrl: finalImageUrl,
                     password: data.password || undefined,
+                    isBookable: data.isBookable,
                 };
 
                 if (!submissionData.password) {
@@ -128,6 +134,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                     email: data.email,
                     imageUrl: finalImageUrl,
                     password: data.password,
+                    isBookable: data.isBookable,
                 };
                 await addStaff(newStaffId, submissionData);
                 toast({ title: 'Success', description: 'Staff member added successfully.' });
@@ -241,6 +248,26 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                                         </Select>
                                         <FormMessage />
                                     </FormItem>
+                                )}
+                            />
+                             <FormField
+                                control={form.control}
+                                name="isBookable"
+                                render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                                    <div className="space-y-0.5">
+                                        <FormLabel>Available for Client Booking</FormLabel>
+                                        <FormDesc>
+                                            If enabled, clients can book appointments with this staff member.
+                                        </FormDesc>
+                                    </div>
+                                    <FormControl>
+                                        <Switch
+                                            checked={field.value}
+                                            onCheckedChange={field.onChange}
+                                        />
+                                    </FormControl>
+                                </FormItem>
                                 )}
                             />
                             

@@ -27,10 +27,10 @@ const dummyServices: Service[] = [
 ];
 
 const dummyStaff: Staff[] = [
-    { id: 'staff-1', name: 'Alex Smith', specialization: 'Master Barber', locationId: 'downtown-1', locationName: 'Downtown Barbers', uid: 'staff-uid-alex', email: 'alex@trimology.com', imageUrl: 'https://placehold.co/100x100.png' },
-    { id: 'staff-2', name: 'Maria Garcia', specialization: 'Senior Stylist', locationId: 'downtown-1', locationName: 'Downtown Barbers', imageUrl: 'https://placehold.co/100x100.png' },
-    { id: 'staff-3', name: 'John Doe', specialization: 'Stylist', locationId: 'uptown-2', locationName: 'Uptown Cuts', imageUrl: 'https://placehold.co/100x100.png' },
-    { id: 'staff-4', name: 'Jane Roe', specialization: 'Color Specialist', locationId: 'uptown-2', locationName: 'Uptown Cuts', uid: 'staff-uid-jane', email: 'jane@trimology.com', imageUrl: 'https://placehold.co/100x100.png' },
+    { id: 'staff-1', name: 'Alex Smith', specialization: 'Master Barber', locationId: 'downtown-1', locationName: 'Downtown Barbers', uid: 'staff-uid-alex', email: 'alex@trimology.com', imageUrl: 'https://placehold.co/100x100.png', isBookable: true },
+    { id: 'staff-2', name: 'Maria Garcia', specialization: 'Senior Stylist', locationId: 'downtown-1', locationName: 'Downtown Barbers', imageUrl: 'https://placehold.co/100x100.png', isBookable: true },
+    { id: 'staff-3', name: 'John Doe', specialization: 'Stylist', locationId: 'uptown-2', locationName: 'Uptown Cuts', imageUrl: 'https://placehold.co/100x100.png', isBookable: false },
+    { id: 'staff-4', name: 'Jane Roe', specialization: 'Color Specialist', locationId: 'uptown-2', locationName: 'Uptown Cuts', uid: 'staff-uid-jane', email: 'jane@trimology.com', imageUrl: 'https://placehold.co/100x100.png', isBookable: true },
 ];
 
 const dummyBookings: Booking[] = [
@@ -220,7 +220,7 @@ export async function addStaff(id: string, data: Partial<Omit<Staff, 'id' | 'uid
         if (USE_DUMMY_DATA) {
             console.log("DUMMY: addStaff with login creation", data);
             const newUid = await createFirebaseUser(data.email, data.password);
-            const newStaffMember = { ...data, id, uid: newUid };
+            const newStaffMember = { ...data, id, uid: newUid, isBookable: data.isBookable ?? true };
             delete newStaffMember.password;
             dummyStaff.push(newStaffMember as Staff);
             revalidatePath('/admin/staff');
@@ -235,18 +235,18 @@ export async function addStaff(id: string, data: Partial<Omit<Staff, 'id' | 'uid
         throw new Error("User creation must be handled by a secure backend function.");
         // const newUid = await callCreateUserCloudFunction(data.email, data.password);
         // const staffDoc = doc(db, 'staff', id);
-        // await setDoc(staffDoc, { ...data, uid: newUid });
+        // await setDoc(staffDoc, { ...data, uid: newUid, isBookable: data.isBookable ?? true });
 
     } else {
          if (USE_DUMMY_DATA) {
             console.log('DUMMY: addStaff (no login)', data);
-            const newStaffMember = { ...data, id };
+            const newStaffMember = { ...data, id, isBookable: data.isBookable ?? true };
             delete newStaffMember.password;
             dummyStaff.push(newStaffMember as Staff);
             revalidatePath('/admin/staff'); revalidatePath('/'); return;
         }
         const staffDoc = doc(db, 'staff', id);
-        await setDoc(staffDoc, data);
+        await setDoc(staffDoc, { ...data, isBookable: data.isBookable ?? true });
     }
     revalidatePath('/admin/staff');
     revalidatePath('/');

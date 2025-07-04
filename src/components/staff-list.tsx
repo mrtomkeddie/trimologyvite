@@ -1,3 +1,4 @@
+
 'use client';
 import * as React from 'react';
 import type { Staff, Location } from '@/lib/types';
@@ -17,7 +18,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash2, Edit, Loader2, Star, MapPin, KeyRound, User } from 'lucide-react';
+import { PlusCircle, Trash2, Edit, Loader2, Star, MapPin, KeyRound, User, Check, X } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -108,6 +109,7 @@ export function StaffList({ initialStaff, locations, onDataChange }: StaffListPr
                             <TableHead>Email</TableHead>
                             <TableHead>Specialization</TableHead>
                             <TableHead>Location</TableHead>
+                            <TableHead>Bookable</TableHead>
                             <TableHead className="text-right w-[120px]">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -148,6 +150,15 @@ export function StaffList({ initialStaff, locations, onDataChange }: StaffListPr
                                             {staffMember.locationName}
                                         </div>
                                     </TableCell>
+                                    <TableCell>
+                                        <div className='flex justify-center'>
+                                            {staffMember.isBookable !== false ? (
+                                                <Check className="h-5 w-5 text-primary" />
+                                            ) : (
+                                                <X className="h-5 w-5 text-muted-foreground" />
+                                            )}
+                                        </div>
+                                    </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex gap-2 justify-end">
                                             <Button variant="ghost" size="icon" onClick={() => handleEditClick(staffMember)}>
@@ -181,7 +192,7 @@ export function StaffList({ initialStaff, locations, onDataChange }: StaffListPr
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={5} className="text-center h-24">
+                                <TableCell colSpan={6} className="text-center h-24">
                                      {selectedLocation === 'all' && initialStaff.length === 0 ? 'No staff found. Add your first one!' : 'No staff found for this location.'}
                                 </TableCell>
                             </TableRow>
