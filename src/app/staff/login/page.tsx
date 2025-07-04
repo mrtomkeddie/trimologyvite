@@ -10,24 +10,21 @@ import { Loader2 } from 'lucide-react';
 import { getStaffByUid } from '@/lib/firestore';
 
 export default function StaffLoginPage() {
-  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setLoading(true);
       if (currentUser) {
-        setUser(currentUser);
-        // Check if they are a staff member. If so, redirect.
+        // User is logged in, check if they are a valid staff member
         try {
             const staffMember = await getStaffByUid(currentUser.uid);
             if (staffMember) {
+                // Yes, they are staff. Redirect to their schedule.
                 router.push('/my-schedule');
+                // We don't need to setLoading(false) here because we are navigating away.
             } else {
-                // User is logged in but not a staff member. They shouldn't be here.
-                // We'll let them sit on the login page for now. 
-                // A better implementation might redirect them or show an error.
+                // Not a staff member, so stop loading and show the login form.
                 setLoading(false);
             }
         } catch (error) {
@@ -35,7 +32,7 @@ export default function StaffLoginPage() {
              setLoading(false);
         }
       } else {
-        setUser(null);
+        // No user is logged in, stop loading and show the login form.
         setLoading(false);
       }
     });
@@ -51,8 +48,7 @@ export default function StaffLoginPage() {
     );
   }
 
-  // If user is loaded but not redirected (e.g., they are an admin), show login form
-  if (!user || user) {
-     return <StaffLoginForm />;
-  }
+  // If loading is finished and we haven't redirected, it means the user
+  // needs to log in, so we show the form.
+  return <StaffLoginForm />;
 }
