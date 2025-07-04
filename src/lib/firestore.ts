@@ -222,7 +222,11 @@ export async function deleteStaff(id: string) {
 
 export async function getStaffByUid(uid: string): Promise<Staff | null> {
     if (USE_DUMMY_DATA) {
-        return Promise.resolve(dummyStaff.find(s => s.uid === uid) || null);
+        // In dummy mode, we can't rely on the UID matching.
+        // To provide a good testing experience for the staff login, we'll return
+        // the first staff member who has a UID defined in the dummy data (Alex),
+        // regardless of the actual UID passed in. This avoids manual code editing for the user.
+        return Promise.resolve(dummyStaff.find(s => !!s.uid) || null);
     }
     const q = query(staffCollection, where('uid', '==', uid), limit(1));
     const snapshot = await getDocs(q);
