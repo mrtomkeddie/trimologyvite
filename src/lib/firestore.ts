@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from './firebase';
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, orderBy, query, Timestamp, where, getDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, orderBy, query, Timestamp, where, getDoc, setDoc } from 'firebase/firestore';
 import type { Location, Service, Staff, Booking, NewBooking, AdminUser } from './types';
 import { revalidatePath } from 'next/cache';
 
@@ -29,6 +29,34 @@ export async function getAdminUser(uid: string): Promise<AdminUser | null> {
         locationName: adminData.locationName,
     } as AdminUser;
 }
+
+export async function getAdminsFromFirestore(): Promise<AdminUser[]> {
+    const q = query(adminsCollection, orderBy('email'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+        uid: doc.id,
+        ...doc.data()
+    } as AdminUser));
+}
+
+export async function addAdmin(uid: string, data: { email: string; locationId?: string; locationName?: string; }) {
+    const adminDoc = doc(db, 'admins', uid);
+    await setDoc(adminDoc, data); // Use setDoc because the ID is known
+    revalidatePath('/admin/admins');
+}
+
+export async function updateAdmin(uid: string, data: { email: string; locationId?: string; locationName?: string; }) {
+    const adminDoc = doc(db, 'admins', uid);
+    await updateDoc(adminDoc, data);
+    revalidatePath('/admin/admins');
+}
+
+export async function deleteAdmin(uid: string) {
+    const adminDoc = doc(db, 'admins', uid);
+    await deleteDoc(adminDoc);
+    revalidatePath('/admin/admins');
+}
+
 
 // Locations
 export async function getLocationsFromFirestore(locationId?: string): Promise<Location[]> {

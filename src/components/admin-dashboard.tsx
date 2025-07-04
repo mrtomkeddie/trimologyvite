@@ -4,7 +4,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import type { User } from 'firebase/auth';
-import { LogOut, Scissors, Users, MapPin, ArrowRight, Key, CalendarDays } from 'lucide-react';
+import { LogOut, Scissors, Users, MapPin, ArrowRight, Key, CalendarDays, Shield } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 import type { AdminUser } from '@/lib/types';
@@ -101,6 +101,24 @@ export function AdminDashboard({ user, adminUser }: AdminDashboardProps) {
                             </div>
                             <div className="mt-4 text-primary font-semibold flex items-center">
                                 Go to Locations <ArrowRight className="ml-2 h-4 w-4" />
+                            </div>
+                        </div>
+                    </Link>
+                )}
+                 {isSuperAdmin && (
+                    <Link href="/admin/admins" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
+                        <div className="p-6 flex flex-col justify-between h-full">
+                            <div>
+                                <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                    <h3 className="tracking-tight font-semibold">Manage Admins</h3>
+                                    <Shield className="h-4 w-4 text-muted-foreground" />
+                                </div>
+                                <p className="text-sm text-muted-foreground">
+                                    Add or remove branch and super admin users.
+                                </p>
+                            </div>
+                             <div className="mt-4 text-primary font-semibold flex items-center">
+                                Go to Admins <ArrowRight className="ml-2 h-4 w-4" />
                             </div>
                         </div>
                     </Link>

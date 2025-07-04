@@ -84,3 +84,9 @@ export const StaffFormSchema = z.object({
   specialization: z.string().min(3, 'Specialization must be at least 3 characters.'),
   locationId: z.string({ required_error: 'Please assign a location.' }),
 });
+
+export const AdminFormSchema = z.object({
+  uid: z.string().min(1, 'UID is required.'),
+  email: z.string().email('Please enter a valid email.'),
+  locationId: z.string().optional(), // 'super' for Super Admin, or a location ID
+});
