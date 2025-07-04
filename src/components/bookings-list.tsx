@@ -1,3 +1,4 @@
+
 'use client';
 import * as React from 'react';
 import type { Booking, Location } from '@/lib/types';
@@ -16,7 +17,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, Loader2, MapPin } from 'lucide-react';
+import { Trash2, Loader2, MapPin, PoundSterling } from 'lucide-react';
 import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -84,6 +85,7 @@ export function BookingsList({ initialBookings, locations }: BookingsListProps) 
                             <TableHead>Client</TableHead>
                             <TableHead>Contact</TableHead>
                             <TableHead>Service</TableHead>
+                            <TableHead>Price</TableHead>
                             <TableHead>Staff</TableHead>
                             <TableHead>Location</TableHead>
                             <TableHead className="text-right w-[80px]">Actions</TableHead>
@@ -100,6 +102,14 @@ export function BookingsList({ initialBookings, locations }: BookingsListProps) 
                                         <div className="text-xs text-muted-foreground">{booking.clientEmail}</div>
                                     </TableCell>
                                     <TableCell>{booking.serviceName}</TableCell>
+                                    <TableCell>
+                                        {booking.servicePrice != null && (
+                                            <div className="flex items-center font-medium">
+                                                <PoundSterling className="mr-1 h-3 w-3 text-muted-foreground" />
+                                                {booking.servicePrice.toFixed(2)}
+                                            </div>
+                                        )}
+                                    </TableCell>
                                     <TableCell>{booking.staffName}</TableCell>
                                     <TableCell>{booking.locationName}</TableCell>
                                     <TableCell className="text-right">
@@ -131,7 +141,7 @@ export function BookingsList({ initialBookings, locations }: BookingsListProps) 
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={7} className="text-center h-24">
+                                <TableCell colSpan={8} className="text-center h-24">
                                     No bookings found for this location.
                                 </TableCell>
                             </TableRow>

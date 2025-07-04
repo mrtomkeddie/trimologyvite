@@ -6,7 +6,7 @@ import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ShieldAlert, LogOut, Calendar, Clock, User as UserIcon } from 'lucide-react';
+import { Loader2, ShieldAlert, LogOut, Calendar, Clock, User as UserIcon, PoundSterling } from 'lucide-react';
 import { getStaffByUid, getBookingsByStaffId } from '@/lib/firestore';
 import type { Staff, Booking } from '@/lib/types';
 import { format } from 'date-fns';
@@ -101,7 +101,15 @@ export default function MySchedulePage() {
                                             <span className="text-2xl font-bold text-primary">{format(new Date(booking.bookingTimestamp), 'dd')}</span>
                                         </div>
                                         <div className="flex-1 space-y-1">
-                                            <p className="text-sm font-medium leading-none">{booking.serviceName}</p>
+                                            <div className="flex justify-between items-center">
+                                                <p className="text-sm font-medium leading-none">{booking.serviceName}</p>
+                                                {booking.servicePrice != null && (
+                                                    <div className="flex items-center text-sm font-medium text-primary">
+                                                        <PoundSterling className="mr-1 h-4 w-4" />
+                                                        {booking.servicePrice.toFixed(2)}
+                                                    </div>
+                                                )}
+                                            </div>
                                             <div className="flex items-center text-sm text-muted-foreground">
                                                 <Clock className="mr-2 h-4 w-4" />
                                                 {format(new Date(booking.bookingTimestamp), 'p')}

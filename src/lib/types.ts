@@ -37,6 +37,7 @@ export const BookingSchema = z.object({
     locationName: z.string(),
     serviceId: z.string(),
     serviceName: z.string(),
+    servicePrice: z.coerce.number(),
     staffId: z.string(),
     staffName: z.string(),
     bookingTimestamp: z.string(), // Stored as ISO string

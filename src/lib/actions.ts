@@ -1,3 +1,4 @@
+
 'use server';
 
 import { format } from 'date-fns';
@@ -61,6 +62,7 @@ export async function createBooking(bookingData: BookingData) {
         locationName: location.name,
         serviceId: bookingData.serviceId,
         serviceName: service.name,
+        servicePrice: service.price,
         staffId: bookingData.staffId || 'any',
         staffName: staffMember?.name || 'Any Available',
         bookingTimestamp: bookingTimestamp.toISOString(),
@@ -80,7 +82,7 @@ Dear ${bookingData.clientName},
 Thank you for booking with Trimology!
 
 Your appointment details:
-Service: ${service?.name || 'N/A'}
+Service: ${service?.name || 'N/A'} (£${service.price.toFixed(2)})
 Location: ${location?.name || 'N/A'}
 Date: ${format(bookingData.date, 'PPP')}
 Time: ${bookingData.time}

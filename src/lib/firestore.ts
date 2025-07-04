@@ -35,10 +35,10 @@ const dummyStaff: Staff[] = [
 ];
 
 const dummyBookings: Booking[] = [
-    { id: 'book-1', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', staffId: 'staff-1', staffName: 'Alex Smith', bookingTimestamp: addDays(new Date(), 1).toISOString(), clientName: 'Bob Johnson', clientPhone: '555-1111', clientEmail: 'bob@example.com' },
-    { id: 'book-2', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-2', serviceName: 'Beard Trim', staffId: 'staff-1', staffName: 'Alex Smith', bookingTimestamp: addDays(new Date(), 2).toISOString(), clientName: 'Charlie Brown', clientPhone: '555-2222' },
-    { id: 'book-3', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-5', serviceName: 'Color & Cut', staffId: 'staff-4', staffName: 'Jane Roe', bookingTimestamp: addDays(new Date(), 3).toISOString(), clientName: 'Diana Prince', clientPhone: '555-3333', clientEmail: 'diana@example.com' },
-    { id: 'book-4', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', staffId: 'staff-2', staffName: 'Maria Garcia', bookingTimestamp: addDays(new Date(), 1).toISOString(), clientName: 'Peter Parker', clientPhone: '555-4444' },
+    { id: 'book-1', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, staffId: 'staff-1', staffName: 'Alex Smith', bookingTimestamp: addDays(new Date(), 1).toISOString(), clientName: 'Bob Johnson', clientPhone: '555-1111', clientEmail: 'bob@example.com' },
+    { id: 'book-2', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-2', serviceName: 'Beard Trim', servicePrice: 15, staffId: 'staff-1', staffName: 'Alex Smith', bookingTimestamp: addDays(new Date(), 2).toISOString(), clientName: 'Charlie Brown', clientPhone: '555-2222' },
+    { id: 'book-3', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-5', serviceName: 'Color & Cut', servicePrice: 90, staffId: 'staff-4', staffName: 'Jane Roe', bookingTimestamp: addDays(new Date(), 3).toISOString(), clientName: 'Diana Prince', clientPhone: '555-3333', clientEmail: 'diana@example.com' },
+    { id: 'book-4', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, staffId: 'staff-2', staffName: 'Maria Garcia', bookingTimestamp: addDays(new Date(), 1).toISOString(), clientName: 'Peter Parker', clientPhone: '555-4444' },
 ];
 
 const dummyAdmins: AdminUser[] = [
