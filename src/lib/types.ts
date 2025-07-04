@@ -45,6 +45,15 @@ export const BookingSchema = z.object({
 export type Booking = z.infer<typeof BookingSchema>;
 export type NewBooking = Omit<Booking, 'id'>;
 
+export const AdminUserSchema = z.object({
+  uid: z.string(),
+  email: z.string().email(),
+  locationId: z.string().optional(), // If not present, they are a super-admin
+  locationName: z.string().optional(),
+});
+export type AdminUser = z.infer<typeof AdminUserSchema>;
+
+
 export const BookingFormSchema = z.object({
     locationId: z.string({ required_error: 'Please select a location.' }),
     serviceId: z.string({ required_error: 'Please select a service.' }),

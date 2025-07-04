@@ -1,14 +1,54 @@
 
-
-import { getServicesFromFirestore, getLocationsFromFirestore } from "@/lib/firestore";
+'use client';
+import * as React from 'react';
+import { getServicesFromFirestore, getLocationsFromFirestore, getAdminUser } from "@/lib/firestore";
 import { ServicesList } from "@/components/services-list";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import type { Service, Location } from '@/lib/types';
 
-export default async function ManageServicesPage() {
-    const services = await getServicesFromFirestore();
-    const locations = await getLocationsFromFirestore();
+export default function ManageServicesPage() {
+    const [services, setServices] = React.useState<Service[]>([]);
+    const [locations, setLocations] = React.useState<Location[]>([]);
+    const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState<string | null>(null);
+
+    React.useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                try {
+                    const adminUser = await getAdminUser(user.uid);
+                    const userLocationId = adminUser?.locationId;
+                    const [fetchedServices, fetchedLocations] = await Promise.all([
+                        getServicesFromFirestore(userLocationId),
+                        getLocationsFromFirestore(userLocationId)
+                    ]);
+                    setServices(fetchedServices);
+                    setLocations(fetchedLocations);
+                } catch (e) {
+                    setError("Failed to fetch service data.");
+                    console.error(e);
+                } finally {
+                    setLoading(false);
+                }
+            } else {
+                setLoading(false);
+                setError("Please log in to continue.");
+            }
+        });
+
+        return () => unsubscribe();
+    }, []);
+
+    if (loading) {
+        return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
+    }
+     if (error) {
+        return <div className="flex h-screen w-full items-center justify-center text-destructive">{error}</div>;
+    }
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">

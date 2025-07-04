@@ -2,22 +2,43 @@
 'use server';
 
 import { db } from './firebase';
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, orderBy, query, Timestamp } from 'firebase/firestore';
-import type { Location, Service, Staff, Booking, NewBooking } from './types';
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, orderBy, query, Timestamp, where, getDoc } from 'firebase/firestore';
+import type { Location, Service, Staff, Booking, NewBooking, AdminUser } from './types';
 import { revalidatePath } from 'next/cache';
 
 const locationsCollection = collection(db, 'locations');
 const servicesCollection = collection(db, 'services');
 const staffCollection = collection(db, 'staff');
 const bookingsCollection = collection(db, 'bookings');
+const adminsCollection = collection(db, 'admins');
+
+// Admins
+export async function getAdminUser(uid: string): Promise<AdminUser | null> {
+    const adminDocRef = doc(db, 'admins', uid);
+    const adminDoc = await getDoc(adminDocRef);
+
+    if (!adminDoc.exists()) {
+        return null;
+    }
+    
+    const adminData = adminDoc.data();
+    return {
+        uid,
+        email: adminData.email,
+        locationId: adminData.locationId,
+        locationName: adminData.locationName,
+    } as AdminUser;
+}
 
 // Locations
-export async function getLocationsFromFirestore(): Promise<Location[]> {
+export async function getLocationsFromFirestore(locationId?: string): Promise<Location[]> {
+    if (locationId) {
+        const docRef = doc(db, "locations", locationId);
+        const docSnap = await getDoc(docRef);
+        return docSnap.exists() ? [{ id: docSnap.id, ...docSnap.data() } as Location] : [];
+    }
     const q = query(locationsCollection, orderBy('name'));
     const snapshot = await getDocs(q);
-    if (snapshot.empty) {
-        return [];
-    }
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Location));
 }
 
@@ -42,12 +63,12 @@ export async function deleteLocation(id: string) {
 }
 
 // Services
-export async function getServicesFromFirestore(): Promise<Service[]> {
-    const q = query(servicesCollection, orderBy('name'));
+export async function getServicesFromFirestore(locationId?: string): Promise<Service[]> {
+    const q = locationId 
+        ? query(servicesCollection, where('locationId', '==', locationId), orderBy('name'))
+        : query(servicesCollection, orderBy('name'));
+
     const snapshot = await getDocs(q);
-    if (snapshot.empty) {
-        return [];
-    }
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Service));
 }
 
@@ -72,12 +93,12 @@ export async function deleteService(id: string) {
 }
 
 // Staff
-export async function getStaffFromFirestore(): Promise<Staff[]> {
-    const q = query(staffCollection, orderBy('name'));
+export async function getStaffFromFirestore(locationId?: string): Promise<Staff[]> {
+    const q = locationId
+        ? query(staffCollection, where('locationId', '==', locationId), orderBy('name'))
+        : query(staffCollection, orderBy('name'));
+    
     const snapshot = await getDocs(q);
-    if (snapshot.empty) {
-        return [];
-    }
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Staff));
 }
 
@@ -102,21 +123,19 @@ export async function deleteStaff(id: string) {
 }
 
 // Bookings
-export async function getBookingsFromFirestore(): Promise<Booking[]> {
-    const q = query(bookingsCollection, orderBy('bookingTimestamp', 'desc'));
+export async function getBookingsFromFirestore(locationId?: string): Promise<Booking[]> {
+     const q = locationId
+        ? query(bookingsCollection, where('locationId', '==', locationId), orderBy('bookingTimestamp', 'desc'))
+        : query(bookingsCollection, orderBy('bookingTimestamp', 'desc'));
+
     const snapshot = await getDocs(q);
-    if (snapshot.empty) {
-        return [];
-    }
     return snapshot.docs.map(doc => {
         const data = doc.data();
-        // Firestore Timestamps need to be converted to a serializable format (ISO string)
-        const booking: Booking = {
+        return {
             id: doc.id,
             ...data,
-            bookingTimestamp: (data.bookingTimestamp as any), // Already a string from our action
+            bookingTimestamp: data.bookingTimestamp,
         } as Booking;
-        return booking;
     });
 }
 

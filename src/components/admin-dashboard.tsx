@@ -7,23 +7,29 @@ import type { User } from 'firebase/auth';
 import { LogOut, Scissors, Users, MapPin, ArrowRight, Key, CalendarDays } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
+import type { AdminUser } from '@/lib/types';
 
 
 type AdminDashboardProps = {
   user: User;
+  adminUser: AdminUser;
 };
 
-export function AdminDashboard({ user }: AdminDashboardProps) {
+export function AdminDashboard({ user, adminUser }: AdminDashboardProps) {
 
   const handleLogout = async () => {
     await signOut(auth);
   };
-
+  
+  const isSuperAdmin = !adminUser.locationId;
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
         <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b bg-background px-4 sm:px-6">
-             <h1 className="font-headline text-xl font-semibold">Admin Dashboard</h1>
+             <div className="flex flex-col">
+                <h1 className="font-headline text-xl font-semibold">Admin Dashboard</h1>
+                {adminUser.locationName && <p className="text-sm text-muted-foreground">Managing: {adminUser.locationName}</p>}
+             </div>
              <div className="flex items-center gap-2">
                 <Button onClick={handleLogout} variant="outline" size="sm">
                     <LogOut className="mr-2 h-4 w-4" />
@@ -81,22 +87,24 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
                         </div>
                     </div>
                 </Link>
-                <Link href="/admin/locations" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
-                    <div className="p-6 flex flex-col justify-between h-full">
-                        <div>
-                            <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <h3 className="tracking-tight font-semibold">Manage Locations</h3>
-                                <MapPin className="h-4 w-4 text-muted-foreground" />
+                {isSuperAdmin && (
+                    <Link href="/admin/locations" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
+                        <div className="p-6 flex flex-col justify-between h-full">
+                            <div>
+                                <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                    <h3 className="tracking-tight font-semibold">Manage Locations</h3>
+                                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                                </div>
+                                <p className="text-sm text-muted-foreground">
+                                    Add or update your salon locations.
+                                </p>
                             </div>
-                            <p className="text-sm text-muted-foreground">
-                                Add or update your salon locations.
-                            </p>
+                            <div className="mt-4 text-primary font-semibold flex items-center">
+                                Go to Locations <ArrowRight className="ml-2 h-4 w-4" />
+                            </div>
                         </div>
-                        <div className="mt-4 text-primary font-semibold flex items-center">
-                            Go to Locations <ArrowRight className="ml-2 h-4 w-4" />
-                        </div>
-                    </div>
-                </Link>
+                    </Link>
+                )}
                 <Link href="/admin/settings" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
                      <div className="p-6 flex flex-col justify-between h-full">
                         <div>
