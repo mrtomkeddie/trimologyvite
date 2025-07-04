@@ -61,7 +61,13 @@ export async function getAdminUser(uid: string): Promise<AdminUser | null> {
         // we'll return the first super admin from the list, allowing any authenticated
         // user to see the admin dashboard.
         const superAdmin = dummyAdmins.find(a => !a.locationId);
-        return superAdmin || null;
+        if (superAdmin) {
+            return {
+                ...superAdmin,
+                uid: uid, // Use the actual user's UID to make it feel real
+            };
+        }
+        return null;
     }
     const adminDocRef = doc(db, 'admins', uid);
     const adminDoc = await getDoc(adminDocRef);
@@ -230,7 +236,8 @@ export async function getStaffByUid(uid: string): Promise<Staff | null> {
         // To provide a good testing experience for the staff login, we'll return
         // the first staff member who has a UID defined in the dummy data (Alex),
         // regardless of the actual UID passed in. This avoids manual code editing for the user.
-        return Promise.resolve(dummyStaff.find(s => !!s.uid) || null);
+        const staffMember = dummyStaff.find(s => !!s.uid);
+        return staffMember || null;
     }
     const q = query(staffCollection, where('uid', '==', uid), limit(1));
     const snapshot = await getDocs(q);
@@ -298,7 +305,5 @@ export async function deleteBooking(id: string) {
     revalidatePath('/admin/bookings');
     revalidatePath('/my-schedule');
 }
-
-    
 
     
