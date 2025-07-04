@@ -3,12 +3,12 @@
 import * as React from 'react';
 import { getStaffFromFirestore, getLocationsFromFirestore, getAdminUser } from "@/lib/firestore";
 import { StaffList } from "@/components/staff-list";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import type { Staff, Location } from '@/lib/types';
+import type { Staff, Location, AdminUser } from '@/lib/types';
 
 
 export default function ManageStaffPage() {
@@ -16,13 +16,19 @@ export default function ManageStaffPage() {
     const [locations, setLocations] = React.useState<Location[]>([]);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
+    const [adminUser, setAdminUser] = React.useState<AdminUser | null>(null);
 
     React.useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
                 try {
-                    const adminUser = await getAdminUser(user.uid);
-                    const userLocationId = adminUser?.locationId;
+                    const fetchedAdminUser = await getAdminUser(user.uid);
+                    if (!fetchedAdminUser) {
+                        throw new Error("You are not authorized to view this page.");
+                    }
+                    setAdminUser(fetchedAdminUser);
+
+                    const userLocationId = fetchedAdminUser.locationId;
                     const [fetchedStaff, fetchedLocations] = await Promise.all([
                         getStaffFromFirestore(userLocationId),
                         getLocationsFromFirestore(userLocationId)
@@ -30,7 +36,7 @@ export default function ManageStaffPage() {
                     setStaff(fetchedStaff);
                     setLocations(fetchedLocations);
                 } catch (e) {
-                    setError("Failed to fetch staff data.");
+                    setError(e instanceof Error ? e.message : "Failed to fetch staff data.");
                     console.error(e);
                 } finally {
                     setLoading(false);
@@ -48,8 +54,21 @@ export default function ManageStaffPage() {
         return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
     }
 
-     if (error) {
-        return <div className="flex h-screen w-full items-center justify-center text-destructive">{error}</div>;
+     if (error || !adminUser) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-background text-center p-4">
+                <div>
+                    <ShieldAlert className="h-16 w-16 text-destructive mx-auto mb-4" />
+                    <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
+                    <p className="text-muted-foreground mb-6">
+                        {error || "You do not have permission to access this page."}
+                    </p>
+                    <Button asChild>
+                        <Link href="/admin">Return to Dashboard</Link>
+                    </Button>
+                </div>
+            </div>
+        );
     }
 
     return (

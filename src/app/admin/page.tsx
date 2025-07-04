@@ -16,7 +16,6 @@ export default function AdminPage() {
   const [user, setUser] = useState<User | null>(null);
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -25,19 +24,12 @@ export default function AdminPage() {
       if (currentUser) {
         try {
           const fetchedAdminUser = await getAdminUser(currentUser.uid);
-          if (fetchedAdminUser) {
-            setAdminUser(fetchedAdminUser);
-            setIsAuthorized(true);
-          } else {
-            setAdminUser(null);
-            setIsAuthorized(false);
-          }
+          setAdminUser(fetchedAdminUser);
         } catch (error) {
           console.error("Error fetching admin user data:", error);
-          setIsAuthorized(false);
+          setAdminUser(null);
         }
       } else {
-        setIsAuthorized(null);
         setAdminUser(null);
       }
       setLoading(false);
@@ -54,11 +46,11 @@ export default function AdminPage() {
     );
   }
 
-  if (user && isAuthorized) {
-    return <AdminDashboard user={user} adminUser={adminUser!} />;
+  if (user && adminUser) {
+    return <AdminDashboard user={user} adminUser={adminUser} />;
   }
 
-  if (user && !isAuthorized) {
+  if (user && !adminUser) {
     return (
          <div className="flex min-h-screen items-center justify-center bg-background text-center p-4">
             <div>
