@@ -57,7 +57,11 @@ const adminsCollection = collection(db, 'admins');
 // Admins
 export async function getAdminUser(uid: string): Promise<AdminUser | null> {
     if (USE_DUMMY_DATA) {
-        return dummyAdmins.find(admin => admin.uid === uid) || null;
+        // In dummy mode, to provide a good testing experience for admin login,
+        // we'll return the first super admin from the list, allowing any authenticated
+        // user to see the admin dashboard.
+        const superAdmin = dummyAdmins.find(a => !a.locationId);
+        return superAdmin || null;
     }
     const adminDocRef = doc(db, 'admins', uid);
     const adminDoc = await getDoc(adminDocRef);
@@ -294,5 +298,7 @@ export async function deleteBooking(id: string) {
     revalidatePath('/admin/bookings');
     revalidatePath('/my-schedule');
 }
+
+    
 
     
