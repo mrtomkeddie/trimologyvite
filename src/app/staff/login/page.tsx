@@ -3,15 +3,17 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { onAuthStateChanged, type User } from 'firebase/auth';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { StaffLoginForm } from '@/components/staff-login-form';
 import { Loader2 } from 'lucide-react';
 import { getStaffByUid } from '@/lib/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 export default function StaffLoginPage() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -22,13 +24,20 @@ export default function StaffLoginPage() {
             if (staffMember) {
                 // Yes, they are staff. Redirect to their schedule.
                 router.push('/my-schedule');
-                // We don't need to setLoading(false) here because we are navigating away.
             } else {
-                // Not a staff member, so stop loading and show the login form.
+                // This user is authenticated but not a staff member.
+                // Sign them out and show an error toast to prevent confusion.
+                await signOut(auth);
+                toast({
+                    title: "Access Denied",
+                    description: "This account does not have staff permissions.",
+                    variant: "destructive",
+                });
                 setLoading(false);
             }
         } catch (error) {
              console.error("Error verifying staff status:", error);
+             await signOut(auth); // Also sign out on error to be safe
              setLoading(false);
         }
       } else {
@@ -38,7 +47,7 @@ export default function StaffLoginPage() {
     });
 
     return () => unsubscribe();
-  }, [router]);
+  }, [router, toast]);
 
   if (loading) {
     return (

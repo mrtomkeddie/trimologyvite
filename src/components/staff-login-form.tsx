@@ -22,15 +22,15 @@ export function StaffLoginForm() {
     setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // The onAuthStateChanged listener in StaffLoginPage will handle redirecting
+      // The onAuthStateChanged listener in StaffLoginPage will handle redirecting.
+      // We don't set isLoading to false here, as the page will unmount on success.
     } catch (error) {
       toast({
         title: 'Login Failed',
         description: 'Invalid credentials. Please try again.',
         variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Only set loading to false on failure.
     }
   };
 
