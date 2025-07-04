@@ -81,13 +81,13 @@ export function BookingsList({ initialBookings, locations }: BookingsListProps) 
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Date & Time</TableHead>
+                            <TableHead className="min-w-[150px]">Date & Time</TableHead>
                             <TableHead>Client</TableHead>
-                            <TableHead>Contact</TableHead>
                             <TableHead>Service</TableHead>
-                            <TableHead>Price</TableHead>
-                            <TableHead>Staff</TableHead>
-                            <TableHead>Location</TableHead>
+                            <TableHead className="hidden sm:table-cell">Contact</TableHead>
+                            <TableHead className="hidden md:table-cell">Price</TableHead>
+                            <TableHead className="hidden lg:table-cell">Staff</TableHead>
+                            <TableHead className="hidden xl:table-cell">Location</TableHead>
                             <TableHead className="text-right w-[80px]">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -95,14 +95,20 @@ export function BookingsList({ initialBookings, locations }: BookingsListProps) 
                         {filteredBookings.length > 0 ? (
                             filteredBookings.map(booking => (
                                 <TableRow key={booking.id}>
-                                    <TableCell className="font-medium">{format(new Date(booking.bookingTimestamp), 'PPP p')}</TableCell>
+                                    <TableCell className="font-medium">
+                                        <div className="hidden sm:block whitespace-nowrap">{format(new Date(booking.bookingTimestamp), 'PP p')}</div>
+                                        <div className="sm:hidden">
+                                            <div>{format(new Date(booking.bookingTimestamp), 'PP')}</div>
+                                            <div className="text-sm text-muted-foreground">{format(new Date(booking.bookingTimestamp), 'p')}</div>
+                                        </div>
+                                    </TableCell>
                                     <TableCell>{booking.clientName}</TableCell>
-                                    <TableCell>
+                                    <TableCell>{booking.serviceName}</TableCell>
+                                    <TableCell className="hidden sm:table-cell">
                                         <div>{booking.clientPhone}</div>
                                         <div className="text-xs text-muted-foreground">{booking.clientEmail}</div>
                                     </TableCell>
-                                    <TableCell>{booking.serviceName}</TableCell>
-                                    <TableCell>
+                                    <TableCell className="hidden md:table-cell">
                                         {booking.servicePrice != null && (
                                             <div className="flex items-center font-medium">
                                                 <PoundSterling className="mr-1 h-3 w-3 text-muted-foreground" />
@@ -110,8 +116,8 @@ export function BookingsList({ initialBookings, locations }: BookingsListProps) 
                                             </div>
                                         )}
                                     </TableCell>
-                                    <TableCell>{booking.staffName}</TableCell>
-                                    <TableCell>{booking.locationName}</TableCell>
+                                    <TableCell className="hidden lg:table-cell">{booking.staffName}</TableCell>
+                                    <TableCell className="hidden xl:table-cell">{booking.locationName}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex gap-2 justify-end">
                                             <AlertDialog>
