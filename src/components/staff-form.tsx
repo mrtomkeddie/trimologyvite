@@ -13,7 +13,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { addStaff, updateStaff } from '@/lib/firestore';
 import { StaffFormSchema, type Staff, type Location } from '@/lib/types';
-import { Loader2 } from 'lucide-react';
+import { Loader2, User } from 'lucide-react';
+import { uploadStaffImage } from '@/lib/storage';
+import { db } from '@/lib/firebase';
+import { doc, collection } from 'firebase/firestore';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+
 
 type StaffFormValues = z.infer<typeof StaffFormSchema>;
 
@@ -38,6 +43,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
             uid: '',
             email: '',
             imageUrl: '',
+            imageFile: undefined,
         }
     });
 
@@ -51,6 +57,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                     uid: staffMember.uid || '',
                     email: staffMember.email || '',
                     imageUrl: staffMember.imageUrl || '',
+                    imageFile: undefined,
                 });
             } else {
                 form.reset({
@@ -60,6 +67,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                     uid: '',
                     email: '',
                     imageUrl: '',
+                    imageFile: undefined,
                 });
             }
         }
@@ -74,34 +82,63 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
             return;
         }
 
-        const submissionData = {
-            ...data,
-            locationName: location.name,
-            uid: data.uid || undefined,
-            email: data.email || undefined,
-            imageUrl: data.imageUrl || undefined,
-        };
-        
         try {
-            if (staffMember) {
+            const imageFile = data.imageFile?.[0] as File | undefined;
+            
+            if (staffMember) { // --- UPDATE PATH ---
+                let finalImageUrl = staffMember.imageUrl || '';
+                if (imageFile) {
+                    finalImageUrl = await uploadStaffImage(staffMember.id, imageFile);
+                }
+
+                const submissionData = {
+                    name: data.name,
+                    specialization: data.specialization,
+                    locationId: data.locationId,
+                    locationName: location.name,
+                    uid: data.uid || undefined,
+                    email: data.email || undefined,
+                    imageUrl: finalImageUrl,
+                };
                 await updateStaff(staffMember.id, submissionData);
                 toast({ title: 'Success', description: 'Staff member updated successfully.' });
-            } else {
-                await addStaff(submissionData);
+
+            } else { // --- CREATE PATH ---
+                const newStaffId = doc(collection(db, 'staff')).id;
+                let finalImageUrl = '';
+                
+                if (imageFile) {
+                    finalImageUrl = await uploadStaffImage(newStaffId, imageFile);
+                }
+
+                const submissionData = {
+                    name: data.name,
+                    specialization: data.specialization,
+                    locationId: data.locationId,
+                    locationName: location.name,
+                    uid: data.uid || undefined,
+                    email: data.email || undefined,
+                    imageUrl: finalImageUrl,
+                };
+                await addStaff(newStaffId, submissionData);
                 toast({ title: 'Success', description: 'Staff member added successfully.' });
             }
+            
             onSubmitted();
             setIsOpen(false);
         } catch (error) {
+            console.error("Form submission error:", error);
             toast({
                 title: 'Error',
-                description: 'Something went wrong. Please try again.',
+                description: 'Something went wrong. Please check the console for details and try again.',
                 variant: 'destructive',
             });
         } finally {
             setIsSubmitting(false);
         }
     };
+
+    const currentImageUrl = form.watch('imageUrl');
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -143,15 +180,31 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                             />
                              <FormField
                                 control={form.control}
-                                name="imageUrl"
+                                name="imageFile"
                                 render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Image URL</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="https://example.com/photo.png" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
+                                <FormItem>
+                                    <FormLabel>Staff Photo</FormLabel>
+                                    {currentImageUrl && !field.value?.[0] && (
+                                    <div className="mt-2">
+                                        <Avatar className="h-24 w-24">
+                                        <AvatarImage src={currentImageUrl} alt={form.getValues('name')} />
+                                        <AvatarFallback><User className="h-8 w-8" /></AvatarFallback>
+                                        </Avatar>
+                                    </div>
+                                    )}
+                                    <FormControl>
+                                        <Input
+                                            type="file"
+                                            accept="image/png, image/jpeg, image/webp"
+                                            onChange={(e) => field.onChange(e.target.files)}
+                                            className="pt-2 text-sm file:text-primary file:font-semibold"
+                                        />
+                                    </FormControl>
+                                    <FormDesc>
+                                        {currentImageUrl ? 'Upload a new file to replace the current photo.' : 'Max file size: 5MB.'}
+                                    </FormDesc>
+                                    <FormMessage />
+                                </FormItem>
                                 )}
                             />
                             <FormField

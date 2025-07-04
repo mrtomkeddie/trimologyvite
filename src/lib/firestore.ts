@@ -57,14 +57,12 @@ const adminsCollection = collection(db, 'admins');
 // Admins
 export async function getAdminUser(uid: string): Promise<AdminUser | null> {
     if (USE_DUMMY_DATA) {
-        // In dummy mode, any authenticated user will be treated as the super-admin
-        // to allow for easy testing of the admin dashboard.
         const superAdmin = dummyAdmins.find(a => !a.locationId);
         if (superAdmin) {
             return {
                 ...superAdmin,
-                uid: uid, // Use the actual user's UID to make it feel real
-                email: 'test.super.admin@example.com', // Use a consistent dummy email
+                uid: uid,
+                email: 'test.super.admin@example.com',
             };
         }
         return null;
@@ -207,9 +205,10 @@ export async function getStaffFromFirestore(locationId?: string): Promise<Staff[
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Staff));
 }
 
-export async function addStaff(data: Partial<Staff>) {
-    if (USE_DUMMY_DATA) { console.log('DUMMY: addStaff', data); revalidatePath('/admin/staff'); revalidatePath('/'); return; }
-    await addDoc(staffCollection, data);
+export async function addStaff(id: string, data: Partial<Staff>) {
+    if (USE_DUMMY_DATA) { console.log('DUMMY: addStaff', id, data); revalidatePath('/admin/staff'); revalidatePath('/'); return; }
+    const staffDoc = doc(db, 'staff', id);
+    await setDoc(staffDoc, data);
     revalidatePath('/admin/staff');
     revalidatePath('/');
 }
@@ -232,10 +231,8 @@ export async function deleteStaff(id: string) {
 
 export async function getStaffByUid(uid: string): Promise<Staff | null> {
     if (USE_DUMMY_DATA) {
-        // In dummy mode, any authenticated user will be treated as the first staff member with a UID
-        // to allow for easy testing of the staff schedule page.
-        const staffMember = dummyStaff.find(s => !!s.uid);
-        return staffMember || null;
+        // Any authenticated user can see Alex's schedule in dummy mode
+        return dummyStaff.find(s => s.id === 'staff-1') || null;
     }
     const q = query(staffCollection, where('uid', '==', uid), limit(1));
     const snapshot = await getDocs(q);

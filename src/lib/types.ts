@@ -84,10 +84,23 @@ export const ServiceFormSchema = z.object({
   locationId: z.string({ required_error: 'Please assign a location.' }),
 });
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+
 export const StaffFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
   specialization: z.string().min(3, 'Specialization must be at least 3 characters.'),
-  imageUrl: z.string().url('Please enter a valid URL.').optional().or(z.literal('')),
+  imageUrl: z.string().url().optional().or(z.literal('')),
+  imageFile: z.any()
+    .optional()
+    .refine(
+        (files) => !files || files.length === 0 || files[0].size <= MAX_FILE_SIZE,
+        `Max file size is 5MB.`
+    )
+    .refine(
+        (files) => !files || files.length === 0 || ACCEPTED_IMAGE_TYPES.includes(files[0].type),
+        "Only .jpg, .jpeg, .png and .webp formats are supported."
+    ),
   locationId: z.string({ required_error: 'Please assign a location.' }),
   uid: z.string().optional(),
   email: z.string().email('Please enter a valid email.').optional().or(z.literal('')),
