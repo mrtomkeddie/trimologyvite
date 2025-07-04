@@ -20,16 +20,17 @@ export default function AdminPage() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setLoading(true);
-      setUser(currentUser);
       if (currentUser) {
+        setUser(currentUser);
         try {
           const fetchedAdminUser = await getAdminUser(currentUser.uid);
-          setAdminUser(fetchedAdminUser);
+          setAdminUser(fetchedAdminUser); // Will be null if not found
         } catch (error) {
           console.error("Error fetching admin user data:", error);
           setAdminUser(null);
         }
       } else {
+        setUser(null);
         setAdminUser(null);
       }
       setLoading(false);
@@ -56,8 +57,9 @@ export default function AdminPage() {
             <div>
                  <ShieldAlert className="h-16 w-16 text-destructive mx-auto mb-4" />
                 <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
-                <p className="text-muted-foreground mb-6">
-                    You do not have permission to access the admin dashboard.
+                <p className="text-muted-foreground mb-6 max-w-md">
+                    You've logged in successfully as <span className="font-semibold text-foreground">{user.email}</span>, but this account does not have admin permissions.
+                     Please contact the site owner or check that a document with this user's UID exists in your Firestore 'admins' collection.
                 </p>
                 <Button onClick={() => signOut(auth)} variant="destructive">
                     Sign Out
