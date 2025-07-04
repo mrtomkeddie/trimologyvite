@@ -1,6 +1,6 @@
-
 'use client';
 import * as React from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
@@ -27,10 +27,10 @@ type StaffFormProps = {
     setIsOpen: (isOpen: boolean) => void;
     staffMember: Staff | null;
     locations: Location[];
-    onSubmitted: () => void;
 };
 
-export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitted }: StaffFormProps) {
+export function StaffForm({ isOpen, setIsOpen, staffMember, locations }: StaffFormProps) {
+    const router = useRouter();
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const { toast } = useToast();
     
@@ -104,6 +104,11 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                 toast({ title: 'Success', description: 'Staff member updated successfully.' });
 
             } else { // --- CREATE PATH ---
+                 if (!data.email || !data.password) {
+                     toast({ title: 'Error', description: 'Login Email and Temporary Password are required for new staff.', variant: 'destructive' });
+                     setIsSubmitting(false);
+                     return;
+                }
                 const newStaffId = doc(collection(db, 'staff')).id;
                 let finalImageUrl = '';
                 
@@ -116,15 +121,15 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                     specialization: data.specialization,
                     locationId: data.locationId,
                     locationName: location.name,
-                    email: data.email || undefined,
+                    email: data.email,
                     imageUrl: finalImageUrl,
-                    password: data.password || undefined,
+                    password: data.password,
                 };
                 await addStaff(newStaffId, submissionData);
                 toast({ title: 'Success', description: 'Staff member added successfully.' });
             }
             
-            onSubmitted();
+            router.refresh();
             setIsOpen(false);
         } catch (error) {
             console.error("Form submission error:", error);
@@ -141,6 +146,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
 
     const currentImageUrl = form.watch('imageUrl');
     const showLoginFields = !staffMember?.uid;
+    const isCreatingNewStaff = !staffMember;
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -245,7 +251,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                                             <FormItem>
                                                 <FormLabel>Login Email</FormLabel>
                                                 <FormControl>
-                                                    <Input type="email" placeholder="staff@example.com" {...field} />
+                                                    <Input type="email" placeholder="staff@example.com" {...field} required={isCreatingNewStaff} />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -261,7 +267,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                                                     <Input 
                                                         type="password"
                                                         placeholder="Min. 6 characters"
-                                                        required={!!form.watch('email')}
+                                                        required={isCreatingNewStaff}
                                                         {...field}
                                                     />
                                                 </FormControl>

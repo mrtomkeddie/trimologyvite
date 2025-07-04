@@ -1,6 +1,6 @@
-
 'use client';
 import * as React from 'react';
+import { useRouter } from 'next/navigation';
 import type { Staff, Location } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -28,15 +28,12 @@ type StaffListProps = {
 };
 
 export function StaffList({ initialStaff, locations }: StaffListProps) {
+    const router = useRouter();
     const [staff, setStaff] = React.useState(initialStaff);
     const [isFormOpen, setIsFormOpen] = React.useState(false);
     const [editingStaff, setEditingStaff] = React.useState<Staff | null>(null);
     const [isDeleting, setIsDeleting] = React.useState<string | null>(null);
     const { toast } = useToast();
-
-    const handleFormSubmit = () => {
-       // Revalidation from server action will handle UI updates
-    };
     
     const handleAddClick = () => {
         setEditingStaff(null);
@@ -53,6 +50,7 @@ export function StaffList({ initialStaff, locations }: StaffListProps) {
         try {
             await deleteStaff(id);
             toast({ title: 'Success', description: 'Staff member deleted successfully.' });
+            router.refresh();
         } catch (error) {
             toast({ title: 'Error', description: 'Failed to delete staff member.', variant: 'destructive' });
         } finally {
@@ -81,7 +79,6 @@ export function StaffList({ initialStaff, locations }: StaffListProps) {
                 setIsOpen={setIsFormOpen}
                 staffMember={editingStaff}
                 locations={locations}
-                onSubmitted={handleFormSubmit}
             />
 
             <div className="rounded-lg border bg-card">
