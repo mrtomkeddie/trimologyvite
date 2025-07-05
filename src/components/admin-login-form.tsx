@@ -35,29 +35,41 @@ export function AdminLoginForm() {
     setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // The onAuthStateChanged listener in AdminPage will handle displaying the dashboard.
-      // No need to set isLoading to false here as the component will unmount.
+      // On success, the onAuthStateChanged listener in the layout will handle the redirect.
+      // We don't need to set isLoading to false, as the component will unmount/change.
     } catch (error) {
-        if (error instanceof Error && (error as any).code === 'auth/user-not-found') {
-            // For a seamless demo, if the user doesn't exist, create them.
+        const errorCode = (error as any).code;
+
+        if (errorCode === 'auth/user-not-found' || errorCode === 'auth/invalid-credential') {
+            // If user not found, try creating them. This is for demo purposes.
+            // Firebase now uses 'auth/invalid-credential' for both user-not-found and wrong-password,
+            // so we try to create an account if login fails for this reason.
             try {
                 await createUserWithEmailAndPassword(auth, email, password);
-                // The onAuthStateChanged listener will now handle the successful login.
+                // On success, the onAuthStateChanged listener will handle redirect.
             } catch (createError) {
-                 toast({
-                    title: 'Login Failed',
-                    description: 'This email may be in use or the password is too weak.',
-                    variant: 'destructive',
-                });
+                const createErrorCode = (createError as any).code;
+                 if (createErrorCode === 'auth/email-already-in-use') {
+                    // This means the user exists, but the initial password attempt was wrong.
+                    toast({
+                        title: 'Login Failed',
+                        description: 'The password you entered is incorrect. Please try again or use "Forgot Password".',
+                        variant: 'destructive',
+                    });
+                } else {
+                     toast({
+                        title: 'Login Failed',
+                        description: 'This email may be in use or the password is too weak (min. 6 characters).',
+                        variant: 'destructive',
+                    });
+                }
                 setIsLoading(false);
             }
         } else {
-            let errorMessage = 'Invalid credentials. Please try again.';
-             if (error instanceof Error) {
-                const errorCode = (error as any).code;
-                if (errorCode === 'auth/invalid-api-key' || errorCode === 'auth/api-key-not-valid.-please-pass-a-valid-api-key.') {
-                    errorMessage = 'Your Firebase API Key is not configured correctly. Please check your environment variables.';
-                }
+            // Handle other specific errors
+             let errorMessage = 'An unexpected error occurred. Please try again.';
+             if (errorCode === 'auth/invalid-api-key' || errorCode === 'auth/api-key-not-valid.-please-pass-a-valid-api-key.') {
+                errorMessage = 'Your Firebase API Key is not configured correctly. Please check your environment variables.';
             }
             toast({
                 title: 'Login Failed',

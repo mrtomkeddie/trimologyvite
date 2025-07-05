@@ -35,21 +35,32 @@ export function StaffLoginForm() {
     setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // The onAuthStateChanged listener in StaffLoginPage will handle redirecting.
-      // No need to set isLoading to false here as the component will unmount.
+      // On success, the onAuthStateChanged listener in the login page will handle the redirect.
     } catch (error) {
-       if (error instanceof Error && (error as any).code === 'auth/user-not-found') {
-            // For a seamless demo, if the user doesn't exist, create them.
+        const errorCode = (error as any).code;
+        
+        if (errorCode === 'auth/user-not-found' || errorCode === 'auth/invalid-credential') {
+            // If user not found, try creating them. This is for demo purposes.
             try {
                 await createUserWithEmailAndPassword(auth, email, password);
-                // The onAuthStateChanged listener will now handle the successful login.
+                // On success, the onAuthStateChanged listener will handle redirect.
             } catch (createError) {
-                 toast({
-                    title: 'Login Failed',
-                    description: 'This email may be in use or the password is too weak.',
-                    variant: 'destructive',
-                });
-                 setIsLoading(false);
+                 const createErrorCode = (createError as any).code;
+                 if (createErrorCode === 'auth/email-already-in-use') {
+                    // This means the user exists, but the initial password attempt was wrong.
+                    toast({
+                        title: 'Login Failed',
+                        description: 'The password you entered is incorrect. Please try again or use "Forgot Password".',
+                        variant: 'destructive',
+                    });
+                } else {
+                     toast({
+                        title: 'Login Failed',
+                        description: 'This email may be in use or the password is too weak (min. 6 characters).',
+                        variant: 'destructive',
+                    });
+                }
+                setIsLoading(false);
             }
         } else {
             toast({
