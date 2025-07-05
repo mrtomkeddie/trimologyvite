@@ -1,7 +1,7 @@
 
 'use client';
 import * as React from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
 
@@ -12,16 +12,36 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { addStaffWithLogin, updateStaff } from '@/lib/firestore';
-import { StaffFormSchema, type Staff, type Location } from '@/lib/types';
-import { Loader2, User } from 'lucide-react';
+import { StaffFormSchema, type Staff, type Location, WorkingHoursSchema } from '@/lib/types';
+import { Loader2, User, Info } from 'lucide-react';
 import { uploadStaffImage } from '@/lib/storage';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Switch } from './ui/switch';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
-import { Info } from 'lucide-react';
-
+import { Label } from './ui/label';
 
 type StaffFormValues = z.infer<typeof StaffFormSchema>;
+
+const defaultWorkingHours = WorkingHoursSchema.parse({
+    monday: { start: '09:00', end: '17:00' },
+    tuesday: { start: '09:00', end: '17:00' },
+    wednesday: { start: '09:00', end: '17:00' },
+    thursday: { start: '09:00', end: '17:00' },
+    friday: { start: '09:00', end: '17:00' },
+    saturday: 'off',
+    sunday: 'off',
+});
+
+const daysOfWeek = [
+    { id: 'monday', label: 'Monday' },
+    { id: 'tuesday', label: 'Tuesday' },
+    { id: 'wednesday', label: 'Wednesday' },
+    { id: 'thursday', label: 'Thursday' },
+    { id: 'friday', label: 'Friday' },
+    { id: 'saturday', label: 'Saturday' },
+    { id: 'sunday', label: 'Sunday' },
+] as const;
+
 
 type StaffFormProps = {
     isOpen: boolean;
@@ -30,6 +50,87 @@ type StaffFormProps = {
     locations: Location[];
     onSubmitted: () => void;
 };
+
+function WorkingHoursFormPart({ control, form }: { control: any, form: any }) {
+    const timeOptions = React.useMemo(() => {
+        const options = [];
+        for (let h = 0; h < 24; h++) {
+            for (let m = 0; m < 60; m += 30) {
+                const hour = h.toString().padStart(2, '0');
+                const minute = m.toString().padStart(2, '0');
+                options.push(`${hour}:${minute}`);
+            }
+        }
+        return options;
+    }, []);
+    
+    const workingHoursValues = useWatch({
+        control,
+        name: "workingHours",
+    });
+
+    return (
+        <div className="space-y-4 rounded-md border p-4">
+            <h4 className="font-medium text-base">Working Hours</h4>
+            <p className="text-sm text-muted-foreground">Set the weekly availability for this staff member. If a day is off, clients cannot book them.</p>
+            <div className="space-y-4">
+                {daysOfWeek.map((day) => {
+                    const fieldName = `workingHours.${day.id}`;
+                    const isDayOff = workingHoursValues?.[day.id] === 'off';
+
+                    return (
+                        <div key={day.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-lg border bg-background/50 p-3 shadow-sm">
+                            <div className="space-y-0.5 mb-2 sm:mb-0">
+                                <Label className="text-base font-semibold">{day.label}</Label>
+                                <div className="flex items-center space-x-2 pt-1">
+                                    <Switch
+                                        id={`switch-${day.id}`}
+                                        checked={!isDayOff}
+                                        onCheckedChange={(checked) => {
+                                            form.setValue(fieldName, checked ? { start: '09:00', end: '17:00' } : 'off');
+                                        }}
+                                    />
+                                    <Label htmlFor={`switch-${day.id}`}>{isDayOff ? 'Off' : 'Working'}</Label>
+                                </div>
+                            </div>
+                            {!isDayOff && (
+                                <div className="flex items-center gap-2">
+                                    <FormField
+                                        control={control}
+                                        name={`${fieldName}.start`}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                    <FormControl><SelectTrigger className="w-28"><SelectValue /></SelectTrigger></FormControl>
+                                                    <SelectContent>{timeOptions.map(t => <SelectItem key={`start-${t}`} value={t}>{t}</SelectItem>)}</SelectContent>
+                                                </Select>
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <span className="text-muted-foreground">-</span>
+                                     <FormField
+                                        control={control}
+                                        name={`${fieldName}.end`}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                    <FormControl><SelectTrigger className="w-28"><SelectValue /></SelectTrigger></FormControl>
+                                                    <SelectContent>{timeOptions.map(t => <SelectItem key={`end-${t}`} value={t}>{t}</SelectItem>)}</SelectContent>
+                                                </Select>
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+                            )}
+                             <FormMessage>{form.formState.errors.workingHours?.[day.id]?.end?.message}</FormMessage>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
 
 export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitted }: StaffFormProps) {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -47,6 +148,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
             imageUrl: '',
             imageFile: undefined,
             isBookable: true,
+            workingHours: defaultWorkingHours,
         }
     });
 
@@ -63,6 +165,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                     imageUrl: staffMember.imageUrl || '',
                     imageFile: undefined,
                     isBookable: staffMember.isBookable !== false, // default to true if undefined
+                    workingHours: staffMember.workingHours || defaultWorkingHours,
                 });
             } else {
                 form.reset({
@@ -75,6 +178,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                     imageUrl: '',
                     imageFile: undefined,
                     isBookable: true,
+                    workingHours: defaultWorkingHours,
                 });
             }
         }
@@ -105,6 +209,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                     locationName: location.name,
                     imageUrl: finalImageUrl,
                     isBookable: data.isBookable,
+                    workingHours: data.workingHours,
                 };
                 
                 await updateStaff(staffMember.id, submissionData);
@@ -125,6 +230,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                     password: data.password,
                     imageUrl: imageUrl,
                     isBookable: data.isBookable,
+                    workingHours: data.workingHours,
                  });
                  toast({ title: 'Success', description: 'Staff member added successfully.'});
             }
@@ -149,16 +255,16 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogContent className="sm:max-w-md flex flex-col max-h-[90vh]">
-                <DialogHeader>
+            <DialogContent className="sm:max-w-lg flex flex-col max-h-[90vh]">
+                 <DialogHeader className="px-6 pt-6">
                     <DialogTitle>{isCreating ? 'Add New Staff Member' : 'Edit Staff Member'}</DialogTitle>
                     <DialogDescription>
                         {isCreating ? 'Create a profile and login for a new staff member.' : 'Update the details of this staff member.'}
                     </DialogDescription>
                 </DialogHeader>
-                <div className="flex-grow overflow-y-auto pr-6 pl-2">
+                 <div className="flex-grow overflow-y-auto px-6">
                     <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pl-4">
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                             <FormField
                                 control={form.control}
                                 name="name"
@@ -259,6 +365,8 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                                 )}
                             />
                             
+                            <WorkingHoursFormPart control={form.control} form={form} />
+
                            <div className='space-y-4 rounded-md border border-input p-4 bg-muted/50'>
                                 <h4 className="text-sm font-medium">{isCreating ? 'Create Staff Login' : 'Staff Login Details'}</h4>
                                 {isCreating && (
@@ -305,7 +413,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                                 )}
                            </div>
 
-                            <div className="flex justify-end pt-4 pb-4">
+                             <div className="flex justify-end pt-4 pb-4">
                                  <Button type="submit" disabled={isSubmitting}>
                                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     {isCreating ? 'Add Staff Member' : 'Save Changes'}

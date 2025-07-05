@@ -70,6 +70,7 @@ export function AdminBookingForm({ adminUser, locations, services, staff }: Admi
 
   const locationId = form.watch('locationId');
   const serviceId = form.watch('serviceId');
+  const staffId = form.watch('staffId');
   const selectedDate = form.watch('date');
 
   const selectedLocation = React.useMemo(() => {
@@ -105,20 +106,20 @@ export function AdminBookingForm({ adminUser, locations, services, staff }: Admi
   React.useEffect(() => {
     setSuggestedTimes([]);
     form.resetField('time', { defaultValue: undefined });
-  }, [serviceId, selectedDate, form]);
+  }, [serviceId, selectedDate, staffId, form]);
 
   const handleSuggestTimes = async () => {
-    if (!selectedService || !selectedDate) return;
+    if (!selectedService || !selectedDate || !locationId || !staffId) return;
     setIsLoadingTimes(true);
     setSuggestedTimes([]);
     try {
-      const result = await getSuggestedTimes(selectedService.duration, format(selectedDate, 'yyyy-MM-dd'));
+      const result = await getSuggestedTimes(selectedService.duration, format(selectedDate, 'yyyy-MM-dd'), staffId, locationId);
       if (result.success && result.times) {
         setSuggestedTimes(result.times);
         if(result.times.length === 0) {
             toast({
                 title: "No Slots Available",
-                description: "No available time slots for the selected date. Please try another day.",
+                description: "No available time slots for the selected date/staff. Please try another day or staff member.",
                 variant: 'destructive',
             });
         }

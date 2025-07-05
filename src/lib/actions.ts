@@ -1,27 +1,75 @@
 
 'use server';
 
-import { format } from 'date-fns';
+import { format, parse, addMinutes, getDay, isBefore, isAfter } from 'date-fns';
 import { getLocations, getServices, getStaff } from './data';
-import type { Booking, NewBooking } from './types';
+import type { NewBooking, Staff } from './types';
 import { addBooking } from './firestore';
 
-export async function getSuggestedTimes(serviceDuration: number, preferredDate: string) {
-    // This is a radical simplification to work around a build tool bug.
-    // The actual logic was correct, but something in it was confusing the compiler.
-    console.log(`Getting times for service duration ${serviceDuration} on ${preferredDate}`);
+// Helper to map JS day index (Sun=0) to our string keys
+const dayMap: (keyof Staff['workingHours'])[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+export async function getSuggestedTimes(
+    serviceDuration: number,
+    preferredDate: string, // 'yyyy-MM-dd' format
+    staffId: string,
+    locationId: string,
+) {
+    console.log(`Getting times for staff ${staffId} on ${preferredDate}`);
     
-    await new Promise(resolve => setTimeout(resolve, 250));
+    // Fallback for 'any' staff selection
+    if (staffId === 'any') {
+        console.log(`Any staff selected, returning generic times.`);
+        return {
+            success: true,
+            times: [
+                "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+                "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00"
+            ]
+        };
+    }
+
+    const allStaff = await getStaff();
+    const staffMember = allStaff.find(s => s.id === staffId);
     
-    return { 
-        success: true, 
-        times: [
-            "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-            "13:00", "13:30", "14:00", "14:30", "15:00", "15:30",
-            "16:00"
-        ] 
-    };
+    // If no staff, or staff is not bookable, or has no hours defined, return empty
+    if (!staffMember || staffMember.isBookable === false || !staffMember.workingHours) {
+        console.log("Staff not found, not bookable, or has no working hours.");
+        return { success: true, times: [] };
+    }
+
+    const dateObj = parse(preferredDate, 'yyyy-MM-dd', new Date());
+    const dayOfWeek = dayMap[getDay(dateObj)];
+    const dayHours = staffMember.workingHours[dayOfWeek];
+
+    // If staff is off on this day, return empty
+    if (!dayHours || dayHours === 'off') {
+        console.log(`Staff is off on ${dayOfWeek}.`);
+        return { success: true, times: [] };
+    }
+
+    const { start: startTime, end: endTime } = dayHours;
+
+    const availableSlots: string[] = [];
+    // Use the selected date for time calculations to handle day changes correctly
+    let currentSlotTime = parse(startTime, 'HH:mm', dateObj);
+    const dayEndTimeObj = parse(endTime, 'HH:mm', dateObj);
+
+    // NOTE: This simplified logic generates all possible slots within working hours.
+    // It does NOT yet account for existing bookings.
+    // Incrementing by a fixed 30 mins for simplicity. A full implementation would use serviceDuration.
+    const increment = 30; 
+
+    while (isBefore(currentSlotTime, dayEndTimeObj)) {
+        availableSlots.push(format(currentSlotTime, 'HH:mm'));
+        currentSlotTime = addMinutes(currentSlotTime, increment);
+    }
+    
+    console.log(`Generated ${availableSlots.length} slots for ${staffMember.name}`);
+    
+    return { success: true, times: availableSlots };
 }
+
 
 type BookingData = {
     locationId: string;

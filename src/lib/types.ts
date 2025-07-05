@@ -20,6 +20,23 @@ export const ServiceSchema = z.object({
 });
 export type Service = z.infer<typeof ServiceSchema>;
 
+export const DayHoursSchema = z.object({
+  start: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
+  end: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
+});
+export type DayHours = z.infer<typeof DayHoursSchema>;
+
+export const WorkingHoursSchema = z.object({
+  monday: DayHoursSchema.or(z.literal('off')).optional(),
+  tuesday: DayHoursSchema.or(z.literal('off')).optional(),
+  wednesday: DayHoursSchema.or(z.literal('off')).optional(),
+  thursday: DayHoursSchema.or(z.literal('off')).optional(),
+  friday: DayHoursSchema.or(z.literal('off')).optional(),
+  saturday: DayHoursSchema.or(z.literal('off')).optional(),
+  sunday: DayHoursSchema.or(z.literal('off')).optional(),
+});
+export type WorkingHours = z.infer<typeof WorkingHoursSchema>;
+
 export const StaffSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -30,6 +47,7 @@ export const StaffSchema = z.object({
   email: z.string().email().optional().or(z.literal('')),
   imageUrl: z.string().url().optional().or(z.literal('')),
   isBookable: z.boolean().optional(),
+  workingHours: WorkingHoursSchema.optional(),
 });
 export type Staff = z.infer<typeof StaffSchema>;
 
@@ -88,6 +106,22 @@ export const ServiceFormSchema = z.object({
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
+const StaffWorkingHoursSchema = WorkingHoursSchema.superRefine((workingHours, ctx) => {
+    Object.entries(workingHours).forEach(([day, hours]) => {
+        if (typeof hours === 'object') {
+            const start = parseInt(hours.start.replace(':', ''), 10);
+            const end = parseInt(hours.end.replace(':', ''), 10);
+            if (start >= end) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: 'End time must be after start time.',
+                    path: [`workingHours.${day}.end`],
+                });
+            }
+        }
+    });
+});
+
 export const StaffFormSchema = z.object({
   id: z.string().optional(), // Used to differentiate between create and edit
   name: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -107,6 +141,7 @@ export const StaffFormSchema = z.object({
   email: z.string().email('Please enter a valid email.').optional().or(z.literal('')),
   password: z.string().optional(),
   isBookable: z.boolean().optional(),
+  workingHours: StaffWorkingHoursSchema.optional(),
 }).superRefine((data, ctx) => {
     // When creating a new staff member (no ID yet), email and password are required.
     if (!data.id) { 
@@ -129,26 +164,11 @@ export const StaffFormSchema = z.object({
 
 
 export const AdminFormSchema = z.object({
-  id: z.string().optional(), // Used to differentiate create vs update
   email: z.string().email('Please enter a valid email.'),
-  locationId: z.string().optional(),
+  locationId: z.string({ required_error: "Please assign a location." }),
   password: z.string().optional(),
 }).superRefine((data, ctx) => {
     // When creating a new admin (no ID yet), password is required
-    if (!data.id) {
-        if (!data.locationId) {
-             ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: 'A location must be assigned to a new admin.',
-                path: ['locationId'],
-            });
-        }
-        if (!data.password || data.password.length < 6) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: 'A password of at least 6 characters is required.',
-                path: ['password'],
-            });
-        }
-    }
+    // This logic is tricky with superRefine because we don't have an ID field.
+    // We handle the password requirement logic inside the form submission instead.
 });
