@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { addAdmin, updateAdmin } from '@/lib/firestore';
+import { addAdminWithLogin, updateAdmin } from '@/lib/firestore';
 import { AdminFormSchema, type AdminUser, type Location } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -111,7 +111,7 @@ export function AdminForm({ isOpen, setIsOpen, admin, locations, onSubmitted, cu
                     locationName: location.name,
                 };
 
-                await addAdmin(submissionData);
+                await addAdminWithLogin(submissionData);
                 toast({ title: 'Success', description: 'Branch Admin added successfully.' });
             }
             onSubmitted();
