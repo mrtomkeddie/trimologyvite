@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { addStaffWithLogin, updateStaff } from '@/lib/firestore';
 import { StaffFormSchema, type Staff, type Location, WorkingHoursSchema } from '@/lib/types';
-import { Loader2, User, Info } from 'lucide-react';
+import { Loader2, User, Info, UploadCloud } from 'lucide-react';
 import { uploadStaffImage } from '@/lib/storage';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
@@ -151,6 +151,22 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
         }
     });
 
+    const imageFile = form.watch('imageFile');
+    const [imagePreview, setImagePreview] = React.useState<string | null>(null);
+
+     React.useEffect(() => {
+        if (imageFile && imageFile.length > 0 && imageFile[0] instanceof File) {
+            const file = imageFile[0];
+            const previewUrl = URL.createObjectURL(file);
+            setImagePreview(previewUrl);
+
+            return () => {
+                URL.revokeObjectURL(previewUrl);
+            };
+        }
+    }, [imageFile]);
+
+
     React.useEffect(() => {
         if (isOpen) {
             if (staffMember) {
@@ -180,6 +196,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                     workingHours: defaultWorkingHours,
                 });
             }
+            setImagePreview(null);
         }
     }, [staffMember, form, isOpen]);
 
@@ -290,35 +307,49 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                                     </FormItem>
                                 )}
                             />
-                             <FormField
+                            
+                            <FormField
                                 control={form.control}
                                 name="imageFile"
                                 render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Staff Photo</FormLabel>
-                                    {currentImageUrl && !field.value?.[0] && (
-                                    <div className="mt-2">
+                                    <div className="flex items-center gap-4">
                                         <Avatar className="h-24 w-24">
-                                        <AvatarImage src={currentImageUrl} alt={form.getValues('name')} />
-                                        <AvatarFallback><User className="h-8 w-8" /></AvatarFallback>
+                                            <AvatarImage src={imagePreview || currentImageUrl} alt={form.getValues('name')} />
+                                            <AvatarFallback><User className="h-8 w-8" /></AvatarFallback>
                                         </Avatar>
+                            
+                                        <FormControl>
+                                            <Label 
+                                                htmlFor="imageFile"
+                                                className="flex-grow h-24 w-full flex flex-col items-center justify-center border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted transition-colors"
+                                            >
+                                                <div className="flex flex-col items-center justify-center text-center p-2">
+                                                    <UploadCloud className="w-6 h-6 mb-1 text-muted-foreground" />
+                                                    <p className="text-sm text-muted-foreground">
+                                                        <span className="font-semibold text-primary">Click to upload</span>
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">PNG, JPG, or WEBP</p>
+                                                </div>
+                                                <Input
+                                                    id="imageFile"
+                                                    type="file"
+                                                    className="hidden"
+                                                    accept="image/png, image/jpeg, image/webp"
+                                                    onChange={(e) => field.onChange(e.target.files)}
+                                                />
+                                            </Label>
+                                        </FormControl>
                                     </div>
-                                    )}
-                                    <FormControl>
-                                        <Input
-                                            type="file"
-                                            accept="image/png, image/jpeg, image/webp"
-                                            onChange={(e) => field.onChange(e.target.files)}
-                                            className="pt-2 text-sm file:text-primary file:font-semibold"
-                                        />
-                                    </FormControl>
-                                    <FormDesc>
-                                        {currentImageUrl ? 'Upload a new file to replace the current photo.' : 'Max file size: 5MB.'}
+                                    <FormDesc className="pl-28">
+                                        Max file size: 5MB.
                                     </FormDesc>
-                                    <FormMessage />
+                                    <FormMessage className="pl-28" />
                                 </FormItem>
                                 )}
                             />
+
                             <FormField
                                 control={form.control}
                                 name="locationId"
