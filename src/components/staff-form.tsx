@@ -284,7 +284,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                      <ScrollArea className="h-full">
                          <div className="px-6 py-6">
                             <Form {...form}>
-                                <form id="staff-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                                     <FormField
                                         control={form.control}
                                         name="name"
@@ -446,18 +446,17 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                                             </FormDesc>
                                         )}
                                 </div>
+                                <DialogFooter className="px-0 py-4 flex-shrink-0">
+                                     <Button type="submit" disabled={isSubmitting}>
+                                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        {isCreating ? 'Add Staff Member' : 'Save Changes'}
+                                    </Button>
+                                </DialogFooter>
                                 </form>
                             </Form>
                         </div>
                     </ScrollArea>
                 </div>
-                
-                 <DialogFooter className="px-6 py-4 flex-shrink-0 border-t">
-                     <Button type="submit" form="staff-form" disabled={isSubmitting}>
-                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {isCreating ? 'Add Staff Member' : 'Save Changes'}
-                    </Button>
-                </DialogFooter>
             </DialogContent>
         </Dialog>
     );
