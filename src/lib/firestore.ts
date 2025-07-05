@@ -51,7 +51,7 @@ const dummyBookings: Booking[] = [
 ];
 
 const dummyAdmins: AdminUser[] = [
-    { uid: 'owner-uid', email: 'owner@trimology.com', locationId: 'downtown-1', locationName: 'Downtown Barbers' },
+    { uid: 'owner-uid', email: 'owner@trimology.com' },
     { uid: 'super-admin-uid', email: 'tkeddie@hotmail.com' },
     { uid: 'branch-admin-uid', email: 'manager@trimology.com', locationId: 'downtown-1', locationName: 'Downtown Barbers' },
 ];
@@ -192,29 +192,6 @@ export async function getLocationsFromFirestore(locationId?: string): Promise<Lo
     const q = query(locationsCollection, orderBy('name'));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Location));
-}
-
-export async function addLocation(data: { name: string; address: string; phone?: string; email?: string; }) {
-    if (USE_DUMMY_DATA) { console.log('DUMMY: addLocation', data); revalidatePath('/admin/locations'); revalidatePath('/'); return; }
-    await addDoc(locationsCollection, data);
-    revalidatePath('/admin/locations');
-    revalidatePath('/');
-}
-
-export async function updateLocation(id: string, data: { name: string; address: string; phone?: string; email?: string; }) {
-    if (USE_DUMMY_DATA) { console.log('DUMMY: updateLocation', id, data); revalidatePath('/admin/locations'); revalidatePath('/'); return; }
-    const locationDoc = doc(db, 'locations', id);
-    await updateDoc(locationDoc, data);
-    revalidatePath('/admin/locations');
-    revalidatePath('/');
-}
-
-export async function deleteLocation(id: string) {
-    if (USE_DUMMY_DATA) { console.log('DUMMY: deleteLocation', id); revalidatePath('/admin/locations'); revalidatePath('/'); return; }
-    const locationDoc = doc(db, 'locations', id);
-    await deleteDoc(locationDoc);
-    revalidatePath('/admin/locations');
-    revalidatePath('/');
 }
 
 // Services
