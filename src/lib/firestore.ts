@@ -5,7 +5,7 @@ import { db } from './firebase';
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, orderBy, query, Timestamp, where, getDoc, setDoc, limit } from 'firebase/firestore';
 import type { Location, Service, Staff, Booking, NewBooking, AdminUser } from './types';
 import { revalidatePath } from 'next/cache';
-import { addDays, startOfDay, endOfDay } from 'date-fns';
+import { addDays, startOfDay, endOfDay, subDays } from 'date-fns';
 
 // --- DUMMY DATA SWITCH ---
 // Change this to 'false' to use your live Firestore database.
@@ -16,14 +16,19 @@ const USE_DUMMY_DATA = true;
 const dummyLocations: Location[] = [
     { id: 'downtown-1', name: 'Downtown Barbers', address: '123 Main St, Barberville', phone: '555-0101', email: 'contact@downtown.com' },
     { id: 'uptown-2', name: 'Uptown Cuts', address: '456 High St, Styletown', phone: '555-0102', email: 'hello@uptown.com' },
+    { id: 'soho-3', name: 'Soho Salon', address: '10 Fashion Ave, London', phone: '555-0103', email: 'contact@sohosalon.com' },
 ];
 
 const dummyServices: Service[] = [
     { id: 'svc-1', name: 'Classic Haircut', duration: 30, price: 25, locationId: 'downtown-1', locationName: 'Downtown Barbers' },
     { id: 'svc-2', name: 'Beard Trim', duration: 15, price: 15, locationId: 'downtown-1', locationName: 'Downtown Barbers' },
     { id: 'svc-3', name: 'Hot Towel Shave', duration: 45, price: 40, locationId: 'downtown-1', locationName: 'Downtown Barbers' },
+    { id: 'svc-6', name: 'Modern Fade', duration: 45, price: 35, locationId: 'downtown-1', locationName: 'Downtown Barbers' },
     { id: 'svc-4', name: 'Kids Cut', duration: 30, price: 20, locationId: 'uptown-2', locationName: 'Uptown Cuts' },
     { id: 'svc-5', name: 'Color & Cut', duration: 120, price: 90, locationId: 'uptown-2', locationName: 'Uptown Cuts' },
+    { id: 'svc-7', name: 'Luxury Manicure', duration: 60, price: 50, locationId: 'uptown-2', locationName: 'Uptown Cuts' },
+    { id: 'svc-8', name: 'Creative Color', duration: 180, price: 150, locationId: 'soho-3', locationName: 'Soho Salon' },
+    { id: 'svc-9', name: 'Signature Cut', duration: 60, price: 75, locationId: 'soho-3', locationName: 'Soho Salon' },
 ];
 
 const defaultWorkingHours = {
@@ -39,15 +44,25 @@ const defaultWorkingHours = {
 const dummyStaff: Staff[] = [
     { id: 'staff-1', name: 'Alex Smith', specialization: 'Master Barber', locationId: 'downtown-1', locationName: 'Downtown Barbers', uid: 'staff-uid-alex', email: 'alex@trimology.com', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: defaultWorkingHours },
     { id: 'staff-2', name: 'Maria Garcia', specialization: 'Senior Stylist', locationId: 'downtown-1', locationName: 'Downtown Barbers', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: { ...defaultWorkingHours, wednesday: 'off' } },
+    { id: 'staff-6', name: 'Laura Palmer', specialization: 'Stylist', locationId: 'downtown-1', locationName: 'Downtown Barbers', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: defaultWorkingHours },
     { id: 'staff-3', name: 'John Doe', specialization: '', locationId: 'uptown-2', locationName: 'Uptown Cuts', imageUrl: 'https://placehold.co/100x100.png', isBookable: false },
     { id: 'staff-4', name: 'Jane Roe', specialization: 'Color Specialist', locationId: 'uptown-2', locationName: 'Uptown Cuts', uid: 'staff-uid-jane', email: 'jane@trimology.com', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: { ...defaultWorkingHours, saturday: 'off', sunday: 'off' } },
+    { id: 'staff-5', name: 'Casey Jones', specialization: 'Hair Artist', locationId: 'soho-3', locationName: 'Soho Salon', uid: 'staff-uid-casey', email: 'casey@trimology.com', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: defaultWorkingHours },
 ];
 
 const dummyBookings: Booking[] = [
-    { id: 'book-1', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: addDays(new Date(), 1).toISOString(), clientName: 'Bob Johnson', clientPhone: '555-1111', clientEmail: 'bob@example.com' },
-    { id: 'book-2', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-2', serviceName: 'Beard Trim', servicePrice: 15, serviceDuration: 15, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: addDays(new Date(), 2).toISOString(), clientName: 'Charlie Brown', clientPhone: '555-2222' },
-    { id: 'book-3', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-5', serviceName: 'Color & Cut', servicePrice: 90, serviceDuration: 120, staffId: 'staff-4', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: addDays(new Date(), 3).toISOString(), clientName: 'Diana Prince', clientPhone: '555-3333', clientEmail: 'diana@example.com' },
-    { id: 'book-4', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-2', staffName: 'Maria Garcia', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: addDays(new Date(), 1).toISOString(), clientName: 'Peter Parker', clientPhone: '555-4444' },
+    { id: 'book-1', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: addDays(startOfDay(new Date()), 1).setHours(10, 0).toString(), clientName: 'Bob Johnson', clientPhone: '555-1111', clientEmail: 'bob@example.com' },
+    { id: 'book-2', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-2', serviceName: 'Beard Trim', servicePrice: 15, serviceDuration: 15, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: addDays(startOfDay(new Date()), 2).setHours(14, 30).toString(), clientName: 'Charlie Brown', clientPhone: '555-2222' },
+    { id: 'book-3', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-5', serviceName: 'Color & Cut', servicePrice: 90, serviceDuration: 120, staffId: 'staff-4', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: addDays(startOfDay(new Date()), 3).setHours(11, 0).toString(), clientName: 'Diana Prince', clientPhone: '555-3333', clientEmail: 'diana@example.com' },
+    { id: 'book-4', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-2', staffName: 'Maria Garcia', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: addDays(startOfDay(new Date()), 1).setHours(11, 30).toString(), clientName: 'Peter Parker', clientPhone: '555-4444' },
+    { id: 'book-5', locationId: 'soho-3', locationName: 'Soho Salon', serviceId: 'svc-9', serviceName: 'Signature Cut', servicePrice: 75, serviceDuration: 60, staffId: 'staff-5', staffName: 'Casey Jones', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: addDays(startOfDay(new Date()), 4).setHours(15, 0).toString(), clientName: 'Bruce Wayne', clientPhone: '555-5555' },
+    { id: 'book-6', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-4', serviceName: 'Kids Cut', servicePrice: 20, serviceDuration: 30, staffId: 'staff-4', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: addDays(startOfDay(new Date()), 1).setHours(9, 0).toString(), clientName: 'Anakin Skywalker', clientPhone: '555-6666' },
+    { id: 'book-7', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-3', serviceName: 'Hot Towel Shave', servicePrice: 40, serviceDuration: 45, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: addDays(startOfDay(new Date()), 5).setHours(16, 0).toString(), clientName: 'Tony Stark', clientPhone: '555-7777', clientEmail: 'tony@example.com' },
+    { id: 'book-8', locationId: 'soho-3', locationName: 'Soho Salon', serviceId: 'svc-8', serviceName: 'Creative Color', servicePrice: 150, serviceDuration: 180, staffId: 'staff-5', staffName: 'Casey Jones', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: addDays(startOfDay(new Date()), 6).setHours(10, 0).toString(), clientName: 'Natasha Romanoff', clientPhone: '555-8888' },
+    { id: 'book-9', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-6', staffName: 'Laura Palmer', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: addDays(startOfDay(new Date()), 2).setHours(13, 0).toString(), clientName: 'Clark Kent', clientPhone: '555-9999' },
+    { id: 'book-10', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-7', serviceName: 'Luxury Manicure', servicePrice: 50, serviceDuration: 60, staffId: 'staff-4', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: subDays(startOfDay(new Date()), 1).setHours(12, 0).toString(), clientName: 'Lois Lane', clientPhone: '555-1010' },
+    { id: 'book-11', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-6', serviceName: 'Modern Fade', servicePrice: 35, serviceDuration: 45, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: subDays(startOfDay(new Date()), 2).setHours(11, 0).toString(), clientName: 'Jimmy Olsen', clientPhone: '555-1212' },
+    { id: 'book-12', locationId: 'soho-3', locationName: 'Soho Salon', serviceId: 'svc-9', serviceName: 'Signature Cut', servicePrice: 75, serviceDuration: 60, staffId: 'staff-5', staffName: 'Casey Jones', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: startOfDay(new Date()).setHours(14, 0).toString(), clientName: 'Perry White', clientPhone: '555-1313' },
 ];
 
 const dummyAdmins: AdminUser[] = [
@@ -193,6 +208,47 @@ export async function getLocationsFromFirestore(locationId?: string): Promise<Lo
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Location));
 }
+
+export async function addLocation(data: Omit<Location, 'id'>) {
+    if (USE_DUMMY_DATA) {
+        console.log('DUMMY: addLocation', data);
+        const newLocation = { ...data, id: `loc-${Date.now()}`};
+        dummyLocations.push(newLocation);
+        revalidatePath('/admin/locations');
+        return;
+    }
+    await addDoc(locationsCollection, data);
+    revalidatePath('/admin/locations');
+}
+
+export async function updateLocation(id: string, data: Partial<Omit<Location, 'id'>>) {
+    if (USE_DUMMY_DATA) {
+        console.log('DUMMY: updateLocation', id, data);
+        const locIndex = dummyLocations.findIndex(l => l.id === id);
+        if (locIndex > -1) {
+            dummyLocations[locIndex] = { ...dummyLocations[locIndex], ...data };
+        }
+        revalidatePath('/admin/locations');
+        return;
+    }
+    const locDoc = doc(db, 'locations', id);
+    await updateDoc(locDoc, data);
+    revalidatePath('/admin/locations');
+}
+
+export async function deleteLocation(id: string) {
+    if (USE_DUMMY_DATA) {
+        console.log('DUMMY: deleteLocation', id);
+        const index = dummyLocations.findIndex(l => l.id === id);
+        if (index > -1) dummyLocations.splice(index, 1);
+        revalidatePath('/admin/locations');
+        return;
+    }
+    const locDoc = doc(db, 'locations', id);
+    await deleteDoc(locDoc);
+    revalidatePath('/admin/locations');
+}
+
 
 // Services
 export async function getServicesFromFirestore(locationId?: string): Promise<Service[]> {
@@ -434,3 +490,5 @@ export async function deleteBooking(id: string) {
     revalidatePath('/admin/bookings');
     revalidatePath('/my-schedule');
 }
+
+    
