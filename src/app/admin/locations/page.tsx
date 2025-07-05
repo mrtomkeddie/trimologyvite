@@ -18,7 +18,7 @@ export default function ManageLocationsPage() {
      React.useEffect(() => {
         if (!adminUser) return; // Wait for admin context
 
-        // This page is for super-admins only
+        // This page is for super-admins only. Access is denied if a locationId is present.
         if (adminUser.locationId) {
             setError("You are not authorized to manage locations.");
             setLoading(false);

@@ -21,6 +21,7 @@ export function AdminDashboard({ user, adminUser }: AdminDashboardProps) {
     await signOut(auth);
   };
   
+  // Super admins are identified by NOT having a locationId.
   const isSuperAdmin = !adminUser.locationId;
 
   return (
