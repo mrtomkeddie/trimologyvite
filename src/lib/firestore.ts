@@ -77,9 +77,16 @@ export async function getAdminUser(uid: string): Promise<AdminUser | null> {
     } as AdminUser;
 }
 
-export async function getAdminsFromFirestore(): Promise<AdminUser[]> {
-    if (USE_DUMMY_DATA) return Promise.resolve(dummyAdmins);
-    const q = query(adminsCollection, orderBy('email'));
+export async function getAdminsFromFirestore(locationId?: string): Promise<AdminUser[]> {
+    if (USE_DUMMY_DATA) {
+        if (locationId) return Promise.resolve(dummyAdmins.filter(a => a.locationId === locationId));
+        return Promise.resolve(dummyAdmins);
+    }
+    
+    const q = locationId 
+        ? query(adminsCollection, where('locationId', '==', locationId), orderBy('email')) 
+        : query(adminsCollection, orderBy('email'));
+        
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({
         uid: doc.id,

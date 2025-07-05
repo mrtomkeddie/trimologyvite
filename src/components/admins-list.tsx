@@ -25,9 +25,10 @@ import { auth } from '@/lib/firebase';
 type AdminsListProps = {
     initialAdmins: AdminUser[];
     locations: Location[];
+    currentUser: AdminUser;
 };
 
-export function AdminsList({ initialAdmins, locations }: AdminsListProps) {
+export function AdminsList({ initialAdmins, locations, currentUser }: AdminsListProps) {
     const [admins, setAdmins] = React.useState(initialAdmins);
     const [isFormOpen, setIsFormOpen] = React.useState(false);
     const [editingAdmin, setEditingAdmin] = React.useState<AdminUser | null>(null);
@@ -84,6 +85,7 @@ export function AdminsList({ initialAdmins, locations }: AdminsListProps) {
                 admin={editingAdmin}
                 locations={locations}
                 onSubmitted={handleFormSubmit}
+                currentUser={currentUser}
             />
 
             <div className="rounded-lg border bg-card">

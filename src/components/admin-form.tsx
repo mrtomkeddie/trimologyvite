@@ -25,11 +25,13 @@ type AdminFormProps = {
     admin: AdminUser | null;
     locations: Location[];
     onSubmitted: () => void;
+    currentUser: AdminUser;
 };
 
-export function AdminForm({ isOpen, setIsOpen, admin, locations, onSubmitted }: AdminFormProps) {
+export function AdminForm({ isOpen, setIsOpen, admin, locations, onSubmitted, currentUser }: AdminFormProps) {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const { toast } = useToast();
+    const isCurrentUserBranchAdmin = !!currentUser.locationId;
     
     const form = useForm<AdminFormValues>({
         resolver: zodResolver(AdminFormSchema),
@@ -52,11 +54,11 @@ export function AdminForm({ isOpen, setIsOpen, admin, locations, onSubmitted }: 
                 form.reset({
                     uid: '',
                     email: '',
-                    locationId: '',
+                    locationId: isCurrentUserBranchAdmin ? currentUser.locationId : '',
                 });
             }
         }
-    }, [admin, form, isOpen]);
+    }, [admin, form, isOpen, isCurrentUserBranchAdmin, currentUser.locationId]);
 
     const onSubmit = async (data: AdminFormValues) => {
         setIsSubmitting(true);
@@ -156,18 +158,25 @@ export function AdminForm({ isOpen, setIsOpen, admin, locations, onSubmitted }: 
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Role / Assigned Location</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
+                                    <Select 
+                                        onValueChange={field.onChange} 
+                                        value={field.value} 
+                                        defaultValue={field.value}
+                                        disabled={isCurrentUserBranchAdmin}
+                                    >
                                     <FormControl>
                                         <SelectTrigger>
                                         <SelectValue placeholder="Select a role..." />
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        <SelectItem value="super">Super Admin (All locations)</SelectItem>
+                                        {!isCurrentUserBranchAdmin && (
+                                            <SelectItem value="super">Super Admin (All locations)</SelectItem>
+                                        )}
                                         {locations.map((location) => (
-                                        <SelectItem key={location.id} value={location.id}>
-                                            Branch Admin: {location.name}
-                                        </SelectItem>
+                                            <SelectItem key={location.id} value={location.id}>
+                                                Branch Admin: {location.name}
+                                            </SelectItem>
                                         ))}
                                     </SelectContent>
                                     </Select>
@@ -187,4 +196,3 @@ export function AdminForm({ isOpen, setIsOpen, admin, locations, onSubmitted }: 
         </Dialog>
     );
 }
-

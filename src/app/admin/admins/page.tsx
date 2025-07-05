@@ -11,29 +11,32 @@ import { auth } from '@/lib/firebase';
 import type { AdminUser, Location } from '@/lib/types';
 
 export default function ManageAdminsPage() {
+    const [adminUser, setAdminUser] = React.useState<AdminUser | null>(null);
     const [admins, setAdmins] = React.useState<AdminUser[]>([]);
     const [locations, setLocations] = React.useState<Location[]>([]);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
-    const [isAuthorized, setIsAuthorized] = React.useState(false);
 
-     React.useEffect(() => {
+    React.useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
                 try {
-                    const adminUser = await getAdminUser(user.uid);
-                    // This page is for super-admins only (no locationId)
-                    if (adminUser && !adminUser.locationId) {
-                        setIsAuthorized(true);
-                        const [fetchedAdmins, fetchedLocations] = await Promise.all([
-                            getAdminsFromFirestore(),
-                            getLocationsFromFirestore()
-                        ]);
-                        setAdmins(fetchedAdmins);
-                        setLocations(fetchedLocations);
-                    } else {
-                        setError("You are not authorized to manage admins.");
+                    const fetchedAdminUser = await getAdminUser(user.uid);
+                    if (!fetchedAdminUser) {
+                        throw new Error("You are not authorized to manage admins.");
                     }
+                    setAdminUser(fetchedAdminUser);
+
+                    // A super admin's locationId is undefined, so they will fetch all admins.
+                    // A branch admin's locationId is defined, so they fetch only their own admins.
+                    const userLocationId = fetchedAdminUser.locationId;
+                    
+                    const [fetchedAdmins, fetchedLocations] = await Promise.all([
+                        getAdminsFromFirestore(userLocationId),
+                        getLocationsFromFirestore() // Always get all locations for the form dropdown
+                    ]);
+                    setAdmins(fetchedAdmins);
+                    setLocations(fetchedLocations);
                 } catch (e) {
                     setError(e instanceof Error ? e.message : "Failed to fetch data.");
                     console.error(e);
@@ -53,7 +56,7 @@ export default function ManageAdminsPage() {
         return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
     }
 
-    if (!isAuthorized) {
+    if (error || !adminUser) {
          return (
             <div className="flex min-h-screen items-center justify-center bg-background text-center p-4">
                 <div>
@@ -82,7 +85,7 @@ export default function ManageAdminsPage() {
                 <h1 className="font-headline text-xl font-semibold">Manage Admins</h1>
             </header>
             <main className="flex-1 p-4 sm:p-6 lg:p-8">
-                <AdminsList initialAdmins={admins} locations={locations} />
+                <AdminsList initialAdmins={admins} locations={locations} currentUser={adminUser} />
             </main>
         </div>
     );
