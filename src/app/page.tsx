@@ -5,9 +5,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 export default async function Home() {
-  const locations = await getLocations();
-  const services = await getServices();
-  const staff = await getStaff();
+  // Fetch data in parallel to improve initial page load time.
+  const [locations, services, staff] = await Promise.all([
+    getLocations(),
+    getServices(),
+    getStaff(),
+  ]);
 
   return (
     <div className="flex min-h-dvh w-full flex-col items-center justify-center bg-background p-4 sm:p-6 lg:p-8">
@@ -28,7 +31,6 @@ export default async function Home() {
         </div>
         <footer className="w-full text-center mt-12 text-muted-foreground text-sm">
           <p>&copy; {new Date().getFullYear()} Trimology. All rights reserved.</p>
-          <p>123 Style Street, Barberville, 12345</p>
            <div className="mt-4 flex justify-center gap-4">
             <Link href="/admin" className="hover:text-primary transition-colors">
               Admin Login
