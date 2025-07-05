@@ -272,17 +272,17 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogContent className="sm:max-w-2xl flex flex-col max-h-[90vh] p-0">
-                 <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0 border-b">
-                    <DialogTitle>{isCreating ? 'Add New Staff Member' : 'Edit Staff Member'}</DialogTitle>
-                    <DialogDescription>
-                        {isCreating ? 'Create a profile and login for a new staff member.' : 'Update the details of this staff member.'}
-                    </DialogDescription>
-                </DialogHeader>
-                
+            <DialogContent className="sm:max-w-2xl p-0">
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col min-h-0">
-                         <ScrollArea className="flex-1">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col max-h-[90dvh]">
+                         <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0 border-b">
+                            <DialogTitle>{isCreating ? 'Add New Staff Member' : 'Edit Staff Member'}</DialogTitle>
+                            <DialogDescription>
+                                {isCreating ? 'Create a profile and login for a new staff member.' : 'Update the details of this staff member.'}
+                            </DialogDescription>
+                        </DialogHeader>
+                        
+                        <ScrollArea className="flex-1 min-h-0">
                              <div className="px-6 py-6 space-y-6">
                                 <FormField
                                     control={form.control}
