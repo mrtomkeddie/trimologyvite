@@ -6,7 +6,7 @@ import { AdminsList } from "@/components/admins-list";
 import { ArrowLeft, Loader2, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import type { AdminUser, Location } from '@/lib/types';
 
@@ -16,47 +16,65 @@ export default function ManageAdminsPage() {
     const [locations, setLocations] = React.useState<Location[]>([]);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
+    const [isAuthorized, setIsAuthorized] = React.useState(false);
+
+    const fetchData = React.useCallback(async (user: User) => {
+        setLoading(true);
+        setError(null);
+        try {
+            // Fetch all data in parallel for performance
+            const [fetchedAdminUser, allAdmins, allLocations] = await Promise.all([
+                getAdminUser(user.uid),
+                getAdminsFromFirestore(), // Fetch all admins
+                getLocationsFromFirestore()  // Fetch all locations
+            ]);
+
+            if (!fetchedAdminUser) {
+                throw new Error("You are not authorized to manage admins.");
+            }
+            
+            setIsAuthorized(true);
+            setAdminUser(fetchedAdminUser);
+            setLocations(allLocations); // Set all locations for the form dropdown
+
+            // A super admin sees all admins. A branch admin sees only their own.
+            const filteredAdmins = fetchedAdminUser.locationId
+                ? allAdmins.filter(a => a.locationId === fetchedAdminUser.locationId)
+                : allAdmins;
+            setAdmins(filteredAdmins);
+
+        } catch (e) {
+            setError(e instanceof Error ? e.message : "Failed to fetch data.");
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
     React.useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
-                try {
-                    const fetchedAdminUser = await getAdminUser(user.uid);
-                    if (!fetchedAdminUser) {
-                        throw new Error("You are not authorized to manage admins.");
-                    }
-                    setAdminUser(fetchedAdminUser);
-
-                    // A super admin's locationId is undefined, so they will fetch all admins.
-                    // A branch admin's locationId is defined, so they fetch only their own admins.
-                    const userLocationId = fetchedAdminUser.locationId;
-                    
-                    const [fetchedAdmins, fetchedLocations] = await Promise.all([
-                        getAdminsFromFirestore(userLocationId),
-                        getLocationsFromFirestore() // Always get all locations for the form dropdown
-                    ]);
-                    setAdmins(fetchedAdmins);
-                    setLocations(fetchedLocations);
-                } catch (e) {
-                    setError(e instanceof Error ? e.message : "Failed to fetch data.");
-                    console.error(e);
-                } finally {
-                    setLoading(false);
-                }
+                await fetchData(user);
             } else {
                 setLoading(false);
                 setError("Please log in to continue.");
             }
         });
-
         return () => unsubscribe();
-    }, []);
+    }, [fetchData]);
+
+    const handleDataChange = () => {
+        if (auth.currentUser) {
+            fetchData(auth.currentUser);
+        }
+    };
+
 
     if (loading) {
         return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
     }
 
-    if (error || !adminUser) {
+    if (error || !isAuthorized) {
          return (
             <div className="flex min-h-screen items-center justify-center bg-background text-center p-4">
                 <div>
@@ -85,7 +103,7 @@ export default function ManageAdminsPage() {
                 <h1 className="font-headline text-xl font-semibold">Manage Admins</h1>
             </header>
             <main className="flex-1 p-4 sm:p-6 lg:p-8">
-                <AdminsList initialAdmins={admins} locations={locations} currentUser={adminUser} />
+                <AdminsList initialAdmins={admins} locations={locations} currentUser={adminUser} onDataChange={handleDataChange} />
             </main>
         </div>
     );

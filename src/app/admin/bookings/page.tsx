@@ -6,7 +6,7 @@ import { BookingsList } from "@/components/bookings-list";
 import { ArrowLeft, Loader2, PlusCircle, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { onAuthStateChanged, type User } from 'firebase/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import type { AdminUser, Booking, Location } from '@/lib/types';
 
@@ -21,19 +21,26 @@ export default function ManageBookingsPage() {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
                 try {
-                    const fetchedAdminUser = await getAdminUser(user.uid);
+                    // Fetch all data in parallel to improve performance
+                    const [fetchedAdminUser, allBookings, allLocations] = await Promise.all([
+                        getAdminUser(user.uid),
+                        getBookingsFromFirestore(),
+                        getLocationsFromFirestore(),
+                    ]);
+
                     if (!fetchedAdminUser) {
                         throw new Error("You are not authorized to view this page.");
                     }
                     setAdminUser(fetchedAdminUser);
 
                     const userLocationId = fetchedAdminUser.locationId;
-                    const [fetchedBookings, fetchedLocations] = await Promise.all([
-                        getBookingsFromFirestore(userLocationId),
-                        getLocationsFromFirestore(userLocationId)
-                    ]);
-                    setBookings(fetchedBookings);
-                    setLocations(fetchedLocations);
+
+                    // Filter client-side based on admin role
+                    const filteredBookings = userLocationId ? allBookings.filter(b => b.locationId === userLocationId) : allBookings;
+                    const filteredLocations = userLocationId ? allLocations.filter(l => l.id === userLocationId) : allLocations;
+
+                    setBookings(filteredBookings);
+                    setLocations(filteredLocations);
                 } catch (e) {
                     setError(e instanceof Error ? e.message : "Failed to fetch booking data.");
                     console.error(e);

@@ -36,25 +36,25 @@ export function AdminForm({ isOpen, setIsOpen, admin, locations, onSubmitted, cu
     const form = useForm<AdminFormValues>({
         resolver: zodResolver(AdminFormSchema),
         defaultValues: {
-            uid: '',
             email: '',
-            locationId: '', 
+            locationId: '',
+            password: '',
         }
     });
 
     React.useEffect(() => {
         if (isOpen) {
-            if (admin) {
+            if (admin) { // Editing an existing admin
                 form.reset({
-                    uid: admin.uid,
                     email: admin.email,
                     locationId: admin.locationId || 'super',
+                    password: '', // Password is not shown or edited
                 });
-            } else {
+            } else { // Adding a new admin
                 form.reset({
-                    uid: '',
                     email: '',
                     locationId: isCurrentUserBranchAdmin ? currentUser.locationId : '',
+                    password: '',
                 });
             }
         }
@@ -72,27 +72,40 @@ export function AdminForm({ isOpen, setIsOpen, admin, locations, onSubmitted, cu
              return;
         }
 
-        const submissionData: {email: string; locationId?: string; locationName?: string} = {
-            email: data.email,
-            locationId: isSuper ? undefined : data.locationId,
-            locationName: isSuper ? undefined : location?.name,
-        };
-        // Firestore rules might not allow undefined, so remove keys if they are undefined
-        if(submissionData.locationId === undefined) delete submissionData.locationId;
-        if(submissionData.locationName === undefined) delete submissionData.locationName;
-
         try {
-            if (admin) {
+            if (admin) { // --- UPDATE PATH ---
+                 const submissionData: {email: string; locationId?: string; locationName?: string} = {
+                    email: data.email,
+                    locationId: isSuper ? undefined : data.locationId,
+                    locationName: isSuper ? undefined : location?.name,
+                };
+                if(submissionData.locationId === undefined) delete submissionData.locationId;
+                if(submissionData.locationName === undefined) delete submissionData.locationName;
+
                 await updateAdmin(admin.uid, submissionData);
                 toast({ title: 'Success', description: 'Admin updated successfully.' });
-            } else {
-                await addAdmin(data.uid, submissionData);
+            } else { // --- CREATE PATH ---
+                if (!data.password || data.password.length < 6) {
+                    toast({ title: 'Error', description: 'A password of at least 6 characters is required for new admins.', variant: 'destructive' });
+                    setIsSubmitting(false);
+                    return;
+                }
+                 const submissionData = {
+                    email: data.email,
+                    password: data.password,
+                    locationId: isSuper ? undefined : data.locationId,
+                    locationName: isSuper ? undefined : location?.name,
+                };
+                if(submissionData.locationId === undefined) delete submissionData.locationId;
+                if(submissionData.locationName === undefined) delete submissionData.locationName;
+
+                await addAdmin(submissionData);
                 toast({ title: 'Success', description: 'Admin added successfully.' });
             }
             onSubmitted();
             setIsOpen(false);
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Something went wrong. This UID might already be in use.';
+            const errorMessage = error instanceof Error ? error.message : 'Something went wrong. This email might already be in use.';
             toast({
                 title: 'Error',
                 description: errorMessage,
@@ -102,6 +115,8 @@ export function AdminForm({ isOpen, setIsOpen, admin, locations, onSubmitted, cu
             setIsSubmitting(false);
         }
     };
+
+    const isCreatingNewAdmin = !admin;
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -113,12 +128,12 @@ export function AdminForm({ isOpen, setIsOpen, admin, locations, onSubmitted, cu
                     </DialogDescription>
                 </DialogHeader>
 
-                {!admin && (
+                {isCreatingNewAdmin && (
                     <Alert>
                         <Info className="h-4 w-4" />
-                        <AlertTitle>Important!</AlertTitle>
+                        <AlertTitle>Creating a New Admin</AlertTitle>
                         <AlertDescription>
-                            You must first create the user in Firebase Authentication to get their UID. This form only grants permissions.
+                            Entering an email and a temporary password below will create a new login for this user and grant them admin permissions.
                         </AlertDescription>
                     </Alert>
                 )}
@@ -126,19 +141,6 @@ export function AdminForm({ isOpen, setIsOpen, admin, locations, onSubmitted, cu
 
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
-                        <FormField
-                            control={form.control}
-                            name="uid"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>User ID (UID)</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="UID from Firebase Authentication" {...field} disabled={!!admin} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
                          <FormField
                             control={form.control}
                             name="email"
@@ -146,7 +148,7 @@ export function AdminForm({ isOpen, setIsOpen, admin, locations, onSubmitted, cu
                                 <FormItem>
                                     <FormLabel>Email</FormLabel>
                                     <FormControl>
-                                        <Input type="email" placeholder="user@example.com" {...field} />
+                                        <Input type="email" placeholder="user@example.com" {...field} disabled={!isCreatingNewAdmin} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -184,6 +186,28 @@ export function AdminForm({ isOpen, setIsOpen, admin, locations, onSubmitted, cu
                                 </FormItem>
                             )}
                         />
+
+                        {isCreatingNewAdmin && (
+                             <FormField
+                                control={form.control}
+                                name="password"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Temporary Password</FormLabel>
+                                        <FormControl>
+                                            <Input 
+                                                type="password"
+                                                placeholder="Min. 6 characters"
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        )}
+
+
                         <div className="flex justify-end pt-4">
                              <Button type="submit" disabled={isSubmitting}>
                                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

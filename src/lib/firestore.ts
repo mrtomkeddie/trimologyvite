@@ -5,7 +5,7 @@ import { db } from './firebase';
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, orderBy, query, Timestamp, where, getDoc, setDoc, limit } from 'firebase/firestore';
 import type { Location, Service, Staff, Booking, NewBooking, AdminUser } from './types';
 import { revalidatePath } from 'next/cache';
-import { addDays, format } from 'date-fns';
+import { addDays } from 'date-fns';
 
 // --- DUMMY DATA SWITCH ---
 // Change this to 'false' to use your live Firestore database.
@@ -52,6 +52,23 @@ const staffCollection = collection(db, 'staff');
 const bookingsCollection = collection(db, 'bookings');
 const adminsCollection = collection(db, 'admins');
 
+
+async function createFirebaseUser(email: string, password_do_not_log: string): Promise<string> {
+    // THIS IS A MOCK FUNCTION.
+    // In a real app, this would be a Firebase Cloud Function using the Admin SDK.
+    // It would be called securely from the server to create a user.
+    console.log(`
+    =====================================================================
+    [SERVER-SIDE MOCK] Creating Firebase Auth user for: ${email}
+    This would normally happen in a secure backend environment.
+    A real UID would be returned from firebase.auth().createUser()
+    =====================================================================
+    `);
+    // Return a predictable mock UID for dummy mode
+    return `mock-uid-for-${email.split('@')[0]}`;
+}
+
+
 // Admins
 export async function getAdminUser(uid: string): Promise<AdminUser | null> {
     if (USE_DUMMY_DATA) {
@@ -94,11 +111,27 @@ export async function getAdminsFromFirestore(locationId?: string): Promise<Admin
     } as AdminUser));
 }
 
-export async function addAdmin(uid: string, data: { email: string; locationId?: string; locationName?: string; }) {
-    if (USE_DUMMY_DATA) { console.log('DUMMY: addAdmin', uid, data); revalidatePath('/admin/admins'); return; }
-    const adminDoc = doc(db, 'admins', uid);
-    await setDoc(adminDoc, data); // Use setDoc because the ID is known
-    revalidatePath('/admin/admins');
+export async function addAdmin(data: { email: string; password?: string, locationId?: string; locationName?: string; }) {
+    if (!data.email || !data.password) {
+        throw new Error("Email and password are required to create a new admin.");
+    }
+    if (USE_DUMMY_DATA) {
+        console.log('DUMMY: addAdmin with login creation', data);
+        const newUid = await createFirebaseUser(data.email, data.password);
+        const newAdmin = { uid: newUid, email: data.email, locationId: data.locationId, locationName: data.locationName };
+        dummyAdmins.push(newAdmin);
+        delete (data as any).password;
+        revalidatePath('/admin/admins');
+        return;
+    }
+    
+    // REAL IMPLEMENTATION NOTE: This needs a secure backend function.
+    throw new Error("Admin user creation must be handled by a secure backend function.");
+    // const newUid = await callCreateUserCloudFunction(data.email, data.password);
+    // const adminDoc = doc(db, 'admins', newUid);
+    // const { password, ...adminData } = data;
+    // await setDoc(adminDoc, adminData);
+    // revalidatePath('/admin/admins');
 }
 
 export async function updateAdmin(uid: string, data: { email: string; locationId?: string; locationName?: string; }) {
@@ -206,22 +239,6 @@ export async function getStaffFromFirestore(locationId?: string): Promise<Staff[
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Staff));
 }
 
-async function createFirebaseUser(email: string, password_do_not_log: string): Promise<string> {
-    // THIS IS A MOCK FUNCTION.
-    // In a real app, this would be a Firebase Cloud Function using the Admin SDK.
-    // It would be called securely from the server to create a user.
-    console.log(`
-    =====================================================================
-    [SERVER-SIDE MOCK] Creating Firebase Auth user for: ${email}
-    This would normally happen in a secure backend environment.
-    A real UID would be returned from firebase.auth().createUser()
-    =====================================================================
-    `);
-    // Return a predictable mock UID for dummy mode
-    return `mock-uid-for-${email.split('@')[0]}`;
-}
-
-
 export async function addStaff(id: string, data: Partial<Omit<Staff, 'id' | 'uid'>> & { email?: string, password?: string }) {
     if (data.password && data.email) {
         if (USE_DUMMY_DATA) {
@@ -293,7 +310,14 @@ export async function updateStaff(id: string, data: Partial<Omit<Staff, 'id' | '
 }
 
 export async function deleteStaff(id: string) {
-    if (USE_DUMMY_DATA) { console.log('DUMMY: deleteStaff', id); revalidatePath('/admin/staff'); revalidatePath('/'); return; }
+    if (USE_DUMMY_DATA) { 
+        console.log('DUMMY: deleteStaff', id);
+        const index = dummyStaff.findIndex(s => s.id === id);
+        if (index > -1) dummyStaff.splice(index, 1);
+        revalidatePath('/admin/staff'); 
+        revalidatePath('/'); 
+        return; 
+    }
     // In a real app, you would also want a Cloud Function to delete the corresponding Firebase Auth user.
     const staffDoc = doc(db, 'staff', id);
     await deleteDoc(staffDoc);
@@ -303,8 +327,8 @@ export async function deleteStaff(id: string) {
 
 export async function getStaffByUid(uid: string): Promise<Staff | null> {
     if (USE_DUMMY_DATA) {
-        // Any authenticated user can see Alex's schedule in dummy mode for easy testing.
-        return dummyStaff.find(s => s.id === 'staff-1') || null;
+        // Find staff member by UID in dummy data
+        return dummyStaff.find(s => s.uid === uid) || null;
     }
     const q = query(staffCollection, where('uid', '==', uid), limit(1));
     const snapshot = await getDocs(q);

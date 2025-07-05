@@ -21,19 +21,26 @@ export default function ManageServicesPage() {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
                 try {
-                    const fetchedAdminUser = await getAdminUser(user.uid);
+                    // Fetch all data in parallel to improve performance
+                     const [fetchedAdminUser, allServices, allLocations] = await Promise.all([
+                        getAdminUser(user.uid),
+                        getServicesFromFirestore(),
+                        getLocationsFromFirestore(),
+                    ]);
+
                      if (!fetchedAdminUser) {
                         throw new Error("You are not authorized to view this page.");
                     }
                     setAdminUser(fetchedAdminUser);
 
                     const userLocationId = fetchedAdminUser.locationId;
-                    const [fetchedServices, fetchedLocations] = await Promise.all([
-                        getServicesFromFirestore(userLocationId),
-                        getLocationsFromFirestore(userLocationId)
-                    ]);
-                    setServices(fetchedServices);
-                    setLocations(fetchedLocations);
+
+                    // Filter client-side based on admin role
+                    const filteredServices = userLocationId ? allServices.filter(s => s.locationId === userLocationId) : allServices;
+                    const filteredLocations = userLocationId ? allLocations.filter(l => l.id === userLocationId) : allLocations;
+
+                    setServices(filteredServices);
+                    setLocations(filteredLocations);
                 } catch (e) {
                     setError(e instanceof Error ? e.message : "Failed to fetch service data.");
                     console.error(e);

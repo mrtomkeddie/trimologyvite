@@ -1,3 +1,4 @@
+
 'use client';
 import * as React from 'react';
 import { getStaffFromFirestore, getLocationsFromFirestore, getAdminUser } from "@/lib/firestore";
@@ -21,19 +22,26 @@ export default function ManageStaffPage() {
         setLoading(true);
         setError(null);
         try {
-            const fetchedAdminUser = await getAdminUser(user.uid);
+            // Fetch all data in parallel to improve performance
+            const [fetchedAdminUser, allStaff, allLocations] = await Promise.all([
+                getAdminUser(user.uid),
+                getStaffFromFirestore(),
+                getLocationsFromFirestore(),
+            ]);
+
             if (!fetchedAdminUser) {
                 throw new Error("You are not authorized to view this page.");
             }
             setAdminUser(fetchedAdminUser);
 
             const userLocationId = fetchedAdminUser.locationId;
-            const [fetchedStaff, fetchedLocations] = await Promise.all([
-                getStaffFromFirestore(userLocationId),
-                getLocationsFromFirestore(userLocationId)
-            ]);
-            setStaff(fetchedStaff);
-            setLocations(fetchedLocations);
+
+            // Filter client-side based on admin role
+            const filteredStaff = userLocationId ? allStaff.filter(s => s.locationId === userLocationId) : allStaff;
+            const filteredLocations = userLocationId ? allLocations.filter(l => l.id === userLocationId) : allLocations;
+
+            setStaff(filteredStaff);
+            setLocations(filteredLocations);
         } catch (e) {
             setError(e instanceof Error ? e.message : "Failed to fetch staff data.");
             console.error(e);

@@ -25,11 +25,11 @@ import { auth } from '@/lib/firebase';
 type AdminsListProps = {
     initialAdmins: AdminUser[];
     locations: Location[];
-    currentUser: AdminUser;
+    currentUser: AdminUser | null;
+    onDataChange: () => void;
 };
 
-export function AdminsList({ initialAdmins, locations, currentUser }: AdminsListProps) {
-    const [admins, setAdmins] = React.useState(initialAdmins);
+export function AdminsList({ initialAdmins, locations, currentUser, onDataChange }: AdminsListProps) {
     const [isFormOpen, setIsFormOpen] = React.useState(false);
     const [editingAdmin, setEditingAdmin] = React.useState<AdminUser | null>(null);
     const [isDeleting, setIsDeleting] = React.useState<string | null>(null);
@@ -37,7 +37,7 @@ export function AdminsList({ initialAdmins, locations, currentUser }: AdminsList
     const currentUserId = auth.currentUser?.uid;
 
     const handleFormSubmit = () => {
-       // Let revalidation handle UI updates
+       onDataChange();
     };
     
     const handleAddClick = () => {
@@ -59,16 +59,15 @@ export function AdminsList({ initialAdmins, locations, currentUser }: AdminsList
         try {
             await deleteAdmin(id);
             toast({ title: 'Success', description: 'Admin permissions revoked successfully.' });
+            onDataChange();
         } catch (error) {
             toast({ title: 'Error', description: 'Failed to delete admin.', variant: 'destructive' });
         } finally {
             setIsDeleting(null);
         }
     };
-    
-    React.useEffect(() => {
-        setAdmins(initialAdmins);
-    }, [initialAdmins]);
+
+    if (!currentUser) return null;
 
     return (
         <div className="w-full max-w-6xl mx-auto">
@@ -99,8 +98,8 @@ export function AdminsList({ initialAdmins, locations, currentUser }: AdminsList
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {admins.length > 0 ? (
-                            admins.map(admin => (
+                        {initialAdmins.length > 0 ? (
+                            initialAdmins.map(admin => (
                                 <TableRow key={admin.uid}>
                                     <TableCell className="font-medium">{admin.email}</TableCell>
                                     <TableCell>

@@ -120,7 +120,7 @@ export const StaffFormSchema = z.object({
 
 
 export const AdminFormSchema = z.object({
-  uid: z.string().min(1, 'UID is required.'),
   email: z.string().email('Please enter a valid email.'),
   locationId: z.string().optional(), // 'super' for Super Admin, or a location ID
+  password: z.string().optional(),
 });
