@@ -9,6 +9,50 @@ import { addBooking, getBookingsForStaffOnDate } from './firestore';
 // Helper to map JS day index (Sun=0) to our string keys
 const dayMap: (keyof Staff['workingHours'])[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
+// Helper function to get available times for a single, specific staff member
+async function getIndividualStaffTimes(
+    serviceDuration: number,
+    preferredDate: string, // 'yyyy-MM-dd' format
+    staffMember: Staff
+): Promise<string[]> {
+    if (!staffMember.workingHours || staffMember.isBookable === false) return [];
+
+    const dateObj = parse(preferredDate, 'yyyy-MM-dd', new Date());
+    const dayOfWeek = dayMap[getDay(dateObj)];
+    const dayHours = staffMember.workingHours[dayOfWeek];
+
+    if (!dayHours || dayHours === 'off') {
+        return [];
+    }
+
+    const existingBookings = await getBookingsForStaffOnDate(staffMember.id, dateObj);
+    const { start: startTime, end: endTime } = dayHours;
+    const availableSlots: string[] = [];
+    
+    let currentSlotTime = parse(startTime, 'HH:mm', dateObj);
+    const dayEndTimeObj = parse(endTime, 'HH:mm', dateObj);
+
+    const increment = 15; 
+    
+    while (isBefore(addMinutes(currentSlotTime, serviceDuration), dayEndTimeObj)) {
+        const potentialSlotEnd = addMinutes(currentSlotTime, serviceDuration);
+
+        const isSlotAvailable = !existingBookings.some(booking => {
+            const bookingStart = new Date(booking.bookingTimestamp);
+            const bookingEnd = addMinutes(bookingStart, booking.serviceDuration);
+            return isBefore(currentSlotTime, bookingEnd) && isAfter(potentialSlotEnd, bookingStart);
+        });
+        
+        const isToday = format(new Date(), 'yyyy-MM-dd') === preferredDate;
+        if (isSlotAvailable && (!isToday || isAfter(currentSlotTime, new Date()))) {
+            availableSlots.push(format(currentSlotTime, 'HH:mm'));
+        }
+
+        currentSlotTime = addMinutes(currentSlotTime, increment);
+    }
+    return availableSlots;
+}
+
 export async function getSuggestedTimes(
     serviceDuration: number,
     preferredDate: string, // 'yyyy-MM-dd' format
@@ -17,70 +61,32 @@ export async function getSuggestedTimes(
 ) {
     console.log(`Getting times for staff ${staffId} on ${preferredDate} for a ${serviceDuration} min service.`);
     
-    // Fallback for 'any' staff selection
+    // --- New, smarter logic for 'any' staff ---
     if (staffId === 'any') {
-        console.log(`Any staff selected, returning generic times.`);
-        return {
-            success: true,
-            times: [
-                "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-                "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00"
-            ]
-        };
+        const allStaffAtLocation = (await getStaff()).filter(s => s.locationId === locationId);
+        const allAvailableSlots = new Set<string>();
+
+        // Check availability for every staff member and aggregate the results
+        for (const staffMember of allStaffAtLocation) {
+            const staffSlots = await getIndividualStaffTimes(serviceDuration, preferredDate, staffMember);
+            staffSlots.forEach(slot => allAvailableSlots.add(slot));
+        }
+
+        const sortedSlots = Array.from(allAvailableSlots).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+        console.log(`Found ${sortedSlots.length} total available slots for 'any' staff.`);
+        return { success: true, times: sortedSlots };
     }
 
+    // --- Logic for a specific staff member ---
     const allStaff = await getStaff();
     const staffMember = allStaff.find(s => s.id === staffId);
     
-    if (!staffMember || staffMember.isBookable === false || !staffMember.workingHours) {
-        console.log("Staff not found, not bookable, or has no working hours.");
+    if (!staffMember) {
+        console.log("Staff not found.");
         return { success: true, times: [] };
     }
 
-    const dateObj = parse(preferredDate, 'yyyy-MM-dd', new Date());
-    const dayOfWeek = dayMap[getDay(dateObj)];
-    const dayHours = staffMember.workingHours[dayOfWeek];
-
-    if (!dayHours || dayHours === 'off') {
-        console.log(`Staff is off on ${dayOfWeek}.`);
-        return { success: true, times: [] };
-    }
-
-    // 1. Fetch existing bookings for the day
-    const existingBookings = await getBookingsForStaffOnDate(staffId, dateObj);
-
-    const { start: startTime, end: endTime } = dayHours;
-    const availableSlots: string[] = [];
-    
-    // Use the selected date for time calculations to handle day changes correctly
-    let currentSlotTime = parse(startTime, 'HH:mm', dateObj);
-    const dayEndTimeObj = parse(endTime, 'HH:mm', dateObj);
-
-    // Set a reasonable increment for checking slots (e.g., 15 minutes)
-    const increment = 15; 
-    
-    // Loop until the end of a potential slot would be past the staff's end time
-    while (isBefore(addMinutes(currentSlotTime, serviceDuration), dayEndTimeObj)) {
-        const potentialSlotEnd = addMinutes(currentSlotTime, serviceDuration);
-
-        // Check for conflicts with existing bookings
-        const isSlotAvailable = !existingBookings.some(booking => {
-            const bookingStart = new Date(booking.bookingTimestamp);
-            const bookingEnd = addMinutes(bookingStart, booking.serviceDuration);
-            
-            // Overlap check: (StartA < EndB) and (EndA > StartB)
-            return isBefore(currentSlotTime, bookingEnd) && isAfter(potentialSlotEnd, bookingStart);
-        });
-        
-        // Also, ensure the slot doesn't start before now if the date is today
-        const isToday = format(new Date(), 'yyyy-MM-dd') === preferredDate;
-        if (isSlotAvailable && (!isToday || isAfter(currentSlotTime, new Date()))) {
-            availableSlots.push(format(currentSlotTime, 'HH:mm'));
-        }
-
-        currentSlotTime = addMinutes(currentSlotTime, increment);
-    }
-    
+    const availableSlots = await getIndividualStaffTimes(serviceDuration, preferredDate, staffMember);
     console.log(`Generated ${availableSlots.length} available slots for ${staffMember.name}`);
     
     return { success: true, times: availableSlots };
@@ -104,18 +110,59 @@ export async function createBooking(bookingData: BookingData) {
         throw new Error("Missing required booking information.");
     }
      
-    // Fetch details to enrich the booking document
     const allLocations = await getLocations();
     const allServices = await getServices();
     const allStaff = await getStaff();
 
     const location = allLocations.find(l => l.id === bookingData.locationId);
     const service = allServices.find(s => s.id === bookingData.serviceId);
-    const staffMember = allStaff.find(s => s.id === bookingData.staffId);
     
     if (!location || !service) {
         throw new Error("Invalid location or service selected.");
     }
+
+    let staffMember: Staff | undefined | null = allStaff.find(s => s.id === bookingData.staffId);
+    let assignedStaffId = bookingData.staffId;
+
+    if (bookingData.staffId === 'any') {
+        const bookingStart = new Date(bookingData.date);
+        const [hours, minutes] = bookingData.time.split(':').map(Number);
+        bookingStart.setHours(hours, minutes, 0, 0);
+        const bookingEnd = addMinutes(bookingStart, service.duration);
+        
+        const bookableStaffAtLocation = allStaff.filter(s => s.locationId === bookingData.locationId && s.isBookable !== false && s.workingHours);
+        
+        let foundStaff = null;
+        for (const potentialStaff of bookableStaffAtLocation) {
+            const dayOfWeek = dayMap[getDay(bookingStart)];
+            const dayHours = potentialStaff.workingHours?.[dayOfWeek];
+            if (!dayHours || dayHours === 'off') continue;
+
+            const dayStartTime = parse(dayHours.start, 'HH:mm', bookingStart);
+            const dayEndTime = parse(dayHours.end, 'HH:mm', bookingStart);
+            if (isBefore(bookingStart, dayStartTime) || isAfter(bookingEnd, dayEndTime)) continue;
+
+            const existingBookings = await getBookingsForStaffOnDate(potentialStaff.id, bookingStart);
+            const conflict = existingBookings.some(b => {
+                const existingStart = new Date(b.bookingTimestamp);
+                const existingEnd = addMinutes(existingStart, b.serviceDuration);
+                return isBefore(bookingStart, existingEnd) && isAfter(bookingEnd, existingStart);
+            });
+
+            if (!conflict) {
+                foundStaff = potentialStaff;
+                break;
+            }
+        }
+
+        if (foundStaff) {
+            staffMember = foundStaff;
+            assignedStaffId = foundStaff.id;
+        } else {
+            throw new Error("Sorry, that time slot was just taken. Please choose another slot.");
+        }
+    }
+
 
     const [hours, minutes] = bookingData.time.split(':').map(Number);
     const bookingTimestamp = new Date(bookingData.date);
@@ -128,7 +175,7 @@ export async function createBooking(bookingData: BookingData) {
         serviceName: service.name,
         servicePrice: service.price,
         serviceDuration: service.duration,
-        staffId: bookingData.staffId || 'any',
+        staffId: assignedStaffId,
         staffName: staffMember?.name || 'Any Available',
         staffImageUrl: staffMember?.imageUrl || '',
         bookingTimestamp: bookingTimestamp.toISOString(),
@@ -139,7 +186,6 @@ export async function createBooking(bookingData: BookingData) {
 
     await addBooking(newBooking);
 
-    // "Send" a confirmation email if an email address was provided
     if (bookingData.clientEmail) {
         try {
             const emailBody = `
@@ -167,7 +213,6 @@ We look forward to seeing you!
 
         } catch (error) {
             console.error("Failed to prepare confirmation email content:", error);
-            // We don't want to fail the whole booking if the email fails, so we'll just log the error.
         }
     }
 
