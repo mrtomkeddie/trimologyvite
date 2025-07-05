@@ -280,184 +280,184 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                     </DialogDescription>
                 </DialogHeader>
                 
-                <div className="flex-1 min-h-0">
-                     <ScrollArea className="h-full">
-                         <div className="px-6 py-6">
-                            <Form {...form}>
-                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                                    <FormField
-                                        control={form.control}
-                                        name="name"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Full Name</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="e.g., Alex Johnson" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="specialization"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Specialization</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="e.g., Master Barber" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    
-                                    <FormField
-                                        control={form.control}
-                                        name="imageFile"
-                                        render={({ field }) => (
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+                         <ScrollArea className="flex-1">
+                             <div className="px-6 py-6 space-y-6">
+                                <FormField
+                                    control={form.control}
+                                    name="name"
+                                    render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Staff Photo</FormLabel>
-                                            <div className="flex items-center gap-4">
-                                                <Avatar className="h-24 w-24">
-                                                    <AvatarImage src={imagePreview || currentImageUrl} alt={form.getValues('name')} />
-                                                    <AvatarFallback><User className="h-8 w-8" /></AvatarFallback>
-                                                </Avatar>
-                                    
-                                                <FormControl>
-                                                    <Label 
-                                                        htmlFor="imageFile"
-                                                        className="flex-grow h-24 w-full flex flex-col items-center justify-center border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted transition-colors"
-                                                    >
-                                                        <div className="flex flex-col items-center justify-center text-center p-2">
-                                                            <UploadCloud className="w-6 h-6 mb-1 text-muted-foreground" />
-                                                            <p className="text-sm text-muted-foreground">
-                                                                <span className="font-semibold text-primary">Click to upload</span>
-                                                            </p>
-                                                            <p className="text-xs text-muted-foreground">PNG, JPG, or WEBP</p>
-                                                        </div>
-                                                        <Input
-                                                            id="imageFile"
-                                                            type="file"
-                                                            className="hidden"
-                                                            accept="image/png, image/jpeg, image/webp"
-                                                            onChange={(e) => field.onChange(e.target.files)}
-                                                        />
-                                                    </Label>
-                                                </FormControl>
-                                            </div>
-                                            <FormDesc className="pl-28">
-                                                Max file size: 5MB.
-                                            </FormDesc>
-                                            <FormMessage className="pl-28" />
-                                        </FormItem>
-                                        )}
-                                    />
-
-                                    <FormField
-                                        control={form.control}
-                                        name="locationId"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Location</FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                <FormControl>
-                                                    <SelectTrigger>
-                                                    <SelectValue placeholder="Assign to a location..." />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    {locations.map((location) => (
-                                                    <SelectItem key={location.id} value={location.id}>
-                                                        {location.name}
-                                                    </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="isBookable"
-                                        render={({ field }) => (
-                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                            <div className="space-y-0.5">
-                                                <FormLabel>Available for Client Booking</FormLabel>
-                                                <FormDesc>
-                                                    If enabled, clients can book appointments with this staff member.
-                                                </FormDesc>
-                                            </div>
+                                            <FormLabel>Full Name</FormLabel>
                                             <FormControl>
-                                                <Switch
-                                                    checked={field.value}
-                                                    onCheckedChange={field.onChange}
-                                                />
+                                                <Input placeholder="e.g., Alex Johnson" {...field} />
                                             </FormControl>
+                                            <FormMessage />
                                         </FormItem>
-                                        )}
-                                    />
-                                    
-                                    <WorkingHoursFormPart control={form.control} form={form} />
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="specialization"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Specialization</FormLabel>
+                                            <FormControl>
+                                                <Input placeholder="e.g., Master Barber" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                
+                                <FormField
+                                    control={form.control}
+                                    name="imageFile"
+                                    render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Staff Photo</FormLabel>
+                                        <div className="flex items-center gap-4">
+                                            <Avatar className="h-24 w-24">
+                                                <AvatarImage src={imagePreview || currentImageUrl} alt={form.getValues('name')} />
+                                                <AvatarFallback><User className="h-8 w-8" /></AvatarFallback>
+                                            </Avatar>
+                                
+                                            <FormControl>
+                                                <Label 
+                                                    htmlFor="imageFile"
+                                                    className="flex-grow h-24 w-full flex flex-col items-center justify-center border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted transition-colors"
+                                                >
+                                                    <div className="flex flex-col items-center justify-center text-center p-2">
+                                                        <UploadCloud className="w-6 h-6 mb-1 text-muted-foreground" />
+                                                        <p className="text-sm text-muted-foreground">
+                                                            <span className="font-semibold text-primary">Click to upload</span>
+                                                        </p>
+                                                        <p className="text-xs text-muted-foreground">PNG, JPG, or WEBP</p>
+                                                    </div>
+                                                    <Input
+                                                        id="imageFile"
+                                                        type="file"
+                                                        className="hidden"
+                                                        accept="image/png, image/jpeg, image/webp"
+                                                        onChange={(e) => field.onChange(e.target.files)}
+                                                    />
+                                                </Label>
+                                            </FormControl>
+                                        </div>
+                                        <FormDesc className="pl-28">
+                                            Max file size: 5MB.
+                                        </FormDesc>
+                                        <FormMessage className="pl-28" />
+                                    </FormItem>
+                                    )}
+                                />
+
+                                <FormField
+                                    control={form.control}
+                                    name="locationId"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Location</FormLabel>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                <SelectValue placeholder="Assign to a location..." />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {locations.map((location) => (
+                                                <SelectItem key={location.id} value={location.id}>
+                                                    {location.name}
+                                                </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="isBookable"
+                                    render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                                        <div className="space-y-0.5">
+                                            <FormLabel>Available for Client Booking</FormLabel>
+                                            <FormDesc>
+                                                If enabled, clients can book appointments with this staff member.
+                                            </FormDesc>
+                                        </div>
+                                        <FormControl>
+                                            <Switch
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                            />
+                                        </FormControl>
+                                    </FormItem>
+                                    )}
+                                />
+                                
+                                <WorkingHoursFormPart control={form.control} form={form} />
 
                                 <div className='space-y-4 rounded-md border border-input p-4 bg-muted/50'>
-                                        <h4 className="text-sm font-medium">{isCreating ? 'Create Staff Login' : 'Staff Login Details'}</h4>
-                                        {isCreating && (
-                                            <Alert variant="default" className="bg-background">
-                                                <Info className="h-4 w-4" />
-                                                <AlertTitle>Action Required</AlertTitle>
-                                                <AlertDescription>
-                                                    You must provide an email and a temporary password to create a login for this new staff member.
-                                                </AlertDescription>
-                                            </Alert>
+                                    <h4 className="text-sm font-medium">{isCreating ? 'Create Staff Login' : 'Staff Login Details'}</h4>
+                                    {isCreating && (
+                                        <Alert variant="default" className="bg-background">
+                                            <Info className="h-4 w-4" />
+                                            <AlertTitle>Action Required</AlertTitle>
+                                            <AlertDescription>
+                                                You must provide an email and a temporary password to create a login for this new staff member.
+                                            </AlertDescription>
+                                        </Alert>
+                                    )}
+                                    <FormField
+                                        control={form.control}
+                                        name="email"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Login Email</FormLabel>
+                                                <FormControl>
+                                                    <Input type="email" placeholder="staff.member@example.com" {...field} disabled={!isCreating} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
                                         )}
+                                    />
+                                    {isCreating && (
                                         <FormField
                                             control={form.control}
-                                            name="email"
+                                            name="password"
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel>Login Email</FormLabel>
+                                                    <FormLabel>Temporary Password</FormLabel>
                                                     <FormControl>
-                                                        <Input type="email" placeholder="staff.member@example.com" {...field} disabled={!isCreating} />
+                                                        <Input type="password" placeholder="Min. 6 characters" {...field} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
                                             )}
                                         />
-                                        {isCreating && (
-                                            <FormField
-                                                control={form.control}
-                                                name="password"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Temporary Password</FormLabel>
-                                                        <FormControl>
-                                                            <Input type="password" placeholder="Min. 6 characters" {...field} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        )}
-                                        {!isCreating && (
-                                            <FormDesc className="text-xs">
-                                                To change a password, the staff member must use the "Forgot Password" link on the Staff Login page.
-                                            </FormDesc>
-                                        )}
+                                    )}
+                                    {!isCreating && (
+                                        <FormDesc className="text-xs">
+                                            To change a password, the staff member must use the "Forgot Password" link on the Staff Login page.
+                                        </FormDesc>
+                                    )}
                                 </div>
-                                <DialogFooter className="px-0 py-4 flex-shrink-0">
-                                     <Button type="submit" disabled={isSubmitting}>
-                                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        {isCreating ? 'Add Staff Member' : 'Save Changes'}
-                                    </Button>
-                                </DialogFooter>
-                                </form>
-                            </Form>
-                        </div>
-                    </ScrollArea>
-                </div>
+                            </div>
+                        </ScrollArea>
+
+                        <DialogFooter className="px-6 py-4 border-t flex-shrink-0">
+                                <Button type="submit" disabled={isSubmitting}>
+                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {isCreating ? 'Add Staff Member' : 'Save Changes'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
             </DialogContent>
         </Dialog>
     );
 }
+
