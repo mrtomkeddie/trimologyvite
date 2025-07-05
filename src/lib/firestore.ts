@@ -51,6 +51,7 @@ const dummyBookings: Booking[] = [
 ];
 
 const dummyAdmins: AdminUser[] = [
+    { uid: 'owner-uid', email: 'owner@trimology.com', locationId: 'downtown-1', locationName: 'Downtown Barbers' },
     { uid: 'super-admin-uid', email: 'tkeddie@hotmail.com' },
     { uid: 'branch-admin-uid', email: 'manager@trimology.com', locationId: 'downtown-1', locationName: 'Downtown Barbers' },
 ];
