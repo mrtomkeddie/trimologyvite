@@ -22,7 +22,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       setError(null);
       if (user) {
         try {
-          const fetchedAdminUser = await getAdminUser(user.uid);
+          const fetchedAdminUser = await getAdminUser(user.uid, user.email ?? undefined);
           if (fetchedAdminUser) {
             setAdminUser(fetchedAdminUser);
           } else {

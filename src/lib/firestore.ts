@@ -80,13 +80,18 @@ async function createFirebaseUser(email: string, password_do_not_log: string): P
 
 
 // Admins
-export async function getAdminUser(uid: string): Promise<AdminUser | null> {
+export async function getAdminUser(uid: string, email?: string): Promise<AdminUser | null> {
     if (USE_DUMMY_DATA) {
-        // In dummy mode, find the admin in our list.
-        const existingAdmin = dummyAdmins.find(a => a.uid === uid);
-        // If they don't exist in the list, they are not an admin.
-        return existingAdmin || null;
+        // In dummy mode, we can't trust the hardcoded UID. We find the admin by email.
+        const existingAdmin = dummyAdmins.find(a => a.email === email);
+        if (existingAdmin) {
+            // Important: Return the dummy data but with the REAL uid from the auth session.
+            // This makes the rest of the app work as expected.
+            return { ...existingAdmin, uid: uid };
+        }
+        return null;
     }
+
     const adminDocRef = doc(db, 'admins', uid);
     const adminDoc = await getDoc(adminDocRef);
 
