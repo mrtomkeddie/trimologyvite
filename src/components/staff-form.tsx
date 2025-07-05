@@ -11,12 +11,14 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription as FormDesc } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { updateStaff } from '@/lib/firestore';
+import { addStaffWithLogin, updateStaff } from '@/lib/firestore';
 import { StaffFormSchema, type Staff, type Location } from '@/lib/types';
 import { Loader2, User } from 'lucide-react';
 import { uploadStaffImage } from '@/lib/storage';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Switch } from './ui/switch';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { Info } from 'lucide-react';
 
 
 type StaffFormValues = z.infer<typeof StaffFormSchema>;
@@ -36,10 +38,12 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
     const form = useForm<StaffFormValues>({
         resolver: zodResolver(StaffFormSchema),
         defaultValues: {
+            id: undefined,
             name: '',
             specialization: '',
             locationId: '',
             email: '',
+            password: '',
             imageUrl: '',
             imageFile: undefined,
             isBookable: true,
@@ -50,20 +54,24 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
         if (isOpen) {
             if (staffMember) {
                 form.reset({
+                    id: staffMember.id,
                     name: staffMember.name,
                     specialization: staffMember.specialization,
                     locationId: staffMember.locationId,
                     email: staffMember.email || '',
+                    password: '', // Never show existing password
                     imageUrl: staffMember.imageUrl || '',
                     imageFile: undefined,
                     isBookable: staffMember.isBookable !== false, // default to true if undefined
                 });
             } else {
                 form.reset({
+                    id: undefined,
                     name: '',
                     specialization: '',
                     locationId: '',
                     email: '',
+                    password: '',
                     imageUrl: '',
                     imageFile: undefined,
                     isBookable: true,
@@ -95,7 +103,6 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                     specialization: data.specialization,
                     locationId: data.locationId,
                     locationName: location.name,
-                    email: data.email || undefined,
                     imageUrl: finalImageUrl,
                     isBookable: data.isBookable,
                 };
@@ -104,9 +111,22 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                 toast({ title: 'Success', description: 'Staff member updated successfully.' });
 
             } else { // --- CREATE PATH ---
-                 // This path is now handled by the server action called from the admin page
-                 // For safety, we can throw an error or do nothing.
-                 throw new Error("Creating new staff members should be handled on the admin page, not directly in the form.");
+                 let imageUrl = '';
+                 const tempId = `staff-${Date.now()}`;
+                 if (imageFile) {
+                    imageUrl = await uploadStaffImage(tempId, imageFile);
+                 }
+                
+                 await addStaffWithLogin({
+                    name: data.name,
+                    specialization: data.specialization,
+                    locationId: data.locationId,
+                    email: data.email,
+                    password: data.password,
+                    imageUrl: imageUrl,
+                    isBookable: data.isBookable,
+                 });
+                 toast({ title: 'Success', description: 'Staff member added successfully.'});
             }
             
             onSubmitted();
@@ -125,20 +145,20 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
     };
 
     const currentImageUrl = form.watch('imageUrl');
-    const showLoginFields = staffMember && !staffMember.uid;
+    const isCreating = !staffMember;
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogContent className="sm:max-w-md flex flex-col max-h-[90vh] p-0">
-                <DialogHeader className="p-6 pb-4">
-                    <DialogTitle>{staffMember ? 'Edit Staff Member' : 'Add New Staff Member'}</DialogTitle>
+            <DialogContent className="sm:max-w-md flex flex-col max-h-[90vh]">
+                <DialogHeader>
+                    <DialogTitle>{isCreating ? 'Add New Staff Member' : 'Edit Staff Member'}</DialogTitle>
                     <DialogDescription>
-                        {staffMember ? 'Update the details of this staff member.' : 'Fill in the details for a new staff member.'}
+                        {isCreating ? 'Create a profile and login for a new staff member.' : 'Update the details of this staff member.'}
                     </DialogDescription>
                 </DialogHeader>
-                <div className="flex-grow overflow-y-auto px-6">
+                <div className="flex-grow overflow-y-auto pr-6 pl-2">
                     <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pb-6">
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pl-4">
                             <FormField
                                 control={form.control}
                                 name="name"
@@ -239,36 +259,56 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                                 )}
                             />
                             
-                            {showLoginFields ? (
-                                <div className='space-y-2 rounded-md border border-input p-4'>
-                                    <h4 className="text-sm font-medium">Create Staff Login</h4>
-                                    <p className="text-xs text-muted-foreground pb-2">This staff member does not have a login. To enable login, please delete and re-add them, providing an email and temporary password.</p>
-                                </div>
-                            ) : staffMember ? (
-                                <div className='space-y-2 rounded-md border border-input p-4 bg-muted/50'>
-                                     <h4 className="text-sm font-medium">Staff Login Enabled</h4>
-                                     <p className="text-xs text-muted-foreground pb-2">This staff member can log in with their email. To change their password, they must use the "Forgot Password" link on the login page.</p>
+                           <div className='space-y-4 rounded-md border border-input p-4 bg-muted/50'>
+                                <h4 className="text-sm font-medium">{isCreating ? 'Create Staff Login' : 'Staff Login Details'}</h4>
+                                {isCreating && (
+                                    <Alert variant="default" className="bg-background">
+                                        <Info className="h-4 w-4" />
+                                        <AlertTitle>Action Required</AlertTitle>
+                                        <AlertDescription>
+                                            You must provide an email and a temporary password to create a login for this new staff member.
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
+                                <FormField
+                                    control={form.control}
+                                    name="email"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Login Email</FormLabel>
+                                            <FormControl>
+                                                <Input type="email" placeholder="staff.member@example.com" {...field} disabled={!isCreating} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                {isCreating && (
                                      <FormField
                                         control={form.control}
-                                        name="email"
+                                        name="password"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Login Email</FormLabel>
+                                                <FormLabel>Temporary Password</FormLabel>
                                                 <FormControl>
-                                                    <Input type="email" {...field} disabled />
+                                                    <Input type="password" placeholder="Min. 6 characters" {...field} />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
                                     />
-                                </div>
-                            ) : null}
-                            
+                                )}
+                                {!isCreating && (
+                                    <FormDesc className="text-xs">
+                                        To change a password, the staff member must use the "Forgot Password" link on the Staff Login page.
+                                    </FormDesc>
+                                )}
+                           </div>
 
-                            <div className="flex justify-end pt-4">
+                            <div className="flex justify-end pt-4 pb-4">
                                  <Button type="submit" disabled={isSubmitting}>
                                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    {staffMember ? 'Save Changes' : 'Add Staff Member'}
+                                    {isCreating ? 'Add Staff Member' : 'Save Changes'}
                                 </Button>
                             </div>
                         </form>

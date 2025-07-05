@@ -73,6 +73,10 @@ async function createFirebaseUser(email: string, password_do_not_log: string): P
 export async function getAdminUser(uid: string): Promise<AdminUser | null> {
     if (USE_DUMMY_DATA) {
         // In dummy mode, any logged-in user is treated as a Super Admin for easy testing.
+        const existingAdmin = dummyAdmins.find(a => a.uid === uid);
+        if (existingAdmin) return existingAdmin;
+
+        // If not found, assume super admin for dev purposes.
         return {
             uid: uid,
             email: 'dummy.super.admin@example.com',
@@ -111,16 +115,16 @@ export async function getAdminsFromFirestore(locationId?: string): Promise<Admin
     } as AdminUser));
 }
 
-export async function addAdmin(data: { email: string; password?: string, locationId?: string; locationName?: string; }) {
-    if (!data.email || !data.password) {
-        throw new Error("Email and password are required to create a new admin.");
+export async function addAdminWithLogin(data: Omit<AdminUser, 'uid'> & { password?: string }) {
+    if (!data.email || !data.password || !data.locationId || !data.locationName) {
+        throw new Error("Missing data to create a new branch admin.");
     }
     if (USE_DUMMY_DATA) {
-        console.log('DUMMY: addAdmin with login creation', data);
+        console.log('DUMMY: addAdminWithLogin', data.email);
         const newUid = await createFirebaseUser(data.email, data.password);
-        const newAdmin = { uid: newUid, email: data.email, locationId: data.locationId, locationName: data.locationName };
+        const newAdmin = { ...data, uid: newUid };
+        delete (newAdmin as any).password;
         dummyAdmins.push(newAdmin);
-        delete (data as any).password;
         revalidatePath('/admin/admins');
         return;
     }
@@ -134,15 +138,29 @@ export async function addAdmin(data: { email: string; password?: string, locatio
     // revalidatePath('/admin/admins');
 }
 
-export async function updateAdmin(uid: string, data: { email: string; locationId?: string; locationName?: string; }) {
-    if (USE_DUMMY_DATA) { console.log('DUMMY: updateAdmin', uid, data); revalidatePath('/admin/admins'); return; }
+export async function updateAdmin(uid: string, data: Partial<Omit<AdminUser, 'uid'>>) {
+    if (USE_DUMMY_DATA) { 
+        console.log('DUMMY: updateAdmin', uid, data);
+        const adminIndex = dummyAdmins.findIndex(a => a.uid === uid);
+        if (adminIndex > -1) {
+            dummyAdmins[adminIndex] = { ...dummyAdmins[adminIndex], ...data };
+        }
+        revalidatePath('/admin/admins'); 
+        return; 
+    }
     const adminDoc = doc(db, 'admins', uid);
     await updateDoc(adminDoc, data);
     revalidatePath('/admin/admins');
 }
 
 export async function deleteAdmin(uid: string) {
-    if (USE_DUMMY_DATA) { console.log('DUMMY: deleteAdmin', uid); revalidatePath('/admin/admins'); return; }
+    if (USE_DUMMY_DATA) { 
+        console.log('DUMMY: deleteAdmin', uid);
+        const index = dummyAdmins.findIndex(a => a.uid === uid);
+        if (index > -1) dummyAdmins.splice(index, 1);
+        revalidatePath('/admin/admins'); 
+        return; 
+    }
     const adminDoc = doc(db, 'admins', uid);
     await deleteDoc(adminDoc);
     revalidatePath('/admin/admins');
@@ -239,74 +257,67 @@ export async function getStaffFromFirestore(locationId?: string): Promise<Staff[
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Staff));
 }
 
-export async function addStaff(id: string, data: Partial<Omit<Staff, 'id' | 'uid'>> & { email?: string, password?: string }) {
-    if (data.password && data.email) {
-        if (USE_DUMMY_DATA) {
-            console.log("DUMMY: addStaff with login creation", data);
-            const newUid = await createFirebaseUser(data.email, data.password);
-            const newStaffMember = { ...data, id, uid: newUid, isBookable: data.isBookable ?? true };
-            delete newStaffMember.password;
-            dummyStaff.push(newStaffMember as Staff);
-            revalidatePath('/admin/staff');
-            revalidatePath('/');
-            return;
-        }
 
-        // REAL IMPLEMENTATION NOTE:
-        // You would call a Cloud Function here to create the user with the Admin SDK.
-        // The Cloud Function would return the new user's UID.
-        // For now, this will throw an error because the client can't create users.
-        throw new Error("User creation must be handled by a secure backend function.");
-        // const newUid = await callCreateUserCloudFunction(data.email, data.password);
-        // const staffDoc = doc(db, 'staff', id);
-        // await setDoc(staffDoc, { ...data, uid: newUid, isBookable: data.isBookable ?? true });
-
-    } else {
-         if (USE_DUMMY_DATA) {
-            console.log('DUMMY: addStaff (no login)', data);
-            const newStaffMember = { ...data, id, isBookable: data.isBookable ?? true };
-            delete newStaffMember.password;
-            dummyStaff.push(newStaffMember as Staff);
-            revalidatePath('/admin/staff'); revalidatePath('/'); return;
-        }
-        const staffDoc = doc(db, 'staff', id);
-        await setDoc(staffDoc, { ...data, isBookable: data.isBookable ?? true });
+export async function addStaffWithLogin(data: Omit<Staff, 'id' | 'uid' | 'locationName'> & { password?: string }) {
+    if (!data.email || !data.password) {
+        throw new Error("Email and password are required to create a new staff member with a login.");
     }
-    revalidatePath('/admin/staff');
-    revalidatePath('/');
+    const locationQuery = USE_DUMMY_DATA 
+        ? dummyLocations.find(l => l.id === data.locationId)
+        : await getDoc(doc(db, 'locations', data.locationId)).then(d => d.data());
+
+    if (!locationQuery) {
+        throw new Error("Invalid location specified.");
+    }
+
+    const locationName = locationQuery.name;
+    const newStaffId = `staff-${Date.now()}`;
+
+    if (USE_DUMMY_DATA) {
+        console.log("DUMMY: addStaffWithLogin", data.email);
+        const newUid = await createFirebaseUser(data.email, data.password);
+        const newStaffMember: Staff = {
+            ...data,
+            id: newStaffId,
+            uid: newUid,
+            locationName,
+            isBookable: data.isBookable ?? true,
+        };
+        delete (newStaffMember as any).password;
+        dummyStaff.push(newStaffMember);
+        revalidatePath('/admin/staff');
+        revalidatePath('/');
+        return;
+    }
+
+    // REAL IMPLEMENTATION NOTE: This needs a secure backend function.
+    throw new Error("User creation must be handled by a secure backend function.");
+    // const newUid = await callCreateUserCloudFunction(data.email, data.password);
+    // const staffDocRef = doc(db, 'staff', newStaffId);
+    // const { password, ...staffData } = data;
+    // await setDoc(staffDocRef, { 
+    //     ...staffData,
+    //     uid: newUid, 
+    //     locationName, 
+    //     isBookable: data.isBookable ?? true 
+    // });
+    // revalidatePath('/admin/staff');
+    // revalidatePath('/');
 }
 
-export async function updateStaff(id: string, data: Partial<Omit<Staff, 'id' | 'uid'>> & { email?: string, password?: string }) {
-    if (data.password && data.email) {
-        // This logic path is for adding a login to an existing staff member.
-        if (USE_DUMMY_DATA) {
-            console.log("DUMMY: updateStaff with login creation", data);
-            const newUid = await createFirebaseUser(data.email, data.password);
-            const staffIndex = dummyStaff.findIndex(s => s.id === id);
-            if (staffIndex > -1) {
-                dummyStaff[staffIndex] = { ...dummyStaff[staffIndex], ...data, uid: newUid };
-                 delete (dummyStaff[staffIndex] as any).password;
-            }
-            revalidatePath('/admin/staff');
-            revalidatePath('/');
-            return;
+export async function updateStaff(id: string, data: Partial<Omit<Staff, 'id'>>) {
+    if (USE_DUMMY_DATA) {
+        console.log('DUMMY: updateStaff', id, data);
+        const staffIndex = dummyStaff.findIndex(s => s.id === id);
+        if (staffIndex > -1) {
+            dummyStaff[staffIndex] = { ...dummyStaff[staffIndex], ...data };
         }
-         // REAL IMPLEMENTATION NOTE (same as above)
-        throw new Error("User creation must be handled by a secure backend function.");
-    } else {
-        if (USE_DUMMY_DATA) {
-            console.log('DUMMY: updateStaff (no login)', id, data);
-            const staffIndex = dummyStaff.findIndex(s => s.id === id);
-            if (staffIndex > -1) {
-                dummyStaff[staffIndex] = { ...dummyStaff[staffIndex], ...data };
-            }
-            revalidatePath('/admin/staff'); revalidatePath('/'); return;
-        }
-        const staffDoc = doc(db, 'staff', id);
-        await updateDoc(staffDoc, data);
+        revalidatePath('/admin/staff'); revalidatePath('/'); return;
     }
-     revalidatePath('/admin/staff');
-     revalidatePath('/');
+    const staffDoc = doc(db, 'staff', id);
+    await updateDoc(staffDoc, data);
+    revalidatePath('/admin/staff');
+    revalidatePath('/');
 }
 
 export async function deleteStaff(id: string) {

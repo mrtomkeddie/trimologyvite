@@ -89,6 +89,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 export const StaffFormSchema = z.object({
+  id: z.string().optional(), // Used to differentiate between create and edit
   name: z.string().min(2, 'Name must be at least 2 characters.'),
   specialization: z.string().min(3, 'Specialization must be at least 3 characters.'),
   imageUrl: z.string().url().optional().or(z.literal('')),
@@ -106,21 +107,48 @@ export const StaffFormSchema = z.object({
   email: z.string().email('Please enter a valid email.').optional().or(z.literal('')),
   password: z.string().optional(),
   isBookable: z.boolean().optional(),
-}).refine(data => {
-    // If a password is provided (not empty), it must be at least 6 characters.
-    // This allows the password to be empty during an update if it's not being changed.
-    if (data.password && data.password.length > 0 && data.password.length < 6) {
-      return false;
+}).superRefine((data, ctx) => {
+    // When creating a new staff member (no ID yet), email and password are required.
+    if (!data.id) { 
+        if (!data.email) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Email is required to create a new staff member.',
+                path: ['email'],
+            });
+        }
+        if (!data.password || data.password.length < 6) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'A password of at least 6 characters is required for new staff.',
+                path: ['password'],
+            });
+        }
     }
-    return true;
-}, {
-    message: "Password must be at least 6 characters.",
-    path: ["password"],
 });
 
 
 export const AdminFormSchema = z.object({
+  id: z.string().optional(), // Used to differentiate create vs update
   email: z.string().email('Please enter a valid email.'),
-  locationId: z.string().optional(), // 'super' for Super Admin, or a location ID
+  locationId: z.string().optional(),
   password: z.string().optional(),
+}).superRefine((data, ctx) => {
+    // When creating a new admin (no ID yet), password is required
+    if (!data.id) {
+        if (!data.locationId) {
+             ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'A location must be assigned to a new admin.',
+                path: ['locationId'],
+            });
+        }
+        if (!data.password || data.password.length < 6) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'A password of at least 6 characters is required.',
+                path: ['password'],
+            });
+        }
+    }
 });
