@@ -6,6 +6,10 @@ export const metadata: Metadata = {
   title: 'Trimology',
   description: 'Get the best haircut and beauty services from our award-winning team',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/trimology-logo.png',
+    apple: '/trimology-logo.png',
+  },
 };
 
 export default function RootLayout({

@@ -48,6 +48,7 @@ const dummyStaff: Staff[] = [
     { id: 'staff-3', name: 'John Doe', specialization: '', locationId: 'uptown-2', locationName: 'Uptown Cuts', imageUrl: 'https://placehold.co/100x100.png', isBookable: false },
     { id: 'staff-4', name: 'Jane Roe', specialization: 'Color Specialist', locationId: 'uptown-2', locationName: 'Uptown Cuts', uid: 'staff-uid-jane', email: 'jane@trimology.com', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: { ...defaultWorkingHours, saturday: 'off', sunday: 'off' } },
     { id: 'staff-5', name: 'Casey Jones', specialization: 'Hair Artist', locationId: 'soho-3', locationName: 'Soho Salon', uid: 'staff-uid-casey', email: 'casey@trimology.com', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: defaultWorkingHours },
+    { id: 'staff-7', name: 'Demo Staff', specialization: 'Stylist', locationId: 'downtown-1', locationName: 'Downtown Barbers', uid: 'staff-uid-demo', email: 'staff@trimology.com', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: defaultWorkingHours },
 ];
 
 const dummyBookings: Booking[] = [
@@ -68,7 +69,7 @@ const dummyBookings: Booking[] = [
 const dummyAdmins: AdminUser[] = [
     { uid: 'owner-uid', email: 'owner@trimology.com' },
     { uid: 'super-admin-uid', email: 'superadmin@trimology.com' },
-    { uid: 'branch-admin-uid', email: 'manager@trimology.com', locationId: 'downtown-1', locationName: 'Downtown Barbers' },
+    { uid: 'branch-admin-uid', email: 'branchadmin@trimology.com', locationId: 'downtown-1', locationName: 'Downtown Barbers' },
 ];
 
 
