@@ -2,12 +2,22 @@
 'use client';
 
 import { useState } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose
+} from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, LogIn } from 'lucide-react';
 import Link from 'next/link';
@@ -16,6 +26,8 @@ export function StaffLoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
   const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -24,16 +36,34 @@ export function StaffLoginForm() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       // The onAuthStateChanged listener in StaffLoginPage will handle redirecting.
-      // We don't set isLoading to false here, as the page will unmount on success.
     } catch (error) {
       toast({
         title: 'Login Failed',
         description: 'Invalid credentials. Please try again.',
         variant: 'destructive',
       });
-      setIsLoading(false); // Only set loading to false on failure.
+       setIsLoading(false); // Only set loading to false on failure.
     }
   };
+
+  const handlePasswordReset = async () => {
+    if (!resetEmail) {
+        toast({ title: 'Error', description: 'Please enter your email address.', variant: 'destructive' });
+        return;
+    }
+    setIsResetting(true);
+    try {
+        await sendPasswordResetEmail(auth, resetEmail);
+        toast({ title: 'Password Reset Email Sent', description: 'Check your inbox for instructions to reset your password.' });
+        document.getElementById('close-staff-reset-dialog')?.click();
+    } catch (error) {
+        toast({ title: 'Error', description: 'Could not send password reset email. Please check the address and try again.', variant: 'destructive' });
+    } finally {
+        setIsResetting(false);
+        setResetEmail('');
+    }
+  };
+
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -66,12 +96,45 @@ export function StaffLoginForm() {
               />
             </div>
           </CardContent>
-          <CardFooter className="flex-col gap-4">
+          <CardFooter className="flex-col gap-4 pt-4">
              <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-4 w-4" />}
                 {isLoading ? 'Signing In...' : 'Sign In'}
             </Button>
-            <Link href="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+            <Dialog onOpenChange={(open) => !open && setResetEmail('')}>
+                <DialogTrigger asChild>
+                    <Button variant="link" size="sm" className="w-full font-normal text-sm -mt-2">Forgot Password?</Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Reset Staff Password</DialogTitle>
+                        <DialogDescription>
+                            Enter the staff member's email address and we'll send a link to reset their password.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-2 py-4">
+                        <Label htmlFor="reset-email">Email</Label>
+                        <Input
+                            id="reset-email"
+                            type="email"
+                            placeholder="staff@example.com"
+                            value={resetEmail}
+                            onChange={(e) => setResetEmail(e.target.value)}
+                            required
+                        />
+                    </div>
+                    <DialogFooter>
+                         <DialogClose asChild>
+                           <Button variant="outline" id="close-staff-reset-dialog">Cancel</Button>
+                         </DialogClose>
+                        <Button onClick={handlePasswordReset} disabled={isResetting}>
+                            {isResetting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Send Reset Link
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            <Link href="/" className="text-sm text-muted-foreground hover:text-primary transition-colors mt-2">
                 &larr; Return to Home
             </Link>
           </CardFooter>
