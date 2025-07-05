@@ -12,8 +12,10 @@ import type { Staff, Booking } from '@/lib/types';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useRouter } from 'next/navigation';
 
 export default function MySchedulePage() {
+    const router = useRouter();
     const [user, setUser] = React.useState<User | null>(null);
     const [staff, setStaff] = React.useState<Staff | null>(null);
     const [bookings, setBookings] = React.useState<Booking[]>([]);
@@ -39,18 +41,15 @@ export default function MySchedulePage() {
                     setLoading(false);
                 }
             } else {
-                setUser(null);
-                setStaff(null);
-                setLoading(false);
-                setError("Please log in to view your schedule.");
+                router.push('/staff/login');
             }
         });
         return () => unsubscribe();
-    }, []);
+    }, [router]);
 
     const handleLogout = async () => {
         await signOut(auth);
-        // The auth listener will handle redirecting to login
+        // The auth listener will now handle the redirect.
     };
 
     if (loading) {

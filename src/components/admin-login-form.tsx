@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, LogIn } from 'lucide-react';
+import Link from 'next/link';
 
 export function AdminLoginForm() {
   const [email, setEmail] = useState('');
@@ -140,6 +141,9 @@ export function AdminLoginForm() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+             <Link href="/" className="text-sm text-muted-foreground hover:text-primary transition-colors mt-2">
+                &larr; Return to Home
+            </Link>
           </CardFooter>
         </form>
       </Card>

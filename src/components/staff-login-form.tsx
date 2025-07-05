@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, LogIn } from 'lucide-react';
+import Link from 'next/link';
 
 export function StaffLoginForm() {
   const [email, setEmail] = useState('');
@@ -65,11 +66,14 @@ export function StaffLoginForm() {
               />
             </div>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="flex-col gap-4">
              <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-4 w-4" />}
                 {isLoading ? 'Signing In...' : 'Sign In'}
             </Button>
+            <Link href="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                &larr; Return to Home
+            </Link>
           </CardFooter>
         </form>
       </Card>
