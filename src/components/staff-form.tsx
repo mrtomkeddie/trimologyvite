@@ -129,16 +129,16 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogContent className="sm:max-w-md flex flex-col max-h-[90vh] p-8">
-                <DialogHeader>
+            <DialogContent className="sm:max-w-md flex flex-col max-h-[90vh] p-0">
+                <DialogHeader className="p-6 pb-4">
                     <DialogTitle>{staffMember ? 'Edit Staff Member' : 'Add New Staff Member'}</DialogTitle>
                     <DialogDescription>
                         {staffMember ? 'Update the details of this staff member.' : 'Fill in the details for a new staff member.'}
                     </DialogDescription>
                 </DialogHeader>
-                <div className="flex-grow overflow-y-auto -mr-8 pr-8">
+                <div className="flex-grow overflow-y-auto px-6">
                     <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pb-6">
                             <FormField
                                 control={form.control}
                                 name="name"
