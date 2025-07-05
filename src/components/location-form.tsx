@@ -1,3 +1,4 @@
+
 'use client';
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
@@ -87,7 +88,7 @@ export function LocationForm({ isOpen, setIsOpen, location, onSubmitted }: Locat
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle>{location ? 'Edit Location' : 'Add New Location'}</DialogTitle>
                     <DialogDescription>

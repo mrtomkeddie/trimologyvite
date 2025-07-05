@@ -15,10 +15,10 @@ import { addStaffWithLogin, updateStaff } from '@/lib/firestore';
 import { StaffFormSchema, type Staff, type Location, WorkingHoursSchema } from '@/lib/types';
 import { Loader2, User, Info } from 'lucide-react';
 import { uploadStaffImage } from '@/lib/storage';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { Switch } from './ui/switch';
-import { Alert, AlertDescription, AlertTitle } from './ui/alert';
-import { Label } from './ui/label';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Switch } from '@/components/ui/switch';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Label } from '@/components/ui/label';
 
 type StaffFormValues = z.infer<typeof StaffFormSchema>;
 
@@ -79,10 +79,10 @@ function WorkingHoursFormPart({ control, form }: { control: any, form: any }) {
                     const isDayOff = workingHoursValues?.[day.id] === 'off';
 
                     return (
-                        <div key={day.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-lg border bg-background/50 p-3 shadow-sm">
-                            <div className="space-y-0.5 mb-2 sm:mb-0">
-                                <Label className="text-base font-semibold">{day.label}</Label>
-                                <div className="flex items-center space-x-2 pt-1">
+                        <div key={day.id} className="rounded-lg border bg-background/50 p-3 shadow-sm space-y-2">
+                             <Label className="text-base font-semibold">{day.label}</Label>
+                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex items-center space-x-2 mb-2 sm:mb-0">
                                     <Switch
                                         id={`switch-${day.id}`}
                                         checked={!isDayOff}
@@ -90,39 +90,39 @@ function WorkingHoursFormPart({ control, form }: { control: any, form: any }) {
                                             form.setValue(fieldName, checked ? { start: '09:00', end: '17:00' } : 'off');
                                         }}
                                     />
-                                    <Label htmlFor={`switch-${day.id}`}>{isDayOff ? 'Off' : 'Working'}</Label>
+                                    <Label htmlFor={`switch-${day.id}`}>{isDayOff ? 'Day Off' : 'Working'}</Label>
                                 </div>
+                                {!isDayOff && (
+                                    <div className="flex items-center gap-2">
+                                        <FormField
+                                            control={control}
+                                            name={`${fieldName}.start`}
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                        <FormControl><SelectTrigger className="w-28"><SelectValue /></SelectTrigger></FormControl>
+                                                        <SelectContent>{timeOptions.map(t => <SelectItem key={`start-${t}`} value={t}>{t}</SelectItem>)}</SelectContent>
+                                                    </Select>
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <span className="text-muted-foreground">-</span>
+                                        <FormField
+                                            control={control}
+                                            name={`${fieldName}.end`}
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                        <FormControl><SelectTrigger className="w-28"><SelectValue /></SelectTrigger></FormControl>
+                                                        <SelectContent>{timeOptions.map(t => <SelectItem key={`end-${t}`} value={t}>{t}</SelectItem>)}</SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+                                )}
                             </div>
-                            {!isDayOff && (
-                                <div className="flex items-center gap-2">
-                                    <FormField
-                                        control={control}
-                                        name={`${fieldName}.start`}
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <FormControl><SelectTrigger className="w-28"><SelectValue /></SelectTrigger></FormControl>
-                                                    <SelectContent>{timeOptions.map(t => <SelectItem key={`start-${t}`} value={t}>{t}</SelectItem>)}</SelectContent>
-                                                </Select>
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <span className="text-muted-foreground">-</span>
-                                     <FormField
-                                        control={control}
-                                        name={`${fieldName}.end`}
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <FormControl><SelectTrigger className="w-28"><SelectValue /></SelectTrigger></FormControl>
-                                                    <SelectContent>{timeOptions.map(t => <SelectItem key={`end-${t}`} value={t}>{t}</SelectItem>)}</SelectContent>
-                                                </Select>
-                                            </FormItem>
-                                        )}
-                                    />
-                                </div>
-                            )}
-                             <FormMessage>{form.formState.errors.workingHours?.[day.id]?.end?.message}</FormMessage>
                         </div>
                     );
                 })}
@@ -130,7 +130,6 @@ function WorkingHoursFormPart({ control, form }: { control: any, form: any }) {
         </div>
     );
 }
-
 
 export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitted }: StaffFormProps) {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -255,14 +254,14 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogContent className="sm:max-w-lg flex flex-col max-h-[90vh]">
+            <DialogContent className="sm:max-w-2xl flex flex-col max-h-[90vh]">
                  <DialogHeader className="px-6 pt-6">
                     <DialogTitle>{isCreating ? 'Add New Staff Member' : 'Edit Staff Member'}</DialogTitle>
                     <DialogDescription>
                         {isCreating ? 'Create a profile and login for a new staff member.' : 'Update the details of this staff member.'}
                     </DialogDescription>
                 </DialogHeader>
-                 <div className="flex-grow overflow-y-auto px-6">
+                 <div className="flex-grow overflow-y-auto px-6 py-2 pr-4">
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                             <FormField

@@ -96,7 +96,7 @@ export function ServiceForm({ isOpen, setIsOpen, service, locations, onSubmitted
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle>{service ? 'Edit Service' : 'Add New Service'}</DialogTitle>
                     <DialogDescription>

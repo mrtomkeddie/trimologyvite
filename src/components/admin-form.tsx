@@ -134,7 +134,7 @@ export function AdminForm({ isOpen, setIsOpen, admin, locations, onSubmitted, cu
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle>{admin ? 'Edit Admin' : 'Add New Branch Admin'}</DialogTitle>
                     <DialogDescription>
