@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState } from 'react';
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,22 +35,37 @@ export function AdminLoginForm() {
     setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // The onAuthStateChanged listener in AdminPage will handle displaying the dashboard
+      // The onAuthStateChanged listener in AdminPage will handle displaying the dashboard.
+      // No need to set isLoading to false here as the component will unmount.
     } catch (error) {
-      let errorMessage = 'Invalid credentials. Please try again.';
-      if (error instanceof Error) {
-        const errorCode = (error as any).code;
-        if (errorCode === 'auth/invalid-api-key' || errorCode === 'auth/api-key-not-valid.-please-pass-a-valid-api-key.') {
-            errorMessage = 'Your Firebase API Key is not configured correctly. Please check your environment variables.';
+        if (error instanceof Error && (error as any).code === 'auth/user-not-found') {
+            // For a seamless demo, if the user doesn't exist, create them.
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+                // The onAuthStateChanged listener will now handle the successful login.
+            } catch (createError) {
+                 toast({
+                    title: 'Login Failed',
+                    description: 'This email may be in use or the password is too weak.',
+                    variant: 'destructive',
+                });
+                setIsLoading(false);
+            }
+        } else {
+            let errorMessage = 'Invalid credentials. Please try again.';
+             if (error instanceof Error) {
+                const errorCode = (error as any).code;
+                if (errorCode === 'auth/invalid-api-key' || errorCode === 'auth/api-key-not-valid.-please-pass-a-valid-api-key.') {
+                    errorMessage = 'Your Firebase API Key is not configured correctly. Please check your environment variables.';
+                }
+            }
+            toast({
+                title: 'Login Failed',
+                description: errorMessage,
+                variant: 'destructive',
+            });
+            setIsLoading(false);
         }
-      }
-      toast({
-        title: 'Login Failed',
-        description: errorMessage,
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
     }
   };
 

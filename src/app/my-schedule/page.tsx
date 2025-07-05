@@ -27,7 +27,7 @@ export default function MySchedulePage() {
             if (currentUser) {
                 setUser(currentUser);
                 try {
-                    const staffProfile = await getStaffByUid(currentUser.uid);
+                    const staffProfile = await getStaffByUid(currentUser.uid, currentUser.email ?? undefined);
                     if (staffProfile) {
                         setStaff(staffProfile);
                         const upcomingBookings = await getBookingsByStaffId(staffProfile.id);

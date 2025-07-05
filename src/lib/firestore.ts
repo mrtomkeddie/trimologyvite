@@ -381,14 +381,19 @@ export async function deleteStaff(id: string) {
     revalidatePath('/');
 }
 
-export async function getStaffByUid(uid: string): Promise<Staff | null> {
+export async function getStaffByUid(uid: string, email?: string): Promise<Staff | null> {
     if (USE_DUMMY_DATA) {
-        // Find staff member by UID in dummy data
-        return dummyStaff.find(s => s.uid === uid) || null;
+        // In dummy mode, the UID from auth won't match the hardcoded one. Find by email.
+        const staffMember = dummyStaff.find(s => s.email === email);
+        if (staffMember) {
+            // Return the dummy data but with the REAL uid from the auth session.
+            return { ...staffMember, uid: uid };
+        }
+        return null;
     }
     const q = query(staffCollection, where('uid', '==', uid), limit(1));
     const snapshot = await getDocs(q);
-if (snapshot.empty) {
+    if (snapshot.empty) {
         return null;
     }
     const doc = snapshot.docs[0];

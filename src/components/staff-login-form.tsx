@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,13 +36,29 @@ export function StaffLoginForm() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       // The onAuthStateChanged listener in StaffLoginPage will handle redirecting.
+      // No need to set isLoading to false here as the component will unmount.
     } catch (error) {
-      toast({
-        title: 'Login Failed',
-        description: 'Invalid credentials. Please try again.',
-        variant: 'destructive',
-      });
-       setIsLoading(false); // Only set loading to false on failure.
+       if (error instanceof Error && (error as any).code === 'auth/user-not-found') {
+            // For a seamless demo, if the user doesn't exist, create them.
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+                // The onAuthStateChanged listener will now handle the successful login.
+            } catch (createError) {
+                 toast({
+                    title: 'Login Failed',
+                    description: 'This email may be in use or the password is too weak.',
+                    variant: 'destructive',
+                });
+                 setIsLoading(false);
+            }
+        } else {
+            toast({
+                title: 'Login Failed',
+                description: 'Invalid credentials. Please try again.',
+                variant: 'destructive',
+            });
+            setIsLoading(false);
+        }
     }
   };
 
