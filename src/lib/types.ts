@@ -58,6 +58,7 @@ export const BookingSchema = z.object({
     serviceId: z.string(),
     serviceName: z.string(),
     servicePrice: z.coerce.number(),
+    serviceDuration: z.coerce.number(),
     staffId: z.string(),
     staffName: z.string(),
     staffImageUrl: z.string().url().optional().or(z.literal('')),

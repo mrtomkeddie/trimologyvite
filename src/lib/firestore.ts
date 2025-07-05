@@ -5,7 +5,7 @@ import { db } from './firebase';
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, orderBy, query, Timestamp, where, getDoc, setDoc, limit } from 'firebase/firestore';
 import type { Location, Service, Staff, Booking, NewBooking, AdminUser } from './types';
 import { revalidatePath } from 'next/cache';
-import { addDays } from 'date-fns';
+import { addDays, startOfDay, endOfDay } from 'date-fns';
 
 // --- DUMMY DATA SWITCH ---
 // Change this to 'false' to use your live Firestore database.
@@ -44,10 +44,10 @@ const dummyStaff: Staff[] = [
 ];
 
 const dummyBookings: Booking[] = [
-    { id: 'book-1', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: addDays(new Date(), 1).toISOString(), clientName: 'Bob Johnson', clientPhone: '555-1111', clientEmail: 'bob@example.com' },
-    { id: 'book-2', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-2', serviceName: 'Beard Trim', servicePrice: 15, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: addDays(new Date(), 2).toISOString(), clientName: 'Charlie Brown', clientPhone: '555-2222' },
-    { id: 'book-3', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-5', serviceName: 'Color & Cut', servicePrice: 90, staffId: 'staff-4', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: addDays(new Date(), 3).toISOString(), clientName: 'Diana Prince', clientPhone: '555-3333', clientEmail: 'diana@example.com' },
-    { id: 'book-4', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, staffId: 'staff-2', staffName: 'Maria Garcia', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: addDays(new Date(), 1).toISOString(), clientName: 'Peter Parker', clientPhone: '555-4444' },
+    { id: 'book-1', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: addDays(new Date(), 1).toISOString(), clientName: 'Bob Johnson', clientPhone: '555-1111', clientEmail: 'bob@example.com' },
+    { id: 'book-2', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-2', serviceName: 'Beard Trim', servicePrice: 15, serviceDuration: 15, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: addDays(new Date(), 2).toISOString(), clientName: 'Charlie Brown', clientPhone: '555-2222' },
+    { id: 'book-3', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-5', serviceName: 'Color & Cut', servicePrice: 90, serviceDuration: 120, staffId: 'staff-4', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: addDays(new Date(), 3).toISOString(), clientName: 'Diana Prince', clientPhone: '555-3333', clientEmail: 'diana@example.com' },
+    { id: 'book-4', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-2', staffName: 'Maria Garcia', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: addDays(new Date(), 1).toISOString(), clientName: 'Peter Parker', clientPhone: '555-4444' },
 ];
 
 const dummyAdmins: AdminUser[] = [
@@ -379,18 +379,56 @@ export async function getBookingsByStaffId(staffId: string): Promise<Booking[]> 
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Booking));
 }
 
+export async function getBookingsForStaffOnDate(staffId: string, date: Date): Promise<Booking[]> {
+    if (USE_DUMMY_DATA) {
+        const checkDate = startOfDay(date);
+        const dayBookings = dummyBookings.filter(b => {
+            if (b.staffId !== staffId) return false;
+            const bookingDate = startOfDay(new Date(b.bookingTimestamp));
+            return bookingDate.getTime() === checkDate.getTime();
+        });
+        return Promise.resolve(dayBookings);
+    }
+    const dayStart = startOfDay(date).toISOString();
+    const dayEnd = endOfDay(date).toISOString();
+
+    const q = query(
+        bookingsCollection,
+        where('staffId', '==', staffId),
+        where('bookingTimestamp', '>=', dayStart),
+        where('bookingTimestamp', '<=', dayEnd)
+    );
+
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Booking));
+}
 
 export async function addBooking(data: NewBooking) {
-    if (USE_DUMMY_DATA) { console.log('DUMMY: addBooking', data); revalidatePath('/admin/bookings'); return; }
+    if (USE_DUMMY_DATA) { 
+        console.log('DUMMY: addBooking', data);
+        const newBooking = { ...data, id: `book-${Date.now()}`};
+        dummyBookings.push(newBooking);
+        revalidatePath('/admin/bookings'); 
+        revalidatePath('/my-schedule');
+        return; 
+    }
     await addDoc(bookingsCollection, {
         ...data,
         createdAt: Timestamp.now(),
     });
     revalidatePath('/admin/bookings');
+    revalidatePath('/my-schedule');
 }
 
 export async function deleteBooking(id: string) {
-    if (USE_DUMMY_DATA) { console.log('DUMMY: deleteBooking', id); revalidatePath('/admin/bookings'); revalidatePath('/my-schedule'); return; }
+    if (USE_DUMMY_DATA) { 
+        console.log('DUMMY: deleteBooking', id);
+        const index = dummyBookings.findIndex(b => b.id === id);
+        if (index > -1) dummyBookings.splice(index, 1);
+        revalidatePath('/admin/bookings'); 
+        revalidatePath('/my-schedule'); 
+        return; 
+    }
     const bookingDoc = doc(db, 'bookings', id);
     await deleteDoc(bookingDoc);
     revalidatePath('/admin/bookings');
