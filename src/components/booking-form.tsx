@@ -247,7 +247,7 @@ export function BookingForm({ locations, services, staff }: BookingFormProps) {
                             <SelectItem value="any">Any Staff Member</SelectItem>
                             {filteredStaff.map((staffMember) => (
                               <SelectItem key={staffMember.id} value={staffMember.id}>
-                                {staffMember.name} ({staffMember.specialization})
+                                {staffMember.name} {staffMember.specialization && `(${staffMember.specialization})`}
                               </SelectItem>
                             ))}
                           </SelectContent>

@@ -40,7 +40,7 @@ export type WorkingHours = z.infer<typeof WorkingHoursSchema>;
 export const StaffSchema = z.object({
   id: z.string(),
   name: z.string(),
-  specialization: z.string(),
+  specialization: z.string().optional().or(z.literal('')),
   locationId: z.string(),
   locationName: z.string(),
   uid: z.string().optional(),
@@ -125,7 +125,7 @@ const StaffWorkingHoursSchema = WorkingHoursSchema.superRefine((workingHours, ct
 export const StaffFormSchema = z.object({
   id: z.string().optional(), // Used to differentiate between create and edit
   name: z.string().min(2, 'Name must be at least 2 characters.'),
-  specialization: z.string().min(3, 'Specialization must be at least 3 characters.'),
+  specialization: z.string().optional().or(z.literal('')),
   imageUrl: z.string().url().optional().or(z.literal('')),
   imageFile: z.any()
     .optional()

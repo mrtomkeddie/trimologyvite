@@ -139,10 +139,14 @@ export function StaffList({ initialStaff, locations, onDataChange }: StaffListPr
                                         )}
                                      </TableCell>
                                     <TableCell>
-                                        <div className="flex items-center gap-2">
-                                            <Star className="h-4 w-4 text-muted-foreground" />
-                                            {staffMember.specialization}
-                                        </div>
+                                        {staffMember.specialization ? (
+                                            <div className="flex items-center gap-2">
+                                                <Star className="h-4 w-4 text-muted-foreground" />
+                                                {staffMember.specialization}
+                                            </div>
+                                        ) : (
+                                            <span className="text-muted-foreground">Not specified</span>
+                                        )}
                                     </TableCell>
                                      <TableCell>
                                         <div className="flex items-center gap-2">
