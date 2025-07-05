@@ -21,15 +21,12 @@ export default function ManageStaffPage() {
         setLoading(true);
         setError(null);
         try {
-            const [allStaff, allLocations] = await Promise.all([
-                getStaffFromFirestore(),
-                getLocationsFromFirestore(),
-            ]);
-
             const userLocationId = adminUser.locationId;
-
-            const filteredStaff = userLocationId ? allStaff.filter(s => s.locationId === userLocationId) : allStaff;
-            const filteredLocations = userLocationId ? allLocations.filter(l => l.id === userLocationId) : allLocations;
+            // Fetch only the data relevant to the admin's scope.
+            const [filteredStaff, filteredLocations] = await Promise.all([
+                getStaffFromFirestore(userLocationId),
+                getLocationsFromFirestore(userLocationId),
+            ]);
 
             setStaff(filteredStaff);
             setLocations(filteredLocations);

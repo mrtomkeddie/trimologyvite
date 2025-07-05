@@ -22,15 +22,12 @@ export default function ManageBookingsPage() {
         const fetchData = async () => {
             setLoading(true);
             try {
-                const [allBookings, allLocations] = await Promise.all([
-                    getBookingsFromFirestore(),
-                    getLocationsFromFirestore(),
-                ]);
-
                 const userLocationId = adminUser.locationId;
-
-                const filteredBookings = userLocationId ? allBookings.filter(b => b.locationId === userLocationId) : allBookings;
-                const filteredLocations = userLocationId ? allLocations.filter(l => l.id === userLocationId) : allLocations;
+                // Fetch only the data relevant to the admin's scope.
+                const [filteredBookings, filteredLocations] = await Promise.all([
+                    getBookingsFromFirestore(userLocationId),
+                    getLocationsFromFirestore(userLocationId),
+                ]);
 
                 setBookings(filteredBookings);
                 setLocations(filteredLocations);

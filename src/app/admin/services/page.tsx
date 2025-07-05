@@ -22,15 +22,12 @@ export default function ManageServicesPage() {
         const fetchData = async () => {
             setLoading(true);
             try {
-                 const [allServices, allLocations] = await Promise.all([
-                    getServicesFromFirestore(),
-                    getLocationsFromFirestore(),
+                 const userLocationId = adminUser.locationId;
+                 // Fetch only the data relevant to the admin's scope.
+                 const [filteredServices, filteredLocations] = await Promise.all([
+                    getServicesFromFirestore(userLocationId),
+                    getLocationsFromFirestore(userLocationId),
                 ]);
-
-                const userLocationId = adminUser.locationId;
-
-                const filteredServices = userLocationId ? allServices.filter(s => s.locationId === userLocationId) : allServices;
-                const filteredLocations = userLocationId ? allLocations.filter(l => l.id === userLocationId) : allLocations;
 
                 setServices(filteredServices);
                 setLocations(filteredLocations);

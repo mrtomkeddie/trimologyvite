@@ -22,17 +22,15 @@ export default function ManageAdminsPage() {
         setLoading(true);
         setError(null);
         try {
-            const [allAdmins, allLocations] = await Promise.all([
-                getAdminsFromFirestore(),
-                getLocationsFromFirestore()
+            const userLocationId = adminUser.locationId;
+            // Fetch only the data relevant to the admin's scope.
+            const [filteredAdmins, filteredLocations] = await Promise.all([
+                getAdminsFromFirestore(userLocationId),
+                getLocationsFromFirestore(userLocationId)
             ]);
             
-            setLocations(allLocations);
-
-            const filteredAdmins = adminUser.locationId
-                ? allAdmins.filter(a => a.locationId === adminUser.locationId)
-                : allAdmins;
             setAdmins(filteredAdmins);
+            setLocations(filteredLocations);
 
         } catch (e) {
             setError(e instanceof Error ? e.message : "Failed to fetch data.");

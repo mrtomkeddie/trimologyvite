@@ -39,7 +39,7 @@ const defaultWorkingHours = {
 const dummyStaff: Staff[] = [
     { id: 'staff-1', name: 'Alex Smith', specialization: 'Master Barber', locationId: 'downtown-1', locationName: 'Downtown Barbers', uid: 'staff-uid-alex', email: 'alex@trimology.com', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: defaultWorkingHours },
     { id: 'staff-2', name: 'Maria Garcia', specialization: 'Senior Stylist', locationId: 'downtown-1', locationName: 'Downtown Barbers', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: { ...defaultWorkingHours, wednesday: 'off' } },
-    { id: 'staff-3', name: 'John Doe', specialization: 'Stylist', locationId: 'uptown-2', locationName: 'Uptown Cuts', imageUrl: 'https://placehold.co/100x100.png', isBookable: false },
+    { id: 'staff-3', name: 'John Doe', specialization: '', locationId: 'uptown-2', locationName: 'Uptown Cuts', imageUrl: 'https://placehold.co/100x100.png', isBookable: false },
     { id: 'staff-4', name: 'Jane Roe', specialization: 'Color Specialist', locationId: 'uptown-2', locationName: 'Uptown Cuts', uid: 'staff-uid-jane', email: 'jane@trimology.com', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: { ...defaultWorkingHours, saturday: 'off', sunday: 'off' } },
 ];
 
@@ -82,15 +82,10 @@ async function createFirebaseUser(email: string, password_do_not_log: string): P
 // Admins
 export async function getAdminUser(uid: string): Promise<AdminUser | null> {
     if (USE_DUMMY_DATA) {
-        // In dummy mode, any logged-in user is treated as a Super Admin for easy testing.
+        // In dummy mode, find the admin in our list.
         const existingAdmin = dummyAdmins.find(a => a.uid === uid);
-        if (existingAdmin) return existingAdmin;
-
-        // If not found, assume super admin for dev purposes.
-        return {
-            uid: uid,
-            email: 'dummy.super.admin@example.com',
-        };
+        // If they don't exist in the list, they are not an admin.
+        return existingAdmin || null;
     }
     const adminDocRef = doc(db, 'admins', uid);
     const adminDoc = await getDoc(adminDocRef);
