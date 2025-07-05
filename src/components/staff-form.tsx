@@ -281,7 +281,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                 </DialogHeader>
                 
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col min-h-0">
                          <ScrollArea className="flex-1">
                              <div className="px-6 py-6 space-y-6">
                                 <FormField
@@ -460,4 +460,3 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
         </Dialog>
     );
 }
-
