@@ -1,42 +1,33 @@
 
 'use client';
 import * as React from 'react';
-import { getStaffFromFirestore, getLocationsFromFirestore, getAdminUser } from "@/lib/firestore";
+import { getStaffFromFirestore, getLocationsFromFirestore } from "@/lib/firestore";
 import { StaffList } from "@/components/staff-list";
 import { ArrowLeft, Loader2, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { onAuthStateChanged, type User } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import type { Staff, Location, AdminUser } from '@/lib/types';
-
+import type { Staff, Location } from '@/lib/types';
+import { useAdmin } from '@/contexts/AdminContext';
 
 export default function ManageStaffPage() {
+    const { adminUser } = useAdmin();
     const [staff, setStaff] = React.useState<Staff[]>([]);
     const [locations, setLocations] = React.useState<Location[]>([]);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
-    const [adminUser, setAdminUser] = React.useState<AdminUser | null>(null);
-
-    const fetchData = React.useCallback(async (user: User) => {
+    
+    const fetchData = React.useCallback(async () => {
+        if (!adminUser) return;
         setLoading(true);
         setError(null);
         try {
-            // Fetch all data in parallel to improve performance
-            const [fetchedAdminUser, allStaff, allLocations] = await Promise.all([
-                getAdminUser(user.uid),
+            const [allStaff, allLocations] = await Promise.all([
                 getStaffFromFirestore(),
                 getLocationsFromFirestore(),
             ]);
 
-            if (!fetchedAdminUser) {
-                throw new Error("You are not authorized to view this page.");
-            }
-            setAdminUser(fetchedAdminUser);
+            const userLocationId = adminUser.locationId;
 
-            const userLocationId = fetchedAdminUser.locationId;
-
-            // Filter client-side based on admin role
             const filteredStaff = userLocationId ? allStaff.filter(s => s.locationId === userLocationId) : allStaff;
             const filteredLocations = userLocationId ? allLocations.filter(l => l.id === userLocationId) : allLocations;
 
@@ -48,40 +39,27 @@ export default function ManageStaffPage() {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [adminUser]);
 
     React.useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                await fetchData(user);
-            } else {
-                setLoading(false);
-                setError("Please log in to continue.");
-            }
-        });
-
-        return () => unsubscribe();
+        fetchData();
     }, [fetchData]);
     
     const handleDataChange = () => {
-        if (auth.currentUser) {
-            fetchData(auth.currentUser);
-        }
+        fetchData();
     };
 
     if (loading) {
         return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
     }
 
-     if (error || !adminUser) {
+     if (error) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-background text-center p-4">
                 <div>
                     <ShieldAlert className="h-16 w-16 text-destructive mx-auto mb-4" />
-                    <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
-                    <p className="text-muted-foreground mb-6">
-                        {error || "You do not have permission to access this page."}
-                    </p>
+                    <h1 className="text-2xl font-bold mb-2">Error Fetching Data</h1>
+                    <p className="text-muted-foreground mb-6">{error}</p>
                     <Button asChild>
                         <Link href="/admin">Return to Dashboard</Link>
                     </Button>

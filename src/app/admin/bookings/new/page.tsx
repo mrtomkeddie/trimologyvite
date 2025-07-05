@@ -1,17 +1,16 @@
 
 'use client';
 import * as React from 'react';
-import { getLocationsFromFirestore, getServicesFromFirestore, getStaffFromFirestore, getAdminUser } from "@/lib/firestore";
+import { getLocationsFromFirestore, getServicesFromFirestore, getStaffFromFirestore } from "@/lib/firestore";
 import { AdminBookingForm } from "@/components/admin-booking-form";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import type { AdminUser, Location, Service, Staff } from '@/lib/types';
+import type { Location, Service, Staff } from '@/lib/types';
+import { useAdmin } from '@/contexts/AdminContext';
 
 export default function NewBookingPage() {
-    const [adminUser, setAdminUser] = React.useState<AdminUser | null>(null);
+    const { adminUser } = useAdmin();
     const [locations, setLocations] = React.useState<Location[]>([]);
     const [services, setServices] = React.useState<Service[]>([]);
     const [staff, setStaff] = React.useState<Staff[]>([]);
@@ -19,46 +18,48 @@ export default function NewBookingPage() {
     const [error, setError] = React.useState<string | null>(null);
 
     React.useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                try {
-                    const fetchedAdminUser = await getAdminUser(user.uid);
-                    if (!fetchedAdminUser) {
-                        throw new Error("User is not an authorized admin.");
-                    }
-                    setAdminUser(fetchedAdminUser);
+        if (!adminUser) return; // Wait for admin context
 
-                    const [fetchedLocations, fetchedServices, fetchedStaff] = await Promise.all([
-                        getLocationsFromFirestore(),
-                        getServicesFromFirestore(),
-                        getStaffFromFirestore()
-                    ]);
-                    setLocations(fetchedLocations);
-                    setServices(fetchedServices);
-                    setStaff(fetchedStaff);
-                } catch (e) {
-                    setError(e instanceof Error ? e.message : "Failed to fetch necessary data.");
-                    console.error(e);
-                } finally {
-                    setLoading(false);
-                }
-            } else {
+        const fetchData = async () => {
+            try {
+                const [fetchedLocations, fetchedServices, fetchedStaff] = await Promise.all([
+                    getLocationsFromFirestore(),
+                    getServicesFromFirestore(),
+                    getStaffFromFirestore()
+                ]);
+                setLocations(fetchedLocations);
+                setServices(fetchedServices);
+                setStaff(fetchedStaff);
+            } catch (e) {
+                setError(e instanceof Error ? e.message : "Failed to fetch necessary data.");
+                console.error(e);
+            } finally {
                 setLoading(false);
-                setError("Please log in to create a booking.");
             }
-        });
+        };
 
-        return () => unsubscribe();
-    }, []);
+        fetchData();
+    }, [adminUser]);
 
-    if (loading) {
+    if (loading || !adminUser) {
         return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
     }
 
-    if (error || !adminUser) {
-        return <div className="flex h-screen w-full items-center justify-center text-destructive">{error || "You are not authorized to perform this action."}</div>;
+    if (error) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-background text-center p-4">
+                <div>
+                    <ShieldAlert className="h-16 w-16 text-destructive mx-auto mb-4" />
+                    <h1 className="text-2xl font-bold mb-2">Error</h1>
+                    <p className="text-muted-foreground mb-6">{error}</p>
+                    <Button asChild>
+                        <Link href="/admin/bookings">Return to Bookings</Link>
+                    </Button>
+                </div>
+            </div>
+        );
     }
-
+    
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
             <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:px-6">

@@ -9,41 +9,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, ArrowLeft, ShieldAlert } from 'lucide-react';
+import { Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { getAdminUser } from '@/lib/firestore';
+import { useAdmin } from '@/contexts/AdminContext';
 
 export default function SettingsPage() {
     const { toast } = useToast();
+    const { adminUser, loading: adminLoading } = useAdmin(); // Use context
     const [newPassword, setNewPassword] = React.useState('');
     const [isChangingPassword, setIsChangingPassword] = React.useState(false);
-    const [user, setUser] = React.useState<User | null>(null);
-    const [loading, setLoading] = React.useState(true);
-    const [error, setError] = React.useState<string | null>(null);
-
-     React.useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-            if (currentUser) {
-                setUser(currentUser);
-                 try {
-                    const adminUser = await getAdminUser(currentUser.uid);
-                    if (!adminUser) {
-                        throw new Error("You are not authorized to access this page.");
-                    }
-                } catch (e) {
-                    setError(e instanceof Error ? e.message : "Authorization check failed.");
-                } finally {
-                    setLoading(false);
-                }
-            } else {
-                setLoading(false);
-                setError("Please log in to access settings.");
-            }
-        });
-        return () => unsubscribe();
-    }, []);
-
-
+    
     const handleChangePassword = async () => {
         if (!newPassword || newPassword.length < 6) {
             toast({ title: 'Error', description: 'Password must be at least 6 characters.', variant: 'destructive' });
@@ -55,7 +30,6 @@ export default function SettingsPage() {
                 await updatePassword(auth.currentUser, newPassword);
                 await signOut(auth);
                 toast({ title: 'Success', description: 'Password updated. Please log in again with your new password.' });
-                // App will redirect to login page via the auth state listener
             } else {
                 throw new Error('No user is currently signed in.');
             }
@@ -65,27 +39,11 @@ export default function SettingsPage() {
         }
     };
     
-    if (loading) {
+    // The main loading and auth check is now handled by the AdminLayout.
+    // We just need to check the admin context loading state.
+    if (adminLoading) {
         return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
     }
-
-    if (error || !user) {
-        return (
-            <div className="flex min-h-screen items-center justify-center bg-background text-center p-4">
-                <div>
-                    <ShieldAlert className="h-16 w-16 text-destructive mx-auto mb-4" />
-                    <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
-                    <p className="text-muted-foreground mb-6">
-                        {error || "You do not have permission to access this page."}
-                    </p>
-                    <Button asChild>
-                        <Link href="/admin">Return to Dashboard</Link>
-                    </Button>
-                </div>
-            </div>
-        );
-    }
-
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">

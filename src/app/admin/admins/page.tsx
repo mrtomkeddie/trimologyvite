@@ -1,45 +1,36 @@
 
 'use client';
 import * as React from 'react';
-import { getAdminsFromFirestore, getLocationsFromFirestore, getAdminUser } from "@/lib/firestore";
+import { getAdminsFromFirestore, getLocationsFromFirestore } from "@/lib/firestore";
 import { AdminsList } from "@/components/admins-list";
 import { ArrowLeft, Loader2, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { onAuthStateChanged, type User } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
 import type { AdminUser, Location } from '@/lib/types';
+import { useAdmin } from '@/contexts/AdminContext';
 
 export default function ManageAdminsPage() {
-    const [adminUser, setAdminUser] = React.useState<AdminUser | null>(null);
+    const { adminUser } = useAdmin();
     const [admins, setAdmins] = React.useState<AdminUser[]>([]);
     const [locations, setLocations] = React.useState<Location[]>([]);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
-    const [isAuthorized, setIsAuthorized] = React.useState(false);
 
-    const fetchData = React.useCallback(async (user: User) => {
+    const fetchData = React.useCallback(async () => {
+        if (!adminUser) return;
+
         setLoading(true);
         setError(null);
         try {
-            // Fetch all data in parallel for performance
-            const [fetchedAdminUser, allAdmins, allLocations] = await Promise.all([
-                getAdminUser(user.uid),
-                getAdminsFromFirestore(), // Fetch all admins
-                getLocationsFromFirestore()  // Fetch all locations
+            const [allAdmins, allLocations] = await Promise.all([
+                getAdminsFromFirestore(),
+                getLocationsFromFirestore()
             ]);
-
-            if (!fetchedAdminUser) {
-                throw new Error("You are not authorized to manage admins.");
-            }
             
-            setIsAuthorized(true);
-            setAdminUser(fetchedAdminUser);
-            setLocations(allLocations); // Set all locations for the form dropdown
+            setLocations(allLocations);
 
-            // A super admin sees all admins. A branch admin sees only their own.
-            const filteredAdmins = fetchedAdminUser.locationId
-                ? allAdmins.filter(a => a.locationId === fetchedAdminUser.locationId)
+            const filteredAdmins = adminUser.locationId
+                ? allAdmins.filter(a => a.locationId === adminUser.locationId)
                 : allAdmins;
             setAdmins(filteredAdmins);
 
@@ -49,24 +40,14 @@ export default function ManageAdminsPage() {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [adminUser]);
 
     React.useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                await fetchData(user);
-            } else {
-                setLoading(false);
-                setError("Please log in to continue.");
-            }
-        });
-        return () => unsubscribe();
+        fetchData();
     }, [fetchData]);
 
     const handleDataChange = () => {
-        if (auth.currentUser) {
-            fetchData(auth.currentUser);
-        }
+        fetchData();
     };
 
 
@@ -74,14 +55,14 @@ export default function ManageAdminsPage() {
         return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
     }
 
-    if (error || !isAuthorized) {
+    if (error) {
          return (
             <div className="flex min-h-screen items-center justify-center bg-background text-center p-4">
                 <div>
                     <ShieldAlert className="h-16 w-16 text-destructive mx-auto mb-4" />
-                    <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
+                    <h1 className="text-2xl font-bold mb-2">Error Fetching Data</h1>
                     <p className="text-muted-foreground mb-6">
-                        {error || "You do not have permission to access this page."}
+                        {error}
                     </p>
                     <Button asChild>
                         <Link href="/admin">Return to Dashboard</Link>

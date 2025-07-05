@@ -1,74 +1,60 @@
 
 'use client';
 import * as React from 'react';
-import { getBookingsFromFirestore, getLocationsFromFirestore, getAdminUser } from "@/lib/firestore";
+import { getBookingsFromFirestore, getLocationsFromFirestore } from "@/lib/firestore";
 import { BookingsList } from "@/components/bookings-list";
 import { ArrowLeft, Loader2, PlusCircle, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import type { AdminUser, Booking, Location } from '@/lib/types';
+import type { Booking, Location } from '@/lib/types';
+import { useAdmin } from '@/contexts/AdminContext';
 
 export default function ManageBookingsPage() {
-    const [adminUser, setAdminUser] = React.useState<AdminUser | null>(null);
+    const { adminUser } = useAdmin();
     const [bookings, setBookings] = React.useState<Booking[]>([]);
     const [locations, setLocations] = React.useState<Location[]>([]);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
 
      React.useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                try {
-                    // Fetch all data in parallel to improve performance
-                    const [fetchedAdminUser, allBookings, allLocations] = await Promise.all([
-                        getAdminUser(user.uid),
-                        getBookingsFromFirestore(),
-                        getLocationsFromFirestore(),
-                    ]);
+        if (!adminUser) return; // Wait for admin context
 
-                    if (!fetchedAdminUser) {
-                        throw new Error("You are not authorized to view this page.");
-                    }
-                    setAdminUser(fetchedAdminUser);
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const [allBookings, allLocations] = await Promise.all([
+                    getBookingsFromFirestore(),
+                    getLocationsFromFirestore(),
+                ]);
 
-                    const userLocationId = fetchedAdminUser.locationId;
+                const userLocationId = adminUser.locationId;
 
-                    // Filter client-side based on admin role
-                    const filteredBookings = userLocationId ? allBookings.filter(b => b.locationId === userLocationId) : allBookings;
-                    const filteredLocations = userLocationId ? allLocations.filter(l => l.id === userLocationId) : allLocations;
+                const filteredBookings = userLocationId ? allBookings.filter(b => b.locationId === userLocationId) : allBookings;
+                const filteredLocations = userLocationId ? allLocations.filter(l => l.id === userLocationId) : allLocations;
 
-                    setBookings(filteredBookings);
-                    setLocations(filteredLocations);
-                } catch (e) {
-                    setError(e instanceof Error ? e.message : "Failed to fetch booking data.");
-                    console.error(e);
-                } finally {
-                    setLoading(false);
-                }
-            } else {
+                setBookings(filteredBookings);
+                setLocations(filteredLocations);
+            } catch (e) {
+                setError(e instanceof Error ? e.message : "Failed to fetch booking data.");
+                console.error(e);
+            } finally {
                 setLoading(false);
-                setError("Please log in to view bookings.");
             }
-        });
-
-        return () => unsubscribe();
-    }, []);
+        };
+        fetchData();
+    }, [adminUser]);
 
     if (loading) {
         return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
     }
 
-    if (error || !adminUser) {
+    if (error) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-background text-center p-4">
                 <div>
                     <ShieldAlert className="h-16 w-16 text-destructive mx-auto mb-4" />
-                    <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
-                    <p className="text-muted-foreground mb-6">
-                        {error || "You do not have permission to access this page."}
-                    </p>
+                    <h1 className="text-2xl font-bold mb-2">Error Fetching Data</h1>
+                    <p className="text-muted-foreground mb-6">{error}</p>
                     <Button asChild>
                         <Link href="/admin">Return to Dashboard</Link>
                     </Button>

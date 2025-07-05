@@ -1,43 +1,17 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { onAuthStateChanged, type User } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
 import { AdminLoginForm } from '@/components/admin-login-form';
 import { AdminDashboard } from '@/components/admin-dashboard';
 import { Loader2, ShieldAlert } from 'lucide-react';
-import { getAdminUser } from '@/lib/firestore';
-import type { AdminUser } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
+import { useAdmin } from '@/contexts/AdminContext';
+import { auth } from '@/lib/firebase';
 
 export default function AdminPage() {
-  const [user, setUser] = useState<User | null>(null);
-  const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setLoading(true);
-      if (currentUser) {
-        setUser(currentUser);
-        try {
-          const fetchedAdminUser = await getAdminUser(currentUser.uid);
-          setAdminUser(fetchedAdminUser); // Will be null if not found
-        } catch (error) {
-          console.error("Error fetching admin user data:", error);
-          setAdminUser(null);
-        }
-      } else {
-        setUser(null);
-        setAdminUser(null);
-      }
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
+  const { adminUser, loading } = useAdmin();
+  const user = auth.currentUser;
 
   if (loading) {
     return (
@@ -48,10 +22,12 @@ export default function AdminPage() {
   }
 
   if (user && adminUser) {
+    // Auth check passed in layout, user is valid admin. Show dashboard.
     return <AdminDashboard user={user} adminUser={adminUser} />;
   }
 
   if (user && !adminUser) {
+    // User is signed in but is NOT an admin.
     return (
          <div className="flex min-h-screen items-center justify-center bg-background text-center p-4">
             <div>
@@ -69,5 +45,6 @@ export default function AdminPage() {
     );
   }
 
+  // No user, or user without admin role, show login form.
   return <AdminLoginForm />;
 }
