@@ -17,10 +17,19 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, Loader2, MapPin, PoundSterling, User } from 'lucide-react';
+import { Trash2, Loader2, MapPin, PoundSterling, User, Calendar, Clock, Scissors } from 'lucide-react';
 import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+} from '@/components/ui/dialog';
+import { Separator } from './ui/separator';
+import { Badge } from './ui/badge';
 
 type BookingsListProps = {
     initialBookings: Booking[];
@@ -31,13 +40,14 @@ export function BookingsList({ initialBookings, locations }: BookingsListProps) 
     const [bookings, setBookings] = React.useState(initialBookings);
     const [isDeleting, setIsDeleting] = React.useState<string | null>(null);
     const [selectedLocation, setSelectedLocation] = React.useState<string>('all');
+    const [selectedBooking, setSelectedBooking] = React.useState<Booking | null>(null);
     const { toast } = useToast();
 
-    const handleDelete = async (id: string) => {
+    const handleDelete = async (e: React.MouseEvent, id: string) => {
+        e.stopPropagation(); // Prevent the dialog from opening when deleting
         setIsDeleting(id);
         try {
             await deleteBooking(id);
-            // Revalidation from the server action will trigger a re-render with fresh data.
             toast({ title: 'Success', description: 'Booking deleted successfully.' });
         } catch (error) {
             toast({ title: 'Error', description: 'Failed to delete booking.', variant: 'destructive' });
@@ -95,7 +105,7 @@ export function BookingsList({ initialBookings, locations }: BookingsListProps) 
                     <TableBody>
                         {filteredBookings.length > 0 ? (
                             filteredBookings.map(booking => (
-                                <TableRow key={booking.id}>
+                                <TableRow key={booking.id} onClick={() => setSelectedBooking(booking)} className="cursor-pointer hover:bg-muted/50">
                                     <TableCell className="font-medium">
                                         <div className="hidden sm:block whitespace-nowrap">{format(new Date(booking.bookingTimestamp), 'PP p')}</div>
                                         <div className="sm:hidden">
@@ -139,7 +149,7 @@ export function BookingsList({ initialBookings, locations }: BookingsListProps) 
                                         <div className="flex gap-2 justify-end">
                                             <AlertDialog>
                                                  <AlertDialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon" disabled={isDeleting === booking.id}>
+                                                    <Button variant="ghost" size="icon" disabled={isDeleting === booking.id} onClick={(e) => e.stopPropagation()}>
                                                         {isDeleting === booking.id ? <Loader2 className="animate-spin" /> : <Trash2 className="h-4 w-4 text-destructive" />}
                                                     </Button>
                                                 </AlertDialogTrigger>
@@ -152,7 +162,7 @@ export function BookingsList({ initialBookings, locations }: BookingsListProps) 
                                                     </AlertDialogHeader>
                                                     <AlertDialogFooter>
                                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => handleDelete(booking.id)}>
+                                                        <AlertDialogAction onClick={(e) => handleDelete(e, booking.id)}>
                                                             Delete
                                                         </AlertDialogAction>
                                                     </AlertDialogFooter>
@@ -172,6 +182,62 @@ export function BookingsList({ initialBookings, locations }: BookingsListProps) 
                     </TableBody>
                 </Table>
             </div>
+
+             <Dialog open={!!selectedBooking} onOpenChange={(open) => !open && setSelectedBooking(null)}>
+                <DialogContent className="sm:max-w-md">
+                    {selectedBooking && (
+                        <>
+                            <DialogHeader>
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <DialogTitle className="text-2xl font-headline">{selectedBooking.clientName}</DialogTitle>
+                                        <DialogDescription>
+                                            {format(new Date(selectedBooking.bookingTimestamp), 'eeee, MMMM do, yyyy')}
+                                        </DialogDescription>
+                                    </div>
+                                    <Badge variant="outline" className="text-lg">£{selectedBooking.servicePrice.toFixed(2)}</Badge>
+                                </div>
+                            </DialogHeader>
+                            <div className="grid gap-4 pt-4">
+                                 <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/50">
+                                    <div className='flex items-center gap-3'>
+                                        <Clock className="h-5 w-5 text-primary" />
+                                        <span className="text-sm text-muted-foreground">Time</span>
+                                    </div>
+                                    <span className="font-semibold text-base">{format(new Date(selectedBooking.bookingTimestamp), 'p')}</span>
+                                </div>
+                                <Separator />
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-3 text-sm">
+                                        <Scissors className="h-4 w-4 text-primary" />
+                                        <span>{selectedBooking.serviceName} ({selectedBooking.serviceDuration} mins)</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-sm">
+                                        <User className="h-4 w-4 text-primary" />
+                                        <span>{selectedBooking.staffName}</span>
+                                    </div>
+                                     <div className="flex items-center gap-3 text-sm">
+                                        <MapPin className="h-4 w-4 text-primary" />
+                                        <span>{selectedBooking.locationName}</span>
+                                    </div>
+                                </div>
+                                <Separator />
+                                <div className="space-y-2 text-sm">
+                                     <h4 className="font-medium text-muted-foreground mb-2">Contact Information</h4>
+                                     <div className="flex items-center gap-3">
+                                        <span>{selectedBooking.clientPhone}</span>
+                                     </div>
+                                      {selectedBooking.clientEmail && (
+                                         <div className="flex items-center gap-3">
+                                            <span>{selectedBooking.clientEmail}</span>
+                                         </div>
+                                     )}
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
