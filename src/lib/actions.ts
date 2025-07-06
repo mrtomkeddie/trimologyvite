@@ -35,13 +35,13 @@ async function getIndividualStaffTimes(
     }));
 
     try {
-        const suggestedTimes = await suggestTimes({
+        const suggestedTimesResult = await suggestTimes({
             duration: serviceDuration,
             date: preferredDate,
             workingHours: dayHours,
             existingBookings: simpleBookings,
         });
-        return suggestedTimes.times;
+        return suggestedTimesResult.times;
     } catch (error) {
         console.error("AI suggestion failed, falling back to empty array:", error);
         // In a real-world scenario, you might want a non-AI fallback here.
@@ -62,10 +62,15 @@ export async function getSuggestedTimes(
         const allStaffAtLocation = (await getStaff()).filter(s => s.locationId === locationId && s.isBookable !== false);
         const allAvailableSlots = new Set<string>();
 
-        for (const staffMember of allStaffAtLocation) {
-            const staffSlots = await getIndividualStaffTimes(serviceDuration, preferredDate, staffMember);
+        // We can run these in parallel to speed things up
+        const timePromises = allStaffAtLocation.map(staffMember => 
+            getIndividualStaffTimes(serviceDuration, preferredDate, staffMember)
+        );
+        const results = await Promise.all(timePromises);
+
+        results.forEach(staffSlots => {
             staffSlots.forEach(slot => allAvailableSlots.add(slot));
-        }
+        });
 
         const sortedSlots = Array.from(allAvailableSlots).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
         console.log(`Found ${sortedSlots.length} total available slots for 'any' staff.`);

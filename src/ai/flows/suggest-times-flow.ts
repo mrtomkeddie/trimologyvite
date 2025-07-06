@@ -31,6 +31,12 @@ const SuggestTimesOutputSchema = z.object({
 });
 export type SuggestTimesOutput = z.infer<typeof SuggestTimesOutputSchema>;
 
+// This context object provides current date/time info to the prompt
+const SuggestTimesWithContextSchema = SuggestTimesInputSchema.extend({
+    currentDate: z.string(),
+    currentTime: z.string(),
+});
+
 // Exported wrapper function to be called by server actions
 export async function suggestTimes(input: SuggestTimesInput): Promise<SuggestTimesOutput> {
   // Provide current date and time context to the prompt
@@ -46,10 +52,7 @@ export async function suggestTimes(input: SuggestTimesInput): Promise<SuggestTim
 
 const suggestTimesPrompt = ai.definePrompt({
   name: 'suggestTimesPrompt',
-  input: { schema: SuggestTimesInputSchema.extend({
-      currentDate: z.string(),
-      currentTime: z.string(),
-  }) },
+  input: { schema: SuggestTimesWithContextSchema },
   output: { schema: SuggestTimesOutputSchema },
   prompt: `
     You are an intelligent scheduling assistant for a salon.
@@ -80,10 +83,7 @@ const suggestTimesPrompt = ai.definePrompt({
 const suggestTimesFlow = ai.defineFlow(
   {
     name: 'suggestTimesFlow',
-    inputSchema: SuggestTimesInputSchema.extend({
-        currentDate: z.string(),
-        currentTime: z.string(),
-    }),
+    inputSchema: SuggestTimesWithContextSchema,
     outputSchema: SuggestTimesOutputSchema,
   },
   async (input) => {
