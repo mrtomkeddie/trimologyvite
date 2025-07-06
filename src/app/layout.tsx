@@ -7,8 +7,8 @@ export const metadata: Metadata = {
   description: 'Get the best haircut and beauty services from our award-winning team',
   manifest: '/manifest.json',
   icons: {
-    icon: '/trimology-logo.png',
-    apple: '/trimology-logo.png',
+    icon: '/trimology-logo.png?v=2',
+    apple: '/trimology-logo.png?v=2',
   },
 };
 
@@ -24,7 +24,6 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet" />
-        <link rel="icon" href="/trimology-logo.png" sizes="any" />
       </head>
       <body className="font-body antialiased">
         {children}
