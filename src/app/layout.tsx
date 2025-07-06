@@ -7,8 +7,8 @@ export const metadata: Metadata = {
   description: 'Get the best haircut and beauty services from our award-winning team',
   manifest: '/manifest.json',
   icons: {
-    icon: '/trimology-logo.png?v=3',
-    apple: '/trimology-logo.png?v=3',
+    icon: '/trimology-logo.png',
+    apple: '/trimology-logo.png',
   }
 };
 

@@ -5,16 +5,16 @@
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",
-  "theme_color": "#D5B56E",
+  "theme_color": "#000000",
   "icons": [
     {
-      "src": "/trimology-logo.png?v=3",
+      "src": "/trimology-logo.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/trimology-logo.png?v=3",
+      "src": "/trimology-logo.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
