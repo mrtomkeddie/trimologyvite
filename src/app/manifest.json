@@ -1,8 +1,8 @@
 
 {
-  "name": "Trimology",
-  "short_name": "Trimology",
-  "description": "Get the best haircut and beauty services from our award-winning team.",
+  "name": "SalonFlow",
+  "short_name": "SalonFlow",
+  "description": "Book your next appointment with SalonFlow.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",
@@ -24,7 +24,7 @@
       "src": "/trimology-black.png?v=6",
       "sizes": "180x180",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "apple-touch-icon"
     },
     {
       "src": "/trimology-black.png?v=6",

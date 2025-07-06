@@ -29,7 +29,7 @@ export default async function Home() {
         <header className="w-full flex flex-col items-center text-center mb-8">
           <Image 
             src="/trimology-logo.png" 
-            alt="Trimology Logo" 
+            alt="SalonFlow Logo" 
             width={300} 
             height={228}
             className="w-48 h-auto sm:w-64 mb-4"
@@ -40,7 +40,7 @@ export default async function Home() {
           <BookingForm locations={locations} services={services} staff={staff} />
         </div>
         <footer className="w-full text-center mt-12 text-muted-foreground text-sm">
-          <p>&copy; {new Date().getFullYear()} Trimology. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} SalonFlow. All rights reserved.</p>
            <div className="mt-4 flex justify-center gap-4">
             <Link href="/admin" className="hover:text-primary transition-colors">
               Admin Login

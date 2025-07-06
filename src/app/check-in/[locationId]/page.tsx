@@ -41,7 +41,7 @@ export default async function CheckinPage({ params }: { params: { locationId: st
         <header className="w-full flex flex-col items-center text-center mb-8">
           <Image 
             src="/trimology-logo.png" 
-            alt="Trimology Logo" 
+            alt="SalonFlow Logo" 
             width={300} 
             height={228}
             className="w-48 h-auto sm:w-64 mb-4"
