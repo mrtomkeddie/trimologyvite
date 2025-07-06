@@ -89,7 +89,7 @@ export default function ManageLocationsPage() {
                 </div>
 
                 {locations.length > 0 ? (
-                    <div className="grid gap-6 w-full max-w-4xl md:grid-cols-2">
+                    <div className="grid gap-6 w-full max-w-2xl">
                         {locations.map(location => (
                             <Card key={location.id} className="shadow-lg">
                                 <CardHeader>
