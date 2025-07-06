@@ -428,6 +428,30 @@ export async function getBookingsFromFirestore(locationId?: string): Promise<Boo
     });
 }
 
+export async function getBookingsByPhoneFromFirestore(phone: string): Promise<Booking[]> {
+    if (USE_DUMMY_DATA) {
+        const filtered = dummyBookings.filter(b => b.clientPhone === phone);
+        const sorted = filtered.sort((a, b) => new Date(b.bookingTimestamp).getTime() - new Date(a.bookingTimestamp).getTime());
+        return Promise.resolve(sorted);
+    }
+
+    const q = query(
+        bookingsCollection,
+        where('clientPhone', '==', phone),
+        orderBy('bookingTimestamp', 'desc')
+    );
+
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            bookingTimestamp: data.bookingTimestamp,
+        } as Booking;
+    });
+}
+
 export async function getBookingsByStaffId(staffId: string): Promise<Booking[]> {
     if (USE_DUMMY_DATA) {
         const upcoming = dummyBookings

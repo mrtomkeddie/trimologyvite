@@ -32,6 +32,10 @@ export default async function Home() {
         <footer className="w-full text-center mt-12 text-muted-foreground text-sm">
           <p>&copy; {new Date().getFullYear()} Trimology. All rights reserved.</p>
            <div className="mt-4 flex justify-center gap-4">
+            <Link href="/my-visits" className="hover:text-primary transition-colors">
+              My Visits
+            </Link>
+            <span className="text-muted-foreground/50">|</span>
             <Link href="/admin" className="hover:text-primary transition-colors">
               Admin Login
             </Link>
