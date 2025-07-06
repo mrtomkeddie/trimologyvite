@@ -15,6 +15,7 @@ import { Calendar } from '@/components/ui/calendar';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -321,7 +322,10 @@ export function AdminBookingForm({ adminUser, locations, services, staff }: Admi
                     </div>
                     <FormField control={form.control} name="clientEmail" render={({ field }) => (
                       <FormItem>
-                        <FormControl><Input placeholder="Client Email (Optional)" {...field} /></FormControl>
+                        <FormControl><Input placeholder="Client Email" {...field} /></FormControl>
+                        <FormDescription>
+                          Optional. Used for sending the client a booking confirmation.
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )} />
@@ -340,3 +344,5 @@ export function AdminBookingForm({ adminUser, locations, services, staff }: Admi
     </Form>
   );
 }
+
+    
