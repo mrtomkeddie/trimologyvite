@@ -209,7 +209,7 @@ export async function createBooking(bookingData: BookingData) {
             const emailBody = `
 Dear ${bookingData.clientName},
 
-Thank you for booking with SalonFlow!
+Thank you for booking with Trimology!
 
 Your appointment details:
 Service: ${service?.name || 'N/A'} (£${service.price.toFixed(2)})
@@ -220,12 +220,12 @@ Staff: ${staffMember?.name || 'Any Available'}
 
 We look forward to seeing you!
 
-- The SalonFlow Team
+- The Trimology Team
             `.trim().replace(/^ +/gm, '');
 
             console.log("--- Sending Confirmation Email ---");
             console.log(`To: ${bookingData.clientEmail}`);
-            console.log(`Subject: Your SalonFlow Booking Confirmation`);
+            console.log(`Subject: Your Trimology Booking Confirmation`);
             console.log(emailBody);
             console.log("---------------------------------");
 

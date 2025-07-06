@@ -4,8 +4,8 @@ import { Toaster } from "@/components/ui/toaster"
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'SalonFlow',
-  description: 'Book your next appointment with SalonFlow.',
+  title: 'Trimology',
+  description: 'Book your next appointment with Trimology.',
 };
 
 export default function RootLayout({
@@ -24,9 +24,8 @@ export default function RootLayout({
         {/* Favicon and App Icon Links */}
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#000000" />
-        <link rel="icon" href="/trimology-logo.png?v=6" type="image/png" />
-        <link rel="shortcut icon" href="/trimology-logo.png?v=6" type="image/png" />
-        <link rel="apple-touch-icon" href="/trimology-black.png?v=6" />
+        <link rel="icon" href="/trimology-logo.png?v=7" type="image/png" sizes="any" />
+        <link rel="apple-touch-icon" href="/trimology-black.png?v=7" />
 
       </head>
       <body className="font-body antialiased">
