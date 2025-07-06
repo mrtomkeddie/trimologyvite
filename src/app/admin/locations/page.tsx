@@ -1,3 +1,4 @@
+
 'use client';
 import * as React from 'react';
 import { useAdmin } from '@/contexts/AdminContext';
@@ -5,9 +6,10 @@ import { getLocationsFromFirestore } from '@/lib/firestore';
 import type { Location } from '@/lib/types';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Loader2, QrCode, ShieldAlert, Copy } from "lucide-react";
+import { ArrowLeft, Loader2, QrCode, ShieldAlert, UploadCloud, Download } from "lucide-react";
 import Link from "next/link";
-import { useToast } from '@/hooks/use-toast';
+import { QrCodeUploadDialog } from '@/components/qr-upload-dialog';
+import Image from 'next/image';
 
 export default function ManageLocationsPage() {
     const { adminUser } = useAdmin();
@@ -15,35 +17,38 @@ export default function ManageLocationsPage() {
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
     const [origin, setOrigin] = React.useState('');
-    const { toast } = useToast();
+    const [isUploadDialogOpen, setIsUploadDialogOpen] = React.useState(false);
+    const [selectedLocation, setSelectedLocation] = React.useState<Location | null>(null);
+
+    const fetchData = React.useCallback(async () => {
+        if (!adminUser) return;
+        setLoading(true);
+        try {
+            const fetchedLocations = await getLocationsFromFirestore(adminUser.locationId);
+            setLocations(fetchedLocations);
+        } catch (e) {
+            setError(e instanceof Error ? e.message : "Failed to fetch location data.");
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    }, [adminUser]);
 
     React.useEffect(() => {
-        // This ensures window.location.origin is available
         setOrigin(window.location.origin);
-
-        if (!adminUser) return;
-
-        const fetchData = async () => {
-            setLoading(true);
-            try {
-                // Fetch locations based on admin's scope
-                const fetchedLocations = await getLocationsFromFirestore(adminUser.locationId);
-                setLocations(fetchedLocations);
-            } catch (e) {
-                setError(e instanceof Error ? e.message : "Failed to fetch location data.");
-                console.error(e);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchData();
-    }, [adminUser]);
-    
-    const handleCopy = (url: string) => {
-        navigator.clipboard.writeText(url);
-        toast({ title: "Copied!", description: "URL copied to clipboard." });
+    }, [fetchData]);
+
+    const handleUploadClick = (location: Location) => {
+        setSelectedLocation(location);
+        setIsUploadDialogOpen(true);
     };
+    
+    const handleUploadComplete = () => {
+        setIsUploadDialogOpen(false);
+        setSelectedLocation(null);
+        fetchData(); // Re-fetch data to show the new QR code
+    }
 
     if (loading) {
         return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
@@ -79,45 +84,74 @@ export default function ManageLocationsPage() {
                 <div className="text-center max-w-2xl">
                     <h2 className="text-2xl font-bold">Manage Walk-in Customer Check-in</h2>
                     <p className="text-muted-foreground mt-2">
-                        Generate QR codes for your locations to allow walk-in customers to check themselves in quickly. Use any free online QR code generator (like `the-qrcode-generator.com`) with the URLs below.
+                        For each location, you can upload the QR code image you've created. This keeps everything in one place, ready to print or display.
                     </p>
                 </div>
 
                 {locations.length > 0 ? (
                     <div className="grid gap-6 w-full max-w-4xl md:grid-cols-2">
-                        {locations.map(location => {
-                            const walkinUrl = `${origin}/check-in/${location.id}`;
-                            return (
-                                <Card key={location.id} className="shadow-lg">
-                                    <CardHeader>
-                                        <div className="flex items-center justify-between">
-                                            <CardTitle>{location.name}</CardTitle>
-                                            <QrCode className="h-6 w-6 text-primary" />
+                        {locations.map(location => (
+                            <Card key={location.id} className="shadow-lg">
+                                <CardHeader>
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle>{location.name}</CardTitle>
+                                        <QrCode className="h-6 w-6 text-primary" />
+                                    </div>
+                                    <CardDescription>{location.address}</CardDescription>
+                                </CardHeader>
+                                <CardContent className="flex flex-col items-center justify-center gap-4">
+                                    {location.qrCodeUrl ? (
+                                        <div className='text-center w-full'>
+                                             <div className="relative w-48 h-48 mx-auto border-4 border-primary rounded-lg overflow-hidden">
+                                                <Image 
+                                                    src={location.qrCodeUrl} 
+                                                    alt={`${location.name} QR Code`} 
+                                                    layout="fill"
+                                                    objectFit='contain'
+                                                    data-ai-hint="qr code"
+                                                />
+                                            </div>
+                                            <div className="flex gap-2 mt-4 justify-center">
+                                                <Button asChild variant="secondary">
+                                                    <a href={location.qrCodeUrl} download={`${location.name}-QR-Code.png`}>
+                                                         <Download className="mr-2 h-4 w-4" />
+                                                         Download
+                                                    </a>
+                                                </Button>
+                                                <Button variant="outline" onClick={() => handleUploadClick(location)}>Replace</Button>
+                                            </div>
                                         </div>
-                                        <CardDescription>{location.address}</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <p className="text-sm font-semibold mb-2">Walk-in URL:</p>
-                                        <div className="flex items-center gap-2">
-                                            <input 
+                                    ) : (
+                                        <div className='text-center w-full p-4 border-2 border-dashed rounded-lg bg-muted/50'>
+                                            <p className="text-sm text-muted-foreground mb-4">No QR code uploaded yet. Use the link below with any online generator.</p>
+                                             <input 
                                                 type="text" 
                                                 readOnly 
-                                                value={walkinUrl} 
-                                                className="flex-grow bg-muted/50 border border-input rounded-md px-3 py-2 text-sm"
+                                                value={`${origin}/check-in/${location.id}`} 
+                                                className="w-full bg-background border border-input rounded-md px-3 py-2 text-sm text-center mb-4"
                                             />
-                                            <Button variant="outline" size="icon" onClick={() => handleCopy(walkinUrl)}>
-                                                <Copy className="h-4 w-4" />
+                                            <Button onClick={() => handleUploadClick(location)}>
+                                                <UploadCloud className="mr-2 h-4 w-4" />
+                                                Upload QR Code Image
                                             </Button>
                                         </div>
-                                    </CardContent>
-                                </Card>
-                            )
-                        })}
+                                    )}
+                                </CardContent>
+                            </Card>
+                        ))}
                     </div>
                 ) : (
                     <p className="text-muted-foreground mt-8">No locations found.</p>
                 )}
             </main>
+             {selectedLocation && (
+                <QrCodeUploadDialog
+                    isOpen={isUploadDialogOpen}
+                    setIsOpen={setIsUploadDialogOpen}
+                    location={selectedLocation}
+                    onUploadComplete={handleUploadComplete}
+                />
+            )}
         </div>
     );
 }

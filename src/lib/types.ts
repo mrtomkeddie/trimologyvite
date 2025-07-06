@@ -8,6 +8,7 @@ export const LocationSchema = z.object({
   address: z.string(),
   phone: z.string().optional(),
   email: z.string().email().optional().or(z.literal('')),
+  qrCodeUrl: z.string().url().optional().or(z.literal('')),
 });
 export type Location = z.infer<typeof LocationSchema>;
 
@@ -183,4 +184,12 @@ export const AdminFormSchema = z.object({
     // We handle the password requirement logic inside the form submission instead.
 });
 
+
+export const LocationFormSchema = z.object({
+    name: z.string().min(2, "Name must be at least 2 characters"),
+    address: z.string().min(5, "Please enter a valid address"),
+    phone: z.string().optional(),
+    email: z.string().email().optional().or(z.literal('')),
+    qrCodeUrl: z.string().url().optional().or(z.literal('')),
+});
     
