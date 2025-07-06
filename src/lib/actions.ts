@@ -1,15 +1,16 @@
 
 'use server';
 
-import { format, parse, addMinutes, getDay, isBefore, isAfter } from 'date-fns';
+import { format, parse, addMinutes, getDay, isBefore, isAfter, startOfDay, endOfDay } from 'date-fns';
 import { getLocations, getServices, getStaff } from './data';
 import type { NewBooking, Staff, Booking } from './types';
 import { addBooking, getBookingsForStaffOnDate } from './firestore';
+import { suggestTimes }from '@/ai/flows/suggest-times-flow';
 
 // Helper to map JS day index (Sun=0) to our string keys
 const dayMap: (keyof Staff['workingHours'])[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
-// Helper function to get available times for a single, specific staff member
+// Helper function to get available times for a single, specific staff member using AI
 async function getIndividualStaffTimes(
     serviceDuration: number,
     preferredDate: string, // 'yyyy-MM-dd' format
@@ -26,31 +27,26 @@ async function getIndividualStaffTimes(
     }
 
     const existingBookings = await getBookingsForStaffOnDate(staffMember.id, dateObj);
-    const { start: startTime, end: endTime } = dayHours;
-    const availableSlots: string[] = [];
     
-    let currentSlotTime = parse(startTime, 'HH:mm', dateObj);
-    const dayEndTimeObj = parse(endTime, 'HH:mm', dateObj);
+    // Map existing bookings to a simpler format for the AI prompt
+    const simpleBookings = existingBookings.map(b => ({
+      time: format(new Date(b.bookingTimestamp), 'HH:mm'),
+      duration: b.serviceDuration,
+    }));
 
-    const increment = 15; 
-    
-    while (isBefore(addMinutes(currentSlotTime, serviceDuration), dayEndTimeObj)) {
-        const potentialSlotEnd = addMinutes(currentSlotTime, serviceDuration);
-
-        const isSlotAvailable = !existingBookings.some(booking => {
-            const bookingStart = new Date(booking.bookingTimestamp);
-            const bookingEnd = addMinutes(bookingStart, booking.serviceDuration);
-            return isBefore(currentSlotTime, bookingEnd) && isAfter(potentialSlotEnd, bookingStart);
+    try {
+        const suggestedTimes = await suggestTimes({
+            duration: serviceDuration,
+            date: preferredDate,
+            workingHours: dayHours,
+            existingBookings: simpleBookings,
         });
-        
-        const isToday = format(new Date(), 'yyyy-MM-dd') === preferredDate;
-        if (isSlotAvailable && (!isToday || isAfter(currentSlotTime, new Date()))) {
-            availableSlots.push(format(currentSlotTime, 'HH:mm'));
-        }
-
-        currentSlotTime = addMinutes(currentSlotTime, increment);
+        return suggestedTimes.times;
+    } catch (error) {
+        console.error("AI suggestion failed, falling back to empty array:", error);
+        // In a real-world scenario, you might want a non-AI fallback here.
+        return [];
     }
-    return availableSlots;
 }
 
 export async function getSuggestedTimes(
@@ -61,12 +57,11 @@ export async function getSuggestedTimes(
 ) {
     console.log(`Getting times for staff ${staffId} on ${preferredDate} for a ${serviceDuration} min service.`);
     
-    // --- New, smarter logic for 'any' staff ---
+    // --- Logic for 'any' staff ---
     if (staffId === 'any') {
-        const allStaffAtLocation = (await getStaff()).filter(s => s.locationId === locationId);
+        const allStaffAtLocation = (await getStaff()).filter(s => s.locationId === locationId && s.isBookable !== false);
         const allAvailableSlots = new Set<string>();
 
-        // Check availability for every staff member and aggregate the results
         for (const staffMember of allStaffAtLocation) {
             const staffSlots = await getIndividualStaffTimes(serviceDuration, preferredDate, staffMember);
             staffSlots.forEach(slot => allAvailableSlots.add(slot));
@@ -87,7 +82,7 @@ export async function getSuggestedTimes(
     }
 
     const availableSlots = await getIndividualStaffTimes(serviceDuration, preferredDate, staffMember);
-    console.log(`Generated ${availableSlots.length} available slots for ${staffMember.name}`);
+    console.log(`Generated ${availableSlots.length} available slots for ${staffMember.name} using AI.`);
     
     return { success: true, times: availableSlots };
 }
