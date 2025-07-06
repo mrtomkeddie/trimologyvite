@@ -119,8 +119,8 @@ export function AdminBookingForm({ adminUser, locations, services, staff }: Admi
         setSuggestedTimes(result.times);
         if(result.times.length === 0) {
             toast({
-                title: "No Slots Available",
-                description: "No available time slots for the selected date/staff. Please try another day or staff member.",
+                title: "AI Assistant: No Slots Found",
+                description: "The intelligent scheduler couldn't find any available slots for this combination of date, service, and staff. Please try another day or staff member.",
                 variant: 'destructive',
             });
         }
