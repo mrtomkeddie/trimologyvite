@@ -6,11 +6,11 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Trimology',
   description: 'Get the best haircut and beauty services from our award-winning team',
-  manifest: '/manifest.json?v=3',
+  manifest: '/manifest.json',
   icons: {
-    icon: '/trimology-logo.png?v=3',
-    apple: '/trimology-logo.png?v=3',
-    shortcut: '/trimology-logo.png?v=3',
+    icon: '/trimology-logo.png?v=4',
+    apple: '/trimology-logo.png?v=4',
+    shortcut: '/trimology-logo.png?v=4',
   }
 };
 
