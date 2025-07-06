@@ -21,7 +21,7 @@ const SuggestTimesInputSchema = z.object({
   }),
   existingBookings: z.array(z.object({
     time: z.string().describe('Start time of an existing booking, e.g., "10:30".'),
-    duration: z.number().describe('Duration of the existing booking in minutes.'),
+    existingDuration: z.number().describe('Duration of the existing booking in minutes.'),
   })),
 });
 export type SuggestTimesInput = z.infer<typeof SuggestTimesInputSchema>;
@@ -60,9 +60,9 @@ const suggestTimesPrompt = ai.definePrompt({
 
     The staff member's working hours on this day are from {{workingHours.start}} to {{workingHours.end}}.
     They already have the following bookings:
-    {{#if existingBookings.length}}
+    {{#if existingBookings}}
       {{#each existingBookings}}
-      - A {{duration}} minute booking at {{time}}.
+      - A {{this.existingDuration}} minute booking at {{this.time}}.
       {{/each}}
     {{else}}
       No existing bookings.

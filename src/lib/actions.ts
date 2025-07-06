@@ -31,7 +31,7 @@ async function getIndividualStaffTimes(
     // Map existing bookings to a simpler format for the AI prompt
     const simpleBookings = existingBookings.map(b => ({
       time: format(new Date(b.bookingTimestamp), 'HH:mm'),
-      duration: b.serviceDuration,
+      existingDuration: b.serviceDuration,
     }));
 
     try {
