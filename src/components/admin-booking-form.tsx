@@ -35,12 +35,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookingFormSchema, type Service, type Staff, type Location, type AdminUser } from '@/lib/types';
+import { AdminBookingFormSchema, type Service, type Staff, type Location, type AdminUser } from '@/lib/types';
 import { getSuggestedTimes, createBooking } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
-type BookingFormValues = z.infer<typeof BookingFormSchema>;
+type AdminBookingFormValues = z.infer<typeof AdminBookingFormSchema>;
 
 type AdminBookingFormProps = {
   adminUser: AdminUser;
@@ -58,8 +58,8 @@ export function AdminBookingForm({ adminUser, locations, services, staff }: Admi
 
   const isBranchAdmin = !!adminUser.locationId;
 
-  const form = useForm<BookingFormValues>({
-    resolver: zodResolver(BookingFormSchema),
+  const form = useForm<AdminBookingFormValues>({
+    resolver: zodResolver(AdminBookingFormSchema),
     defaultValues: {
       locationId: isBranchAdmin ? adminUser.locationId : undefined,
       clientName: '',
@@ -135,7 +135,7 @@ export function AdminBookingForm({ adminUser, locations, services, staff }: Admi
     }
   };
 
-  async function onSubmit(data: BookingFormValues) {
+  async function onSubmit(data: AdminBookingFormValues) {
     setIsSubmitting(true);
     try {
       await createBooking(data);
@@ -316,6 +316,9 @@ export function AdminBookingForm({ adminUser, locations, services, staff }: Admi
                       <FormField control={form.control} name="clientPhone" render={({ field }) => (
                         <FormItem>
                           <FormControl><Input placeholder="Client Phone Number" {...field} /></FormControl>
+                           <FormDescription>
+                             Optional. Required for loyalty tracking.
+                           </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )} />
@@ -344,5 +347,7 @@ export function AdminBookingForm({ adminUser, locations, services, staff }: Admi
     </Form>
   );
 }
+
+    
 
     

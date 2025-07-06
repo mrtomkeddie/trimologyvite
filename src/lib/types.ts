@@ -1,4 +1,5 @@
 
+
 import { z } from 'zod';
 
 export const LocationSchema = z.object({
@@ -101,6 +102,10 @@ export const BookingFormSchema = z.object({
     clientEmail: z.string().email({ message: 'Please enter a valid email.' }).optional().or(z.literal('')),
 });
 
+export const AdminBookingFormSchema = BookingFormSchema.extend({
+    clientPhone: z.string().optional(),
+});
+
 export const ServiceFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
   duration: z.coerce.number().positive('Duration must be a positive number.'),
@@ -177,3 +182,5 @@ export const AdminFormSchema = z.object({
     // This logic is tricky with superRefine because we don't have an ID field.
     // We handle the password requirement logic inside the form submission instead.
 });
+
+    

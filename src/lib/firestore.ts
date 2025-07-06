@@ -509,6 +509,11 @@ export async function getClientLoyaltyData(locationId?: string): Promise<ClientL
     const clientsMap = new Map<string, ClientLoyalty>();
 
     allBookings.forEach(booking => {
+        // Only process bookings with a phone number for loyalty tracking
+        if (!booking.clientPhone || booking.clientPhone.trim() === '') {
+            return;
+        }
+        
         const clientIdentifier = `${booking.clientName.toLowerCase().trim()}-${booking.clientPhone.trim()}`;
 
         if (clientsMap.has(clientIdentifier)) {
@@ -544,3 +549,6 @@ export async function getClientLoyaltyData(locationId?: string): Promise<ClientL
 }
     
 
+
+
+    
