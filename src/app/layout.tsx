@@ -1,3 +1,4 @@
+
 import type {Metadata} from 'next';
 import { Toaster } from "@/components/ui/toaster"
 import './globals.css';
@@ -5,17 +6,11 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Trimology',
   description: 'Get the best haircut and beauty services from our award-winning team',
-  manifest: '/manifest.json?v=1',
+  manifest: '/manifest.json?v=2',
   icons: {
-    icon: [
-        { url: '/trimology-logo.png?v=1', type: 'image/png', sizes: '192x192' },
-        { url: '/trimology-logo.png?v=1', type: 'image/png', sizes: '512x512' }
-    ],
-    apple: [
-        { url: '/trimology-logo.png?v=1', type: 'image/png' },
-        { url: '/trimology-logo.png?v=1', type: 'image/png', sizes: '180x180' }
-    ],
-    shortcut: '/trimology-logo.png?v=1'
+    icon: '/trimology-logo.png?v=2',
+    apple: '/trimology-logo.png?v=2',
+    shortcut: '/trimology-logo.png?v=2',
   }
 };
 
