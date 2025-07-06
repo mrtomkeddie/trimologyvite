@@ -1,4 +1,3 @@
-
 import { BookingForm } from '@/components/booking-form';
 import { getServices, getStaff, getLocations } from '@/lib/data';
 import Image from 'next/image';
