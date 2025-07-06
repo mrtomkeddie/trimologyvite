@@ -122,18 +122,26 @@ export default function ManageLocationsPage() {
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className='text-center w-full p-4 border-2 border-dashed rounded-lg bg-muted/50'>
-                                            <p className="text-sm text-muted-foreground mb-4">No QR code uploaded yet. Use the link below with any online generator.</p>
-                                             <input 
-                                                type="text" 
-                                                readOnly 
-                                                value={`${origin}/check-in/${location.id}`} 
-                                                className="w-full bg-background border border-input rounded-md px-3 py-2 text-sm text-center mb-4"
-                                            />
-                                            <Button onClick={() => handleUploadClick(location)}>
-                                                <UploadCloud className="mr-2 h-4 w-4" />
-                                                Upload QR Code Image
-                                            </Button>
+                                        <div className='text-center w-full p-4'>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleUploadClick(location)}
+                                                className="h-48 w-48 mx-auto flex flex-col items-center justify-center border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted transition-colors text-muted-foreground"
+                                            >
+                                                <UploadCloud className="h-10 w-10 text-primary" />
+                                                <span className="font-semibold text-foreground mt-2">Upload QR Code</span>
+                                                <span className="text-xs mt-1">Click to upload image</span>
+                                            </button>
+                                            <div className="mt-4 max-w-xs mx-auto">
+                                                <label className="text-xs text-muted-foreground">Or generate one using this link:</label>
+                                                <input 
+                                                    type="text" 
+                                                    readOnly 
+                                                    value={`${origin}/check-in/${location.id}`} 
+                                                    className="w-full bg-background border border-input rounded-md px-3 py-2 text-sm text-center mt-1"
+                                                    onFocus={(e) => e.target.select()}
+                                                />
+                                            </div>
                                         </div>
                                     )}
                                 </CardContent>
