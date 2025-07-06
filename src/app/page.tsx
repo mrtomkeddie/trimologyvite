@@ -3,6 +3,8 @@ import { BookingForm } from '@/components/booking-form';
 import { getServices, getStaff, getLocations } from '@/lib/data';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { History } from 'lucide-react';
 
 export default async function Home() {
   // Fetch data in parallel to improve initial page load time.
@@ -13,7 +15,16 @@ export default async function Home() {
   ]);
 
   return (
-    <div className="flex min-h-dvh w-full flex-col items-center justify-center bg-background p-4 sm:p-6 lg:p-8">
+    <div className="relative flex min-h-dvh w-full flex-col items-center justify-center bg-background p-4 sm:p-6 lg:p-8">
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-6 lg:top-8 lg:right-8 z-10">
+        <Button asChild variant="outline">
+          <Link href="/my-visits">
+            <History className="mr-2 h-4 w-4" />
+            My Visits
+          </Link>
+        </Button>
+      </div>
+      
        <div className="absolute top-0 left-0 w-full h-full bg-accent/20 blur-3xl -z-10" />
       <main className="w-full max-w-5xl flex flex-col items-center">
         <header className="w-full flex flex-col items-center text-center mb-8">
