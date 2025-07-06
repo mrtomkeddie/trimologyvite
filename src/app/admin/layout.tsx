@@ -18,20 +18,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   React.useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setLoading(true);
-      setError(null);
       if (user) {
-        // Add a check to ensure the user object has the email before proceeding.
-        // This prevents a race condition on navigation where the user object is temporarily incomplete.
+        // This can fire multiple times. The first time, user.email might be null.
+        // We only want to proceed when we have the full user object.
         if (!user.email) {
           console.log("AdminLayout: Auth user object is not fully loaded yet, waiting...");
-          // We don't set loading to false, we just wait for the next auth state change
-          // which typically has the complete user object.
+          // The initial state of `loading` (true) will keep the loader on screen.
+          // We just wait for the next, more complete auth state change.
           return;
         }
         
+        // Now we have the full user object, so we can check their admin status.
+        setError(null);
         try {
-          const fetchedAdminUser = await getAdminUser(user.uid, user.email ?? undefined);
+          const fetchedAdminUser = await getAdminUser(user.uid, user.email);
           if (fetchedAdminUser) {
             setAdminUser(fetchedAdminUser);
           } else {
@@ -41,16 +41,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         } catch (e) {
           setError(e instanceof Error ? e.message : "Failed to verify admin status.");
           setAdminUser(null);
+        } finally {
+          setLoading(false); // We are done with all checks.
         }
       } else {
-        // If on the main /admin login or staff login page, it's not an error.
-        // For any other protected route, it is.
+        // User is not logged in.
         if (pathname !== '/admin' && pathname !== '/staff/login') {
             setError("Please log in to continue.");
+        } else {
+            setError(null); // Clear potential errors on login pages
         }
         setAdminUser(null);
+        setLoading(false); // We are done, show the login form or an error.
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
