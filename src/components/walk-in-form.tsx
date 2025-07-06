@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -12,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormMessage,
@@ -131,7 +133,7 @@ export function WalkinForm({ location, services, staff }: WalkinFormProps) {
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Any Staff Member" />
+                              <SelectValue placeholder="Any Available Staff" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -169,6 +171,9 @@ export function WalkinForm({ location, services, staff }: WalkinFormProps) {
                         <Input placeholder="Phone Number" {...field} className="pl-9" />
                     </div>
                     </FormControl>
+                    <FormDescription>
+                        Required for loyalty points tracking.
+                    </FormDescription>
                     <FormMessage />
                 </FormItem>
                 )} />

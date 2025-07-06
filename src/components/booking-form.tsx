@@ -15,6 +15,7 @@ import { Calendar } from '@/components/ui/calendar';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -361,6 +362,9 @@ export function BookingForm({ locations, services, staff }: BookingFormProps) {
                               <Input placeholder="Phone Number" {...field} className="pl-9" />
                             </div>
                           </FormControl>
+                          <FormDescription>
+                            Required for loyalty points tracking.
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )} />
