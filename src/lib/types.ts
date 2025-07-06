@@ -78,6 +78,17 @@ export const AdminUserSchema = z.object({
 });
 export type AdminUser = z.infer<typeof AdminUserSchema>;
 
+export const ClientLoyaltySchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    phone: z.string(),
+    email: z.string().optional(),
+    totalVisits: z.number(),
+    lastVisit: z.string(), // ISO String
+    locations: z.array(z.string()), // Array of location names
+});
+export type ClientLoyalty = z.infer<typeof ClientLoyaltySchema>;
+
 
 export const BookingFormSchema = z.object({
     locationId: z.string({ required_error: 'Please select a location.' }),

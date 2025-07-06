@@ -4,7 +4,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import type { User } from 'firebase/auth';
-import { LogOut, Scissors, Users, MapPin, ArrowRight, Key, CalendarDays, Shield } from 'lucide-react';
+import { LogOut, Scissors, Users, MapPin, ArrowRight, Key, CalendarDays, Shield, Heart } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 import type { AdminUser } from '@/lib/types';
@@ -53,6 +53,22 @@ export function AdminDashboard({ user, adminUser }: AdminDashboardProps) {
                         </div>
                         <div className="mt-4 text-primary font-semibold flex items-center">
                             Go to Bookings <ArrowRight className="ml-2 h-4 w-4" />
+                        </div>
+                    </div>
+                </Link>
+                <Link href="/admin/clients" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
+                    <div className="p-6 flex flex-col justify-between h-full">
+                        <div>
+                            <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <h3 className="tracking-tight font-semibold">Client Loyalty</h3>
+                                <Heart className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                                Track visit history and reward your top clients.
+                            </p>
+                        </div>
+                        <div className="mt-4 text-primary font-semibold flex items-center">
+                            Go to Clients <ArrowRight className="ml-2 h-4 w-4" />
                         </div>
                     </div>
                 </Link>

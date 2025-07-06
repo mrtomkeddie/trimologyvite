@@ -3,7 +3,7 @@
 
 import { db } from './firebase';
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, orderBy, query, Timestamp, where, getDoc, setDoc, limit } from 'firebase/firestore';
-import type { Location, Service, Staff, Booking, NewBooking, AdminUser } from './types';
+import type { Location, Service, Staff, Booking, NewBooking, AdminUser, ClientLoyalty } from './types';
 import { revalidatePath } from 'next/cache';
 import { addDays, startOfDay, endOfDay, subDays } from 'date-fns';
 
@@ -64,6 +64,10 @@ const dummyBookings: Booking[] = [
     { id: 'book-10', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-7', serviceName: 'Luxury Manicure', servicePrice: 50, serviceDuration: 60, staffId: 'staff-4', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: subDays(startOfDay(new Date()), 1).setHours(12, 0).toString(), clientName: 'Lois Lane', clientPhone: '555-1010' },
     { id: 'book-11', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-6', serviceName: 'Modern Fade', servicePrice: 35, serviceDuration: 45, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: subDays(startOfDay(new Date()), 2).setHours(11, 0).toString(), clientName: 'Jimmy Olsen', clientPhone: '555-1212' },
     { id: 'book-12', locationId: 'soho-3', locationName: 'Soho Salon', serviceId: 'svc-9', serviceName: 'Signature Cut', servicePrice: 75, serviceDuration: 60, staffId: 'staff-5', staffName: 'Casey Jones', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: startOfDay(new Date()).setHours(14, 0).toString(), clientName: 'Perry White', clientPhone: '555-1313' },
+    // Add more bookings for loyalty data
+    { id: 'book-13', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: subDays(startOfDay(new Date()), 10).setHours(10, 0).toString(), clientName: 'Bob Johnson', clientPhone: '555-1111', clientEmail: 'bob@example.com' },
+    { id: 'book-14', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-2', staffName: 'Maria Garcia', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: subDays(startOfDay(new Date()), 20).setHours(10, 0).toString(), clientName: 'Bob Johnson', clientPhone: '555-1111', clientEmail: 'bob@example.com' },
+    { id: 'book-15', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-4', serviceName: 'Kids Cut', servicePrice: 20, serviceDuration: 30, staffId: 'staff-4', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: subDays(startOfDay(new Date()), 5).setHours(9, 0).toString(), clientName: 'Anakin Skywalker', clientPhone: '555-6666' },
 ];
 
 const dummyAdmins: AdminUser[] = [
@@ -497,4 +501,45 @@ export async function deleteBooking(id: string) {
     revalidatePath('/my-schedule');
 }
 
+// Client Loyalty
+export async function getClientLoyaltyData(locationId?: string): Promise<ClientLoyalty[]> {
+    // This function derives client data from the existing bookings.
+    const allBookings = await getBookingsFromFirestore(locationId);
+    
+    const clientsMap = new Map<string, ClientLoyalty>();
+
+    allBookings.forEach(booking => {
+        const clientIdentifier = `${booking.clientName.toLowerCase().trim()}-${booking.clientPhone.trim()}`;
+
+        if (clientsMap.has(clientIdentifier)) {
+            const existingClient = clientsMap.get(clientIdentifier)!;
+            existingClient.totalVisits += 1;
+            
+            if (new Date(booking.bookingTimestamp) > new Date(existingClient.lastVisit)) {
+                existingClient.lastVisit = booking.bookingTimestamp;
+            }
+
+            if (!existingClient.locations.includes(booking.locationName)) {
+                existingClient.locations.push(booking.locationName);
+            }
+
+        } else {
+             clientsMap.set(clientIdentifier, {
+                id: clientIdentifier,
+                name: booking.clientName,
+                phone: booking.clientPhone,
+                email: booking.clientEmail,
+                totalVisits: 1,
+                lastVisit: booking.bookingTimestamp,
+                locations: [booking.locationName],
+             });
+        }
+    });
+
+    // Convert map to array and sort by most visits
+    const clientsArray = Array.from(clientsMap.values());
+    clientsArray.sort((a, b) => b.totalVisits - a.totalVisits);
+
+    return clientsArray;
+}
     
