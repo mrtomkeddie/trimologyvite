@@ -21,6 +21,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       setLoading(true);
       setError(null);
       if (user) {
+        // Add a check to ensure the user object has the email before proceeding.
+        // This prevents a race condition on navigation where the user object is temporarily incomplete.
+        if (!user.email) {
+          console.log("AdminLayout: Auth user object is not fully loaded yet, waiting...");
+          // We don't set loading to false, we just wait for the next auth state change
+          // which typically has the complete user object.
+          return;
+        }
+        
         try {
           const fetchedAdminUser = await getAdminUser(user.uid, user.email ?? undefined);
           if (fetchedAdminUser) {
