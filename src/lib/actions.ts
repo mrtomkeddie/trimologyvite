@@ -5,64 +5,82 @@ import { format, parse, addMinutes, getDay, isBefore, isAfter, startOfDay, endOf
 import { getLocations, getServices, getStaff } from './data';
 import type { NewBooking, Staff, Booking } from './types';
 import { addBooking, getBookingsForStaffOnDate } from './firestore';
-import { suggestTimes }from '@/ai/flows/suggest-times-flow';
 
 // Helper to map JS day index (Sun=0) to our string keys
 const dayMap: (keyof Staff['workingHours'])[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
-// Helper function to get available times for a single, specific staff member using AI
+// New non-AI helper function to get available times for a single staff member
 async function getIndividualStaffTimes(
     serviceDuration: number,
-    preferredDate: string, // 'yyyy-MM-dd' format
+    preferredDate: Date,
     staffMember: Staff
 ): Promise<string[]> {
     if (!staffMember.workingHours || staffMember.isBookable === false) return [];
 
-    const dateObj = parse(preferredDate, 'yyyy-MM-dd', new Date());
-    const dayOfWeek = dayMap[getDay(dateObj)];
+    const dayOfWeek = dayMap[getDay(preferredDate)];
     const dayHours = staffMember.workingHours[dayOfWeek];
 
     if (!dayHours || dayHours === 'off') {
         return [];
     }
-
-    const existingBookings = await getBookingsForStaffOnDate(staffMember.id, dateObj);
     
-    // Map existing bookings to a simpler format for the AI prompt
-    const simpleBookings = existingBookings.map(b => ({
-      time: format(new Date(b.bookingTimestamp), 'HH:mm'),
-      existingDuration: b.serviceDuration,
-    }));
+    // --- Define the working day boundaries ---
+    const workDayStart = parse(dayHours.start, 'HH:mm', preferredDate);
+    const workDayEnd = parse(dayHours.end, 'HH:mm', preferredDate);
 
-    try {
-        const suggestedTimesResult = await suggestTimes({
-            duration: serviceDuration,
-            date: preferredDate,
-            workingHours: dayHours,
-            existingBookings: simpleBookings,
-        });
-        return suggestedTimesResult.times;
-    } catch (error) {
-        console.error("AI suggestion failed, falling back to empty array:", error);
-        // In a real-world scenario, you might want a non-AI fallback here.
-        return [];
+    // --- Get existing bookings and create "busy" blocks ---
+    const existingBookings = await getBookingsForStaffOnDate(staffMember.id, preferredDate);
+    const busyBlocks = existingBookings.map(b => {
+        const start = new Date(b.bookingTimestamp);
+        const end = addMinutes(start, b.serviceDuration);
+        return { start, end };
+    });
+
+    const availableSlots: string[] = [];
+    let currentTime = workDayStart;
+
+    // --- Iterate through the workday to find slots ---
+    while (isBefore(addMinutes(currentTime, serviceDuration), workDayEnd) || currentTime.getTime() === workDayEnd.getTime() - (serviceDuration * 60000)) {
+        const slotStart = currentTime;
+        const slotEnd = addMinutes(slotStart, serviceDuration);
+
+        // Check against current time if it's today
+        const now = new Date();
+        if (isBefore(slotStart, now)) {
+             currentTime = addMinutes(currentTime, 15);
+             continue;
+        }
+
+        // Check for conflicts with busy blocks
+        const hasConflict = busyBlocks.some(busyBlock => 
+            (isBefore(slotStart, busyBlock.end) && isAfter(slotEnd, busyBlock.start))
+        );
+
+        if (!hasConflict) {
+            availableSlots.push(format(slotStart, 'HH:mm'));
+        }
+
+        // Move to the next 15-minute interval
+        currentTime = addMinutes(currentTime, 15);
     }
+    
+    return availableSlots;
 }
 
 export async function getSuggestedTimes(
     serviceDuration: number,
-    preferredDate: string, // 'yyyy-MM-dd' format
+    preferredDateStr: string, // 'yyyy-MM-dd' format
     staffId: string,
     locationId: string,
 ) {
-    console.log(`Getting times for staff ${staffId} on ${preferredDate} for a ${serviceDuration} min service.`);
+    console.log(`Getting times for staff ${staffId} on ${preferredDateStr} for a ${serviceDuration} min service.`);
+    const preferredDate = parse(preferredDateStr, 'yyyy-MM-dd', new Date());
     
     // --- Logic for 'any' staff ---
     if (staffId === 'any') {
         const allStaffAtLocation = (await getStaff()).filter(s => s.locationId === locationId && s.isBookable !== false);
         const allAvailableSlots = new Set<string>();
 
-        // We can run these in parallel to speed things up
         const timePromises = allStaffAtLocation.map(staffMember => 
             getIndividualStaffTimes(serviceDuration, preferredDate, staffMember)
         );
@@ -87,7 +105,7 @@ export async function getSuggestedTimes(
     }
 
     const availableSlots = await getIndividualStaffTimes(serviceDuration, preferredDate, staffMember);
-    console.log(`Generated ${availableSlots.length} available slots for ${staffMember.name} using AI.`);
+    console.log(`Found ${availableSlots.length} available slots for ${staffMember.name}.`);
     
     return { success: true, times: availableSlots };
 }

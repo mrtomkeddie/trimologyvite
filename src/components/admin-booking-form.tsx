@@ -119,8 +119,8 @@ export function AdminBookingForm({ adminUser, locations, services, staff }: Admi
         setSuggestedTimes(result.times);
         if(result.times.length === 0) {
             toast({
-                title: "AI Assistant: No Slots Found",
-                description: "The intelligent scheduler couldn't find any available slots for this combination of date, service, and staff. Please try another day or staff member.",
+                title: "No Slots Found",
+                description: "There are no available slots for this combination of date, service, and staff. Please try another day or staff member.",
                 variant: 'destructive',
             });
         }
@@ -317,7 +317,7 @@ export function AdminBookingForm({ adminUser, locations, services, staff }: Admi
                         <FormItem>
                           <FormControl><Input placeholder="Client Phone Number" {...field} /></FormControl>
                            <FormDescription>
-                             Optional. Required for loyalty tracking.
+                             Required for loyalty tracking.
                            </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -347,7 +347,3 @@ export function AdminBookingForm({ adminUser, locations, services, staff }: Admi
     </Form>
   );
 }
-
-    
-
-    
