@@ -25,12 +25,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import type { Service, Location } from '@/lib/types';
+import type { Service, Location, Staff } from '@/lib/types';
 import { createBooking } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 
 const WalkinFormSchema = z.object({
     serviceId: z.string({ required_error: 'Please select a service.' }),
+    staffId: z.string().optional(),
     clientName: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
     clientPhone: z.string().min(10, { message: 'Please enter a valid phone number.' }),
     clientEmail: z.string().email({ message: 'Please enter a valid email.' }).optional().or(z.literal('')),
@@ -41,9 +42,10 @@ type WalkinFormValues = z.infer<typeof WalkinFormSchema>;
 type WalkinFormProps = {
   location: Location;
   services: Service[];
+  staff: Staff[];
 };
 
-export function WalkinForm({ location, services }: WalkinFormProps) {
+export function WalkinForm({ location, services, staff }: WalkinFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -54,6 +56,7 @@ export function WalkinForm({ location, services }: WalkinFormProps) {
       clientName: '',
       clientPhone: '',
       clientEmail: '',
+      staffId: 'any',
     },
   });
 
@@ -65,7 +68,7 @@ export function WalkinForm({ location, services }: WalkinFormProps) {
       const bookingData = {
         locationId: location.id,
         serviceId: data.serviceId,
-        staffId: 'any', // The system will find an available staff member
+        staffId: data.staffId || 'any',
         date: now,
         time: format(now, 'HH:mm'),
         clientName: data.clientName,
@@ -96,29 +99,55 @@ export function WalkinForm({ location, services }: WalkinFormProps) {
             <CardDescription className="text-center">Select your service and enter your details to join the queue.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-             <FormField
-                control={form.control}
-                name="serviceId"
-                render={({ field }) => (
-                    <FormItem>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Choose a service..." />
-                        </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                        {services.map((service) => (
-                            <SelectItem key={service.id} value={service.id}>
-                            {service.name} - £{service.price.toFixed(2)} ({service.duration} min)
-                            </SelectItem>
-                        ))}
-                        </SelectContent>
-                    </Select>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
+            <div className="space-y-4">
+                 <FormField
+                    control={form.control}
+                    name="serviceId"
+                    render={({ field }) => (
+                        <FormItem>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Choose a service..." />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            {services.map((service) => (
+                                <SelectItem key={service.id} value={service.id}>
+                                {service.name} - £{service.price.toFixed(2)} ({service.duration} min)
+                                </SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                <FormField
+                    control={form.control}
+                    name="staffId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Any Staff Member" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="any">Any Available Staff</SelectItem>
+                            {staff.map((staffMember) => (
+                              <SelectItem key={staffMember.id} value={staffMember.id}>
+                                {staffMember.name} {staffMember.specialization && `(${staffMember.specialization})`}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+            </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField control={form.control} name="clientName" render={({ field }) => (

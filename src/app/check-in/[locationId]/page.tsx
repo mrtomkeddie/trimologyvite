@@ -1,4 +1,4 @@
-import { getLocations, getServices } from '@/lib/data';
+import { getLocations, getServices, getStaff } from '@/lib/data';
 import { WalkinForm } from '@/components/walk-in-form';
 import Image from 'next/image';
 import { AlertCircle } from 'lucide-react';
@@ -8,9 +8,10 @@ export default async function CheckinPage({ params }: { params: { locationId: st
   const { locationId } = params;
 
   // Fetch all data in parallel
-  const [allLocations, allServices] = await Promise.all([
+  const [allLocations, allServices, allStaff] = await Promise.all([
     getLocations(),
     getServices(),
+    getStaff(),
   ]);
 
   const location = allLocations.find(l => l.id === locationId);
@@ -29,8 +30,9 @@ export default async function CheckinPage({ params }: { params: { locationId: st
     );
   }
 
-  // Filter services for the current location
+  // Filter services and staff for the current location
   const servicesForLocation = allServices.filter(s => s.locationId === locationId);
+  const staffForLocation = allStaff.filter(s => s.locationId === locationId && s.isBookable !== false);
 
   return (
     <div className="flex min-h-dvh w-full flex-col items-center justify-center bg-background p-4 sm:p-6 lg:p-8">
@@ -50,7 +52,7 @@ export default async function CheckinPage({ params }: { params: { locationId: st
         </header>
         <div className="w-full max-w-2xl">
             {servicesForLocation.length > 0 ? (
-                <WalkinForm location={location} services={servicesForLocation} />
+                <WalkinForm location={location} services={servicesForLocation} staff={staffForLocation} />
             ) : (
                 <Alert>
                     <AlertCircle className="h-4 w-4" />
