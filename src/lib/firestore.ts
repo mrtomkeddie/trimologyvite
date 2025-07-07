@@ -347,17 +347,23 @@ export async function getStaffByUid(uid: string): Promise<Staff | null> {
 
 // Bookings
 export async function getBookingsFromFirestore(locationId?: string): Promise<Booking[]> {
-     if (USE_DUMMY_DATA) {
+    if (USE_DUMMY_DATA) {
         const sorted = dummyBookings.sort((a,b) => b.bookingTimestamp.localeCompare(a.bookingTimestamp));
         if (locationId) return Promise.resolve(sorted.filter(b => b.locationId === locationId));
         return Promise.resolve(sorted);
     }
-     const q = locationId 
-        ? query(bookingsCollection, where('locationId', '==', locationId), orderBy('bookingTimestamp', 'desc'))
-        : query(bookingsCollection, orderBy('bookingTimestamp', 'desc'));
+
+    let q;
+    if (locationId) {
+        // Query by location, but omit the ordering to avoid the composite index requirement.
+        q = query(bookingsCollection, where('locationId', '==', locationId));
+    } else {
+        // Query all bookings, ordered by timestamp. This is a simple index and is allowed.
+        q = query(bookingsCollection, orderBy('bookingTimestamp', 'desc'));
+    }
 
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => {
+    const bookings = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
             id: doc.id,
@@ -365,6 +371,13 @@ export async function getBookingsFromFirestore(locationId?: string): Promise<Boo
             bookingTimestamp: data.bookingTimestamp,
         } as Booking;
     });
+
+    // If we filtered by location, we now need to sort the results in our code.
+    if (locationId) {
+        bookings.sort((a, b) => b.bookingTimestamp.localeCompare(a.bookingTimestamp));
+    }
+
+    return bookings;
 }
 
 export async function getBookingsByPhoneFromFirestore(phone: string): Promise<Booking[]> {
