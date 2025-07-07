@@ -13,6 +13,15 @@ const USE_DUMMY_DATA = true;
 
 // --- DUMMY DATA DEFINITIONS ---
 
+// Helper to create unambiguous UTC timestamp strings for dummy data
+const createDummyTimestamp = (date: Date, hour: number, minute: number): string => {
+    const d = new Date(date);
+    d.setHours(hour, minute, 0, 0); // Set hours in local time for predictability
+    // Then create a UTC string from those local components
+    return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), hour, minute)).toISOString();
+};
+
+
 const dummyLocations: Location[] = [
     { id: 'downtown-1', name: 'Downtown Barbers', address: '123 Main St, Barberville', phone: '555-0101', email: 'contact@downtown.com', qrCodeUrl: '' },
     { id: 'uptown-2', name: 'Uptown Cuts', address: '456 High St, Styletown', phone: '555-0102', email: 'hello@uptown.com', qrCodeUrl: '' },
@@ -51,14 +60,8 @@ const dummyStaff: Staff[] = [
     { id: 'staff-7', name: 'Demo Staff', specialization: 'Stylist', locationId: 'downtown-1', locationName: 'Downtown Barbers', uid: 'staff@trimology.com', email: 'staff@trimology.com', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: defaultWorkingHours },
 ];
 
-// Helper to create timezone-unaware timestamp strings for dummy data
-const createDummyTimestamp = (date: Date, hour: number, minute: number) => {
-    const d = new Date(date);
-    d.setHours(hour, minute, 0, 0);
-    return format(d, "yyyy-MM-dd'T'HH:mm:ss");
-};
 
-const dummyBookings: Booking[] = [
+let dummyBookings: Booking[] = [
     { id: 'book-1', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 1), 10, 0), clientName: 'Bob Johnson', clientPhone: '555-1111', clientEmail: 'bob@example.com' },
     { id: 'book-2', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-2', serviceName: 'Beard Trim', servicePrice: 15, serviceDuration: 15, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 2), 14, 30), clientName: 'Charlie Brown', clientPhone: '555-2222' },
     { id: 'book-3', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-5', serviceName: 'Color & Cut', servicePrice: 90, serviceDuration: 120, staffId: 'staff-4', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 3), 11, 0), clientName: 'Diana Prince', clientPhone: '555-3333', clientEmail: 'diana@example.com' },
@@ -400,7 +403,7 @@ export async function getStaffByUid(uid: string, email?: string): Promise<Staff 
 // Bookings
 export async function getBookingsFromFirestore(locationId?: string): Promise<Booking[]> {
      if (USE_DUMMY_DATA) {
-        const sorted = dummyBookings.sort((a,b) => new Date(b.bookingTimestamp).getTime() - new Date(a.bookingTimestamp).getTime());
+        const sorted = dummyBookings.sort((a,b) => b.bookingTimestamp.localeCompare(a.bookingTimestamp));
         if (locationId) return Promise.resolve(sorted.filter(b => b.locationId === locationId));
         return Promise.resolve(sorted);
     }
@@ -422,7 +425,7 @@ export async function getBookingsFromFirestore(locationId?: string): Promise<Boo
 export async function getBookingsByPhoneFromFirestore(phone: string): Promise<Booking[]> {
     if (USE_DUMMY_DATA) {
         const filtered = dummyBookings.filter(b => b.clientPhone === phone);
-        const sorted = filtered.sort((a, b) => new Date(b.bookingTimestamp).getTime() - new Date(a.bookingTimestamp).getTime());
+        const sorted = filtered.sort((a, b) => b.bookingTimestamp.localeCompare(a.bookingTimestamp));
         return Promise.resolve(sorted);
     }
 
@@ -444,19 +447,19 @@ export async function getBookingsByPhoneFromFirestore(phone: string): Promise<Bo
 }
 
 export async function getBookingsByStaffId(staffId: string): Promise<Booking[]> {
+    const nowString = new Date().toISOString();
+    
     if (USE_DUMMY_DATA) {
         const upcoming = dummyBookings
-            .filter(b => b.staffId === staffId && new Date(b.bookingTimestamp) >= new Date())
-            .sort((a,b) => new Date(a.bookingTimestamp).getTime() - new Date(b.bookingTimestamp).getTime());
+            .filter(b => b.staffId === staffId && b.bookingTimestamp >= nowString)
+            .sort((a,b) => a.bookingTimestamp.localeCompare(b.bookingTimestamp));
         return Promise.resolve(upcoming);
     }
-    // Get current time in a timezone-unaware string format for comparison
-    const nowString = format(new Date(), "yyyy-MM-dd'T'HH:mm:ss");
 
     const q = query(
         bookingsCollection, 
         where('staffId', '==', staffId),
-        where('bookingTimestamp', '>=', nowString), // Compare strings
+        where('bookingTimestamp', '>=', nowString),
         orderBy('bookingTimestamp', 'asc')
     );
     const snapshot = await getDocs(q);
@@ -464,8 +467,9 @@ export async function getBookingsByStaffId(staffId: string): Promise<Booking[]> 
 }
 
 export async function getBookingsForStaffOnDate(staffId: string, date: Date): Promise<Booking[]> {
-    const dayStartStr = format(date, 'yyyy-MM-dd') + 'T00:00:00';
-    const dayEndStr = format(date, 'yyyy-MM-dd') + 'T23:59:59';
+    // Construct UTC-based start and end of day strings for reliable querying
+    const dayStartStr = format(date, 'yyyy-MM-dd') + 'T00:00:00.000Z';
+    const dayEndStr = format(date, 'yyyy-MM-dd') + 'T23:59:59.999Z';
     
     if (USE_DUMMY_DATA) {
         const dayBookings = dummyBookings.filter(b => {
@@ -487,6 +491,9 @@ export async function getBookingsForStaffOnDate(staffId: string, date: Date): Pr
 
 export async function addBooking(data: NewBooking) {
     if (USE_DUMMY_DATA) { 
+        // IMPORTANT: In dummy mode, this mutation is temporary and will not persist across requests.
+        // This is why bookings appear to vanish after being created in dummy mode.
+        // Switch to live Firestore data for proper booking persistence.
         const newBooking = { ...data, id: `book-${Date.now()}`};
         dummyBookings.push(newBooking);
         revalidatePath('/admin/bookings'); 
@@ -546,7 +553,7 @@ export async function getClientLoyaltyData(locationId?: string): Promise<ClientL
              clientsMap.set(clientIdentifier, {
                 id: clientIdentifier,
                 name: booking.clientName,
-                phone: booking.phone,
+                phone: booking.clientPhone,
                 email: booking.clientEmail,
                 totalVisits: 1,
                 lastVisit: booking.bookingTimestamp,

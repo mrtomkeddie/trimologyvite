@@ -1,7 +1,7 @@
 
 'use server';
 
-import { format, parse, addMinutes, getDay, isBefore, isAfter } from 'date-fns';
+import { format, parse, addMinutes, getDay, isBefore, isAfter, startOfDay, endOfDay } from 'date-fns';
 import { getLocations, getServices, getStaff } from './data';
 import type { NewBooking, Staff } from './types';
 import { addBooking, getBookingsForStaffOnDate } from './firestore';
@@ -12,11 +12,11 @@ const dayMap: (keyof Staff['workingHours'])[] = ['sunday', 'monday', 'tuesday', 
 // --- Reusable Conflict Check Helper Function ---
 // This function assumes all date objects passed to it are in the same timezone (server's local time)
 const checkForConflicts = async (staffId: string, start: Date, end: Date): Promise<boolean> => {
-    // getBookingsForStaffOnDate now also uses timezone-unaware strings, so this will work consistently.
+    // This now queries using UTC-based date objects.
     const existingBookings = await getBookingsForStaffOnDate(staffId, start);
 
     return existingBookings.some(b => {
-        // Create Date objects from the timezone-unaware strings for comparison
+        // Create Date objects from the UTC timestamp strings for comparison
         const existingStart = new Date(b.bookingTimestamp);
         const existingEnd = addMinutes(existingStart, b.serviceDuration);
         
@@ -32,44 +32,34 @@ async function getIndividualStaffTimes(
     staffMember: Staff
 ): Promise<string[]> {
     if (!staffMember.workingHours || staffMember.isBookable === false) return [];
-
-    // Create a date object for midnight on the preferred date, in the server's local timezone.
+    
+    // Construct a date object from the preferred date string. It will be interpreted in the server's local timezone.
     const preferredDate = new Date(`${preferredDateStr}T00:00:00`);
     if (isNaN(preferredDate.getTime())) {
-        return []; // Handle invalid date string
+        return [];
     }
 
     const dayOfWeek = dayMap[getDay(preferredDate)];
     const dayHours = staffMember.workingHours[dayOfWeek];
 
-    if (!dayHours || dayHours === 'off') {
-        return [];
-    }
+    if (!dayHours || dayHours === 'off') return [];
     
-    // Create start and end of work day relative to the server's local timezone interpretation of the date.
     const workDayStart = parse(dayHours.start, 'HH:mm', preferredDate);
     const workDayEnd = parse(dayHours.end, 'HH:mm', preferredDate);
 
     const availableSlots: string[] = [];
     let potentialSlotStart = workDayStart;
-    const now = new Date(); // Server's current time
+    const now = new Date();
 
-    // Iterate through the workday in 15-minute intervals
     while (isBefore(potentialSlotStart, workDayEnd)) {
         const potentialSlotEnd = addMinutes(potentialSlotStart, serviceDuration);
 
-        // Rule 1: Slot must end within the workday.
-        if (isAfter(potentialSlotEnd, workDayEnd)) {
-            break; 
-        }
-
-        // Rule 2: Slot cannot be in the past (compared to server's current time).
+        if (isAfter(potentialSlotEnd, workDayEnd)) break;
         if (isBefore(potentialSlotStart, now)) {
             potentialSlotStart = addMinutes(potentialSlotStart, 15);
             continue;
         }
         
-        // Rule 3: Check for conflicts with existing bookings.
         const hasConflict = await checkForConflicts(staffMember.id, potentialSlotStart, potentialSlotEnd);
         if (!hasConflict) {
             availableSlots.push(format(potentialSlotStart, 'HH:mm'));
@@ -87,35 +77,27 @@ export async function getSuggestedTimes(
     staffId: string,
     locationId: string,
 ) {
-    // --- Logic for 'any' staff ---
     if (staffId === 'any') {
         const allStaffAtLocation = (await getStaff()).filter(s => s.locationId === locationId && s.isBookable !== false);
         const allAvailableSlots = new Set<string>();
 
-        // We use the date string directly, letting the helper handle date creation.
         const timePromises = allStaffAtLocation.map(staffMember => 
             getIndividualStaffTimes(serviceDuration, preferredDateStr, staffMember)
         );
         const results = await Promise.all(timePromises);
 
-        results.forEach(staffSlots => {
-            staffSlots.forEach(slot => allAvailableSlots.add(slot));
-        });
+        results.forEach(staffSlots => staffSlots.forEach(slot => allAvailableSlots.add(slot)));
 
         const sortedSlots = Array.from(allAvailableSlots).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
         return { success: true, times: sortedSlots };
     }
 
-    // --- Logic for a specific staff member ---
     const allStaff = await getStaff();
     const staffMember = allStaff.find(s => s.id === staffId);
     
-    if (!staffMember) {
-        return { success: true, times: [] };
-    }
+    if (!staffMember) return { success: true, times: [] };
 
     const availableSlots = await getIndividualStaffTimes(serviceDuration, preferredDateStr, staffMember);
-    
     return { success: true, times: availableSlots };
 }
 
@@ -137,7 +119,6 @@ export async function createBooking(bookingData: BookingData) {
         throw new Error("Missing required booking information.");
     }
      
-    // --- Data Fetching ---
     const allLocations = await getLocations();
     const allServices = await getServices();
     const allStaff = await getStaff();
@@ -145,66 +126,55 @@ export async function createBooking(bookingData: BookingData) {
     const location = allLocations.find(l => l.id === bookingData.locationId);
     const service = allServices.find(s => s.id === bookingData.serviceId);
     
-    if (!location || !service) {
-        throw new Error("Invalid location or service selected.");
-    }
+    if (!location || !service) throw new Error("Invalid location or service selected.");
 
-    // --- Create a timezone-unaware timestamp string for the booking ---
+    // Create an unambiguous UTC timestamp string. This is the core of the fix.
     const datePart = format(bookingData.date, 'yyyy-MM-dd');
     const timePart = bookingData.time;
-    const bookingTimestampString = `${datePart}T${timePart}:00`;
+    const bookingTimestampString = `${datePart}T${timePart}:00.000Z`;
 
-    // Create server-local Date objects from this string for calculations.
-    // This ensures all comparisons happen in the same timezone context.
+    // Create a Date object from this UTC string for calculations.
     const bookingStart = new Date(bookingTimestampString);
-    if (isNaN(bookingStart.getTime())) {
-        throw new Error("Invalid date or time provided for booking.");
-    }
+    if (isNaN(bookingStart.getTime())) throw new Error("Invalid date or time for booking.");
     const bookingEnd = addMinutes(bookingStart, service.duration);
     
     let assignedStaff: Staff | undefined | null = null;
 
-    // --- Assign Staff and Perform Final, Definitive Conflict Check ---
     if (bookingData.staffId === 'any') {
         const bookableStaffAtLocation = allStaff.filter(s => s.locationId === bookingData.locationId && s.isBookable !== false);
         
-        // Find the first staff member who is free at the requested time
         for (const potentialStaff of bookableStaffAtLocation) {
-            const hasConflict = await checkForConflicts(potentialStaff.id, bookingStart, bookingEnd);
-            if (!hasConflict) {
-                // Check if the slot is within their working hours
-                const dayOfWeek = dayMap[getDay(bookingStart)];
-                const dayHours = potentialStaff.workingHours?.[dayOfWeek];
-                if (dayHours && dayHours !== 'off') {
-                    // Create date objects for comparison using the same base date as the booking
-                    const workDayStart = parse(dayHours.start, 'HH:mm', bookingStart);
-                    const workDayEnd = parse(dayHours.end, 'HH:mm', bookingStart);
-                    if (!isBefore(bookingStart, workDayStart) && !isAfter(bookingEnd, workDayEnd)) {
-                        assignedStaff = potentialStaff; // Found a free staff member
-                        break;
-                    }
+            const dayOfWeek = dayMap[getDay(bookingStart)];
+            const dayHours = potentialStaff.workingHours?.[dayOfWeek];
+            if (!dayHours || dayHours === 'off') continue;
+
+            // Use the user's selected date (bookingData.date) to parse working hours, avoiding server timezone shifts.
+            const workDayStart = parse(dayHours.start, 'HH:mm', bookingData.date);
+            const workDayEnd = parse(dayHours.end, 'HH:mm', bookingData.date);
+
+            // Reconstruct bookingStart/End relative to the same day for accurate working hours check
+            const bookingStartInDay = parse(timePart, 'HH:mm', bookingData.date);
+            const bookingEndInDay = addMinutes(bookingStartInDay, service.duration);
+
+            if (!isBefore(bookingStartInDay, workDayStart) && !isAfter(bookingEndInDay, workDayEnd)) {
+                const hasConflict = await checkForConflicts(potentialStaff.id, bookingStart, bookingEnd);
+                if (!hasConflict) {
+                    assignedStaff = potentialStaff;
+                    break;
                 }
             }
         }
 
-        if (!assignedStaff) {
-            throw new Error("Sorry, no staff is available for that time slot. It may have just been taken.");
-        }
+        if (!assignedStaff) throw new Error("Sorry, no staff is available for that time slot. It may have just been taken.");
+    
     } else {
-        // A specific staff member was chosen, find them.
         assignedStaff = allStaff.find(s => s.id === bookingData.staffId);
-        if (!assignedStaff) {
-            throw new Error("The selected staff member could not be found.");
-        }
+        if (!assignedStaff) throw new Error("The selected staff member could not be found.");
         
-        // For the chosen staff, perform the definitive conflict check.
         const hasConflict = await checkForConflicts(assignedStaff.id, bookingStart, bookingEnd);
-        if (hasConflict) {
-            throw new Error("Sorry, that time slot is no longer available for the selected staff member. Please choose another time.");
-        }
+        if (hasConflict) throw new Error("Sorry, that time slot is no longer available. Please choose another time.");
     }
 
-    // --- Create the booking since all checks have passed ---
     const newBooking: NewBooking = {
         locationId: bookingData.locationId,
         locationName: location.name,
@@ -212,10 +182,10 @@ export async function createBooking(bookingData: BookingData) {
         serviceName: service.name,
         servicePrice: service.price,
         serviceDuration: service.duration,
-        staffId: assignedStaff.id, // Use the ID of the definitively assigned staff
+        staffId: assignedStaff.id,
         staffName: assignedStaff.name,
         staffImageUrl: assignedStaff.imageUrl || '',
-        bookingTimestamp: bookingTimestampString, // Store the timezone-unaware string
+        bookingTimestamp: bookingTimestampString, // Store the unambiguous UTC string
         clientName: bookingData.clientName,
         clientPhone: bookingData.clientPhone,
         clientEmail: bookingData.clientEmail || '',
@@ -224,7 +194,6 @@ export async function createBooking(bookingData: BookingData) {
     await addBooking(newBooking);
 
     if (bookingData.clientEmail) {
-        // In a real app, you would integrate a proper email service here.
         console.log(`Email confirmation would be sent to ${bookingData.clientEmail}`);
     }
 
