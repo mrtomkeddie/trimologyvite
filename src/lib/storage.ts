@@ -17,7 +17,7 @@ export async function uploadStaffImage(staffId: string, file: File): Promise<str
 }
 
 export async function uploadLocationQrCode(locationId: string, file: File): Promise<string> {
-    const filePath = `locationQrCodes/${locationId}/${file.name}`;
+    const filePath = `locationQrCodes/${locationId}/${Date.now()}_${file.name}`;
     const storageRef = ref(storage, filePath);
     
     const snapshot = await uploadBytes(storageRef, file, {
