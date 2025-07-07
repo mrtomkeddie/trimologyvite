@@ -4,6 +4,8 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { addAdminWithLogin, updateAdmin } from '@/lib/firestore';
+import { setAdminRecord, updateAdmin } from '@/lib/firestore';
 import { AdminFormSchema, type AdminUser, type Location } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -83,7 +85,7 @@ export function AdminForm({ isOpen, setIsOpen, admin, locations, onSubmitted, cu
                     submissionData.locationName = location.name;
                  }
                 
-                await updateAdmin(admin.uid, submissionData);
+                await updateAdmin(admin.id, submissionData);
                 toast({ title: 'Success', description: 'Admin updated successfully.' });
 
             } else { // --- CREATE PATH ---
@@ -104,14 +106,16 @@ export function AdminForm({ isOpen, setIsOpen, admin, locations, onSubmitted, cu
                      return;
                 }
 
+                const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+                const uid = userCredential.user.uid;
+
                 const submissionData = {
                     email: data.email,
-                    password: data.password,
                     locationId: location.id,
                     locationName: location.name,
                 };
-
-                await addAdminWithLogin(submissionData);
+                
+                await setAdminRecord(uid, submissionData);
                 toast({ title: 'Success', description: 'Branch Admin added successfully.' });
             }
             onSubmitted();

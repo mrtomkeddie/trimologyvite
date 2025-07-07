@@ -20,7 +20,7 @@ export default function StaffLoginPage() {
       if (currentUser) {
         // User is logged in, check if they are a valid staff member
         try {
-            const staffMember = await getStaffByUid(currentUser.uid, currentUser.email ?? undefined);
+            const staffMember = await getStaffByUid(currentUser.uid);
             if (staffMember) {
                 // Yes, they are staff. Redirect to their schedule.
                 router.push('/my-schedule');

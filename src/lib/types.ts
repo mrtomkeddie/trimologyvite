@@ -40,12 +40,11 @@ export const WorkingHoursSchema = z.object({
 export type WorkingHours = z.infer<typeof WorkingHoursSchema>;
 
 export const StaffSchema = z.object({
-  id: z.string(),
+  id: z.string(), // This will be the UID from Firebase Auth
   name: z.string(),
   specialization: z.string().optional().or(z.literal('')),
   locationId: z.string(),
   locationName: z.string(),
-  uid: z.string().optional(),
   email: z.string().email().optional().or(z.literal('')),
   imageUrl: z.string().url().optional().or(z.literal('')),
   isBookable: z.boolean().optional(),
@@ -73,7 +72,7 @@ export type Booking = z.infer<typeof BookingSchema>;
 export type NewBooking = Omit<Booking, 'id'>;
 
 export const AdminUserSchema = z.object({
-  uid: z.string(),
+  id: z.string(), // This is the UID from Firebase Auth
   email: z.string().email(),
   locationId: z.string().optional(), // If not present, they are a super-admin
   locationName: z.string().optional(),
@@ -118,6 +117,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 const StaffWorkingHoursSchema = WorkingHoursSchema.superRefine((workingHours, ctx) => {
+    if (!workingHours) return;
     Object.entries(workingHours).forEach(([day, hours]) => {
         if (typeof hours === 'object') {
             const start = parseInt(hours.start.replace(':', ''), 10);
@@ -134,7 +134,7 @@ const StaffWorkingHoursSchema = WorkingHoursSchema.superRefine((workingHours, ct
 });
 
 export const StaffFormSchema = z.object({
-  id: z.string().optional(), // Used to differentiate between create and edit
+  id: z.string().optional(), // Used to hold the UID when editing
   name: z.string().min(2, 'Name must be at least 2 characters.'),
   specialization: z.string().optional().or(z.literal('')),
   imageUrl: z.string().url().optional().or(z.literal('')),

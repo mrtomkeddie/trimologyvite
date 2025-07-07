@@ -4,6 +4,8 @@ import * as React from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription as FormDesc } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { addStaffWithLogin, updateStaff } from '@/lib/firestore';
+import { setStaffRecord, updateStaff } from '@/lib/firestore';
 import { StaffFormSchema, type Staff, type Location, WorkingHoursSchema } from '@/lib/types';
 import { Loader2, User, Info, UploadCloud } from 'lucide-react';
 import { uploadStaffImage } from '@/lib/storage';
@@ -222,6 +224,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
 
                 const submissionData: Partial<Staff> = {
                     name: data.name,
+                    email: data.email,
                     specialization: data.specialization || '',
                     locationId: data.locationId,
                     locationName: location.name,
@@ -234,18 +237,29 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                 toast({ title: 'Success', description: 'Staff member updated successfully.' });
 
             } else { // --- CREATE PATH ---
+                 if (!data.email || !data.password) {
+                    toast({ title: "Validation Error", description: "Email and password are required for new staff.", variant: "destructive" });
+                    setIsSubmitting(false);
+                    return;
+                 }
+                 
+                 // 1. Create Auth user
+                 const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+                 const uid = userCredential.user.uid;
+                 
+                 // 2. Upload image if it exists
                  let imageUrl = '';
-                 const tempId = `staff-${Date.now()}`;
                  if (imageFile) {
-                    imageUrl = await uploadStaffImage(tempId, imageFile);
+                    imageUrl = await uploadStaffImage(uid, imageFile);
                  }
                 
-                 await addStaffWithLogin({
+                 // 3. Create staff record in Firestore
+                 await setStaffRecord(uid, {
                     name: data.name,
                     specialization: data.specialization || '',
                     locationId: data.locationId,
+                    locationName: location.name,
                     email: data.email,
-                    password: data.password,
                     imageUrl: imageUrl,
                     isBookable: data.isBookable,
                     workingHours: data.workingHours,
@@ -257,7 +271,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
             setIsOpen(false);
         } catch (error) {
             console.error("Form submission error:", error);
-            const errorMessage = error instanceof Error ? error.message : 'Something went wrong. Please check the console for details.';
+            const errorMessage = error instanceof Error ? error.message : 'Something went wrong. The email might be in use.';
             toast({
                 title: 'Error',
                 description: errorMessage,

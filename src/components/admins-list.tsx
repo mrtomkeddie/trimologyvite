@@ -118,7 +118,7 @@ export function AdminsList({ initialAdmins, locations, currentUser, onDataChange
                     <TableBody>
                         {initialAdmins.length > 0 ? (
                             initialAdmins.map(admin => (
-                                <TableRow key={admin.uid} onClick={() => handleRowClick(admin)} className="md:cursor-default cursor-pointer">
+                                <TableRow key={admin.id} onClick={() => handleRowClick(admin)} className="md:cursor-default cursor-pointer">
                                     <TableCell className="font-medium">{admin.email}</TableCell>
                                     <TableCell className="hidden sm:table-cell">
                                         {admin.locationId ? (
@@ -148,8 +148,8 @@ export function AdminsList({ initialAdmins, locations, currentUser, onDataChange
                                             
                                             <AlertDialog>
                                                  <AlertDialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon" disabled={isDeleting === admin.uid || admin.uid === currentUserId} onClick={(e) => e.stopPropagation()}>
-                                                        {isDeleting === admin.uid ? <Loader2 className="animate-spin" /> : <Trash2 className="h-4 w-4 text-destructive" />}
+                                                    <Button variant="ghost" size="icon" disabled={isDeleting === admin.id || admin.id === currentUserId} onClick={(e) => e.stopPropagation()}>
+                                                        {isDeleting === admin.id ? <Loader2 className="animate-spin" /> : <Trash2 className="h-4 w-4 text-destructive" />}
                                                     </Button>
                                                 </AlertDialogTrigger>
                                                 <AlertDialogContent>
@@ -161,7 +161,7 @@ export function AdminsList({ initialAdmins, locations, currentUser, onDataChange
                                                     </AlertDialogHeader>
                                                     <AlertDialogFooter>
                                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={(e) => handleDelete(e, admin.uid)}>
+                                                        <AlertDialogAction onClick={(e) => handleDelete(e, admin.id)}>
                                                             Revoke Permissions
                                                         </AlertDialogAction>
                                                     </AlertDialogFooter>

@@ -16,9 +16,8 @@ const USE_DUMMY_DATA = false;
 // Helper to create unambiguous UTC timestamp strings for dummy data
 const createDummyTimestamp = (date: Date, hour: number, minute: number): string => {
     const d = new Date(date);
-    d.setHours(hour, minute, 0, 0); // Set hours in local time for predictability
-    // Then create a UTC string from those local components
-    return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), hour, minute)).toISOString();
+    d.setUTCHours(hour, minute, 0, 0); 
+    return d.toISOString();
 };
 
 
@@ -51,39 +50,39 @@ const defaultWorkingHours = {
 };
 
 const dummyStaff: Staff[] = [
-    { id: 'staff-1', name: 'Alex Smith', specialization: 'Master Barber', locationId: 'downtown-1', locationName: 'Downtown Barbers', uid: 'staff-uid-alex', email: 'alex@trimology.com', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: defaultWorkingHours },
-    { id: 'staff-2', name: 'Maria Garcia', specialization: 'Senior Stylist', locationId: 'downtown-1', locationName: 'Downtown Barbers', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: { ...defaultWorkingHours, wednesday: 'off' } },
-    { id: 'staff-6', name: 'Laura Palmer', specialization: 'Stylist', locationId: 'downtown-1', locationName: 'Downtown Barbers', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: defaultWorkingHours },
-    { id: 'staff-3', name: 'John Doe', specialization: '', locationId: 'uptown-2', locationName: 'Uptown Cuts', imageUrl: 'https://placehold.co/100x100.png', isBookable: false },
-    { id: 'staff-4', name: 'Jane Roe', specialization: 'Color Specialist', locationId: 'uptown-2', locationName: 'Uptown Cuts', uid: 'staff-uid-jane', email: 'jane@trimology.com', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: { ...defaultWorkingHours, saturday: 'off', sunday: 'off' } },
-    { id: 'staff-5', name: 'Casey Jones', specialization: 'Hair Artist', locationId: 'soho-3', locationName: 'Soho Salon', uid: 'staff-uid-casey', email: 'casey@trimology.com', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: defaultWorkingHours },
-    { id: 'staff-7', name: 'Demo Staff', specialization: 'Stylist', locationId: 'downtown-1', locationName: 'Downtown Barbers', uid: 'staff@trimology.com', email: 'staff@trimology.com', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: defaultWorkingHours },
+    { id: 'staff-uid-alex', name: 'Alex Smith', specialization: 'Master Barber', locationId: 'downtown-1', locationName: 'Downtown Barbers', email: 'alex@trimology.com', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: defaultWorkingHours },
+    { id: 'staff-uid-maria', name: 'Maria Garcia', specialization: 'Senior Stylist', locationId: 'downtown-1', locationName: 'Downtown Barbers', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: { ...defaultWorkingHours, wednesday: 'off' } },
+    { id: 'staff-uid-laura', name: 'Laura Palmer', specialization: 'Stylist', locationId: 'downtown-1', locationName: 'Downtown Barbers', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: defaultWorkingHours },
+    { id: 'staff-uid-john', name: 'John Doe', specialization: '', locationId: 'uptown-2', locationName: 'Uptown Cuts', imageUrl: 'https://placehold.co/100x100.png', isBookable: false },
+    { id: 'staff-uid-jane', name: 'Jane Roe', specialization: 'Color Specialist', locationId: 'uptown-2', locationName: 'Uptown Cuts', email: 'jane@trimology.com', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: { ...defaultWorkingHours, saturday: 'off', sunday: 'off' } },
+    { id: 'staff-uid-casey', name: 'Casey Jones', specialization: 'Hair Artist', locationId: 'soho-3', locationName: 'Soho Salon', email: 'casey@trimology.com', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: defaultWorkingHours },
+    { id: 'staff@trimology.com', name: 'Demo Staff', specialization: 'Stylist', locationId: 'downtown-1', locationName: 'Downtown Barbers', email: 'staff@trimology.com', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: defaultWorkingHours },
 ];
 
 
 let dummyBookings: Booking[] = [
-    { id: 'book-1', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 1), 10, 0), clientName: 'Bob Johnson', clientPhone: '555-1111', clientEmail: 'bob@example.com' },
-    { id: 'book-2', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-2', serviceName: 'Beard Trim', servicePrice: 15, serviceDuration: 15, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 2), 14, 30), clientName: 'Charlie Brown', clientPhone: '555-2222' },
-    { id: 'book-3', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-5', serviceName: 'Color & Cut', servicePrice: 90, serviceDuration: 120, staffId: 'staff-4', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 3), 11, 0), clientName: 'Diana Prince', clientPhone: '555-3333', clientEmail: 'diana@example.com' },
-    { id: 'book-4', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-2', staffName: 'Maria Garcia', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 1), 11, 30), clientName: 'Peter Parker', clientPhone: '555-4444' },
-    { id: 'book-5', locationId: 'soho-3', locationName: 'Soho Salon', serviceId: 'svc-9', serviceName: 'Signature Cut', servicePrice: 75, serviceDuration: 60, staffId: 'staff-5', staffName: 'Casey Jones', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 4), 15, 0), clientName: 'Bruce Wayne', clientPhone: '555-5555' },
-    { id: 'book-6', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-4', serviceName: 'Kids Cut', servicePrice: 20, serviceDuration: 30, staffId: 'staff-4', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 1), 9, 0), clientName: 'Anakin Skywalker', clientPhone: '555-6666' },
-    { id: 'book-7', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-3', serviceName: 'Hot Towel Shave', servicePrice: 40, serviceDuration: 45, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 5), 16, 0), clientName: 'Tony Stark', clientPhone: '555-7777', clientEmail: 'tony@example.com' },
-    { id: 'book-8', locationId: 'soho-3', locationName: 'Soho Salon', serviceId: 'svc-8', serviceName: 'Creative Color', servicePrice: 150, serviceDuration: 180, staffId: 'staff-5', staffName: 'Casey Jones', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 6), 10, 0), clientName: 'Natasha Romanoff', clientPhone: '555-8888' },
-    { id: 'book-9', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-6', staffName: 'Laura Palmer', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 2), 13, 0), clientName: 'Clark Kent', clientPhone: '555-9999' },
-    { id: 'book-10', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-7', serviceName: 'Luxury Manicure', servicePrice: 50, serviceDuration: 60, staffId: 'staff-4', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(subDays(new Date(), 1), 12, 0), clientName: 'Lois Lane', clientPhone: '555-1010' },
-    { id: 'book-11', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-6', serviceName: 'Modern Fade', servicePrice: 35, serviceDuration: 45, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(subDays(new Date(), 2), 11, 0), clientName: 'Jimmy Olsen', clientPhone: '555-1212' },
-    { id: 'book-12', locationId: 'soho-3', locationName: 'Soho Salon', serviceId: 'svc-9', serviceName: 'Signature Cut', servicePrice: 75, serviceDuration: 60, staffId: 'staff-5', staffName: 'Casey Jones', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(new Date(), 14, 0), clientName: 'Perry White', clientPhone: '555-1313' },
+    { id: 'book-1', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-uid-alex', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 1), 10, 0), clientName: 'Bob Johnson', clientPhone: '555-1111', clientEmail: 'bob@example.com' },
+    { id: 'book-2', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-2', serviceName: 'Beard Trim', servicePrice: 15, serviceDuration: 15, staffId: 'staff-uid-alex', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 2), 14, 30), clientName: 'Charlie Brown', clientPhone: '555-2222' },
+    { id: 'book-3', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-5', serviceName: 'Color & Cut', servicePrice: 90, serviceDuration: 120, staffId: 'staff-uid-jane', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 3), 11, 0), clientName: 'Diana Prince', clientPhone: '555-3333', clientEmail: 'diana@example.com' },
+    { id: 'book-4', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-uid-maria', staffName: 'Maria Garcia', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 1), 11, 30), clientName: 'Peter Parker', clientPhone: '555-4444' },
+    { id: 'book-5', locationId: 'soho-3', locationName: 'Soho Salon', serviceId: 'svc-9', serviceName: 'Signature Cut', servicePrice: 75, serviceDuration: 60, staffId: 'staff-uid-casey', staffName: 'Casey Jones', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 4), 15, 0), clientName: 'Bruce Wayne', clientPhone: '555-5555' },
+    { id: 'book-6', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-4', serviceName: 'Kids Cut', servicePrice: 20, serviceDuration: 30, staffId: 'staff-uid-jane', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 1), 9, 0), clientName: 'Anakin Skywalker', clientPhone: '555-6666' },
+    { id: 'book-7', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-3', serviceName: 'Hot Towel Shave', servicePrice: 40, serviceDuration: 45, staffId: 'staff-uid-alex', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 5), 16, 0), clientName: 'Tony Stark', clientPhone: '555-7777', clientEmail: 'tony@example.com' },
+    { id: 'book-8', locationId: 'soho-3', locationName: 'Soho Salon', serviceId: 'svc-8', serviceName: 'Creative Color', servicePrice: 150, serviceDuration: 180, staffId: 'staff-uid-casey', staffName: 'Casey Jones', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 6), 10, 0), clientName: 'Natasha Romanoff', clientPhone: '555-8888' },
+    { id: 'book-9', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-uid-laura', staffName: 'Laura Palmer', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 2), 13, 0), clientName: 'Clark Kent', clientPhone: '555-9999' },
+    { id: 'book-10', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-7', serviceName: 'Luxury Manicure', servicePrice: 50, serviceDuration: 60, staffId: 'staff-uid-jane', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(subDays(new Date(), 1), 12, 0), clientName: 'Lois Lane', clientPhone: '555-1010' },
+    { id: 'book-11', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-6', serviceName: 'Modern Fade', servicePrice: 35, serviceDuration: 45, staffId: 'staff-uid-alex', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(subDays(new Date(), 2), 11, 0), clientName: 'Jimmy Olsen', clientPhone: '555-1212' },
+    { id: 'book-12', locationId: 'soho-3', locationName: 'Soho Salon', serviceId: 'svc-9', serviceName: 'Signature Cut', servicePrice: 75, serviceDuration: 60, staffId: 'staff-uid-casey', staffName: 'Casey Jones', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(new Date(), 14, 0), clientName: 'Perry White', clientPhone: '555-1313' },
     // Add more bookings for loyalty data
-    { id: 'book-13', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(subDays(new Date(), 10), 10, 0), clientName: 'Bob Johnson', clientPhone: '555-1111', clientEmail: 'bob@example.com' },
-    { id: 'book-14', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-2', staffName: 'Maria Garcia', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(subDays(new Date(), 20), 10, 0), clientName: 'Bob Johnson', clientPhone: '555-1111', clientEmail: 'bob@example.com' },
-    { id: 'book-15', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-4', serviceName: 'Kids Cut', servicePrice: 20, serviceDuration: 30, staffId: 'staff-4', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(subDays(new Date(), 5), 9, 0), clientName: 'Anakin Skywalker', clientPhone: '555-6666' },
+    { id: 'book-13', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-uid-alex', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(subDays(new Date(), 10), 10, 0), clientName: 'Bob Johnson', clientPhone: '555-1111', clientEmail: 'bob@example.com' },
+    { id: 'book-14', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-uid-maria', staffName: 'Maria Garcia', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(subDays(new Date(), 20), 10, 0), clientName: 'Bob Johnson', clientPhone: '555-1111', clientEmail: 'bob@example.com' },
+    { id: 'book-15', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-4', serviceName: 'Kids Cut', servicePrice: 20, serviceDuration: 30, staffId: 'staff-uid-jane', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(subDays(new Date(), 5), 9, 0), clientName: 'Anakin Skywalker', clientPhone: '555-6666' },
 ];
 
 const dummyAdmins: AdminUser[] = [
-    { uid: 'owner-uid', email: 'owner@trimology.com' },
-    { uid: 'super-admin-uid', email: 'superadmin@trimology.com' },
-    { uid: 'branch-admin-uid', email: 'branchadmin@trimology.com', locationId: 'downtown-1', locationName: 'Downtown Barbers' },
+    { id: 'owner-uid', email: 'owner@trimology.com' },
+    { id: 'super-admin-uid', email: 'superadmin@trimology.com' },
+    { id: 'branch-admin-uid', email: 'branchadmin@trimology.com', locationId: 'downtown-1', locationName: 'Downtown Barbers' },
 ];
 
 
@@ -94,24 +93,12 @@ const bookingsCollection = collection(db, 'bookings');
 const adminsCollection = collection(db, 'admins');
 
 
-async function createFirebaseUser(email: string, password_do_not_log: string): Promise<string> {
-    // THIS IS A MOCK FUNCTION.
-    // In a real app, this would be a Firebase Cloud Function using the Admin SDK.
-    // It would be called securely from the server to create a user.
-    // Return a predictable mock UID for dummy mode
-    return `mock-uid-for-${email.split('@')[0]}`;
-}
-
-
 // Admins
 export async function getAdminUser(uid: string, email?: string): Promise<AdminUser | null> {
     if (USE_DUMMY_DATA) {
-        // In dummy mode, we can't trust the hardcoded UID. We find the admin by email.
         const existingAdmin = dummyAdmins.find(a => a.email === email);
         if (existingAdmin) {
-            // Important: Return the dummy data but with the REAL uid from the auth session.
-            // This makes the rest of the app work as expected.
-            return { ...existingAdmin, uid: uid };
+            return { ...existingAdmin, id: uid };
         }
         return null;
     }
@@ -125,7 +112,7 @@ export async function getAdminUser(uid: string, email?: string): Promise<AdminUs
     
     const adminData = adminDoc.data();
     return {
-        uid,
+        id: uid,
         email: adminData.email,
         locationId: adminData.locationId,
         locationName: adminData.locationName,
@@ -144,36 +131,26 @@ export async function getAdminsFromFirestore(locationId?: string): Promise<Admin
         
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({
-        uid: doc.id,
+        id: doc.id,
         ...doc.data()
     } as AdminUser));
 }
 
-export async function addAdminWithLogin(data: Omit<AdminUser, 'uid'> & { password?: string }) {
-    if (!data.email || !data.password || !data.locationId || !data.locationName) {
-        throw new Error("Missing data to create a new branch admin.");
-    }
+export async function setAdminRecord(uid: string, data: { email: string; locationId: string; locationName: string; }) {
     if (USE_DUMMY_DATA) {
-        const newUid = await createFirebaseUser(data.email, data.password);
-        const newAdmin = { ...data, uid: newUid };
-        delete (newAdmin as any).password;
+        const newAdmin = { ...data, id: uid };
         dummyAdmins.push(newAdmin);
         revalidatePath('/admin/admins');
         return;
     }
-    
-    // REAL IMPLEMENTATION NOTE: This needs a secure backend function.
-    throw new Error("Admin user creation must be handled by a secure backend function.");
-    // const newUid = await callCreateUserCloudFunction(data.email, data.password);
-    // const adminDoc = doc(db, 'admins', newUid);
-    // const { password, ...adminData } = data;
-    // await setDoc(adminDoc, adminData);
-    // revalidatePath('/admin/admins');
+    const adminDoc = doc(db, 'admins', uid);
+    await setDoc(adminDoc, data);
+    revalidatePath('/admin/admins');
 }
 
-export async function updateAdmin(uid: string, data: Partial<Omit<AdminUser, 'uid'>>) {
+export async function updateAdmin(uid: string, data: Partial<Omit<AdminUser, 'id'>>) {
     if (USE_DUMMY_DATA) { 
-        const adminIndex = dummyAdmins.findIndex(a => a.uid === uid);
+        const adminIndex = dummyAdmins.findIndex(a => a.id === uid);
         if (adminIndex > -1) {
             dummyAdmins[adminIndex] = { ...dummyAdmins[adminIndex], ...data };
         }
@@ -187,7 +164,7 @@ export async function updateAdmin(uid: string, data: Partial<Omit<AdminUser, 'ui
 
 export async function deleteAdmin(uid: string) {
     if (USE_DUMMY_DATA) { 
-        const index = dummyAdmins.findIndex(a => a.uid === uid);
+        const index = dummyAdmins.findIndex(a => a.id === uid);
         if (index > -1) dummyAdmins.splice(index, 1);
         revalidatePath('/admin/admins'); 
         return; 
@@ -303,100 +280,68 @@ export async function getStaffFromFirestore(locationId?: string): Promise<Staff[
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Staff));
 }
 
-
-export async function addStaffWithLogin(data: Omit<Staff, 'id' | 'uid' | 'locationName'> & { password?: string }) {
-    if (!data.email || !data.password) {
-        throw new Error("Email and password are required to create a new staff member with a login.");
-    }
-    const locationQuery = USE_DUMMY_DATA 
-        ? dummyLocations.find(l => l.id === data.locationId)
-        : await getDoc(doc(db, 'locations', data.locationId)).then(d => d.data());
-
-    if (!locationQuery) {
-        throw new Error("Invalid location specified.");
-    }
-
-    const locationName = locationQuery.name;
-    const newStaffId = `staff-${Date.now()}`;
-
+export async function setStaffRecord(uid: string, data: Omit<Staff, 'id'>) {
     if (USE_DUMMY_DATA) {
-        const newUid = await createFirebaseUser(data.email, data.password);
-        const newStaffMember: Staff = {
-            ...data,
-            id: newStaffId,
-            uid: newUid,
-            locationName,
-            isBookable: data.isBookable ?? true,
-            workingHours: data.workingHours || defaultWorkingHours,
-        };
-        delete (newStaffMember as any).password;
-        dummyStaff.push(newStaffMember);
+        const newStaff = { ...data, id: uid };
+        dummyStaff.push(newStaff);
         revalidatePath('/admin/staff');
         revalidatePath('/');
         return;
     }
-
-    // REAL IMPLEMENTATION NOTE: This needs a secure backend function.
-    throw new Error("User creation must be handled by a secure backend function.");
-    // const newUid = await callCreateUserCloudFunction(data.email, data.password);
-    // const staffDocRef = doc(db, 'staff', newStaffId);
-    // const { password, ...staffData } = data;
-    // await setDoc(staffDocRef, { 
-    //     ...staffData,
-    //     uid: newUid, 
-    //     locationName, 
-    //     isBookable: data.isBookable ?? true 
-    // });
-    // revalidatePath('/admin/staff');
-    // revalidatePath('/');
+    
+    const staffDocRef = doc(db, 'staff', uid);
+    await setDoc(staffDocRef, data);
+    revalidatePath('/admin/staff');
+    revalidatePath('/');
 }
 
-export async function updateStaff(id: string, data: Partial<Omit<Staff, 'id'>>) {
+export async function updateStaff(uid: string, data: Partial<Omit<Staff, 'id'>>) {
     if (USE_DUMMY_DATA) {
-        const staffIndex = dummyStaff.findIndex(s => s.id === id);
+        const staffIndex = dummyStaff.findIndex(s => s.id === uid);
         if (staffIndex > -1) {
             dummyStaff[staffIndex] = { ...dummyStaff[staffIndex], ...data };
         }
         revalidatePath('/admin/staff'); revalidatePath('/'); return;
     }
-    const staffDoc = doc(db, 'staff', id);
+    const staffDoc = doc(db, 'staff', uid);
     await updateDoc(staffDoc, data);
     revalidatePath('/admin/staff');
     revalidatePath('/');
 }
 
-export async function deleteStaff(id: string) {
+export async function deleteStaff(uid: string) {
     if (USE_DUMMY_DATA) { 
-        const index = dummyStaff.findIndex(s => s.id === id);
+        const index = dummyStaff.findIndex(s => s.id === uid);
         if (index > -1) dummyStaff.splice(index, 1);
         revalidatePath('/admin/staff'); 
         revalidatePath('/'); 
         return; 
     }
     // In a real app, you would also want a Cloud Function to delete the corresponding Firebase Auth user.
-    const staffDoc = doc(db, 'staff', id);
+    const staffDoc = doc(db, 'staff', uid);
     await deleteDoc(staffDoc);
     revalidatePath('/admin/staff');
     revalidatePath('/');
 }
 
-export async function getStaffByUid(uid: string, email?: string): Promise<Staff | null> {
+export async function getStaffByUid(uid: string): Promise<Staff | null> {
     if (USE_DUMMY_DATA) {
-        // In dummy mode, the UID from auth won't match the hardcoded one. Find by email.
-        const staffMember = dummyStaff.find(s => s.email === email);
-        if (staffMember) {
-            // Return the dummy data but with the REAL uid from the auth session.
-            return { ...staffMember, uid: uid };
-        }
-        return null;
+        const staffMember = dummyStaff.find(s => s.id === uid);
+        return staffMember || null;
     }
-    const q = query(staffCollection, where('uid', '==', uid), limit(1));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) {
-        return null;
+    
+    const staffDocRef = doc(db, 'staff', uid);
+    const staffDoc = await getDoc(staffDocRef);
+
+    if (!staffDoc.exists()) {
+        const q = query(staffCollection, where('email', '==', uid), limit(1)); // Legacy lookup by email for demo
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) return null;
+        const doc_1 = snapshot.docs[0];
+        return { id: doc_1.id, ...doc_1.data() } as Staff;
     }
-    const doc = snapshot.docs[0];
-    return { id: doc.id, ...doc.data() } as Staff;
+    
+    return { id: staffDoc.id, ...staffDoc.data() } as Staff;
 }
 
 

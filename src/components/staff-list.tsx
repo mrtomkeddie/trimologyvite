@@ -154,7 +154,7 @@ export function StaffList({ initialStaff, locations, onDataChange }: StaffListPr
                                      <TableCell className="hidden sm:table-cell">
                                         {staffMember.email ? (
                                             <div className='flex items-center gap-2'>
-                                                {staffMember.uid && <KeyRound className="h-4 w-4 text-primary" title="Login Enabled" />}
+                                                <KeyRound className="h-4 w-4 text-primary" title="Login Enabled" />
                                                 {staffMember.email}
                                             </div>
                                         ) : (
