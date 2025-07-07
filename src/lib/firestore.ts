@@ -357,11 +357,10 @@ export async function getBookingsFromFirestore(locationId?: string): Promise<Boo
 
     const snapshot = await getDocs(q);
     const bookings = snapshot.docs.map(doc => {
-        const data = doc.data();
+        const { createdAt, ...data } = doc.data(); // Destructure to remove non-serializable Timestamp
         return {
             id: doc.id,
             ...data,
-            bookingTimestamp: data.bookingTimestamp,
         } as Booking;
     });
 
@@ -382,7 +381,13 @@ export async function getBookingsByPhoneFromFirestore(phone: string): Promise<Bo
     const q = query(bookingsCollection, where('clientPhone', '==', phone));
 
     const snapshot = await getDocs(q);
-    const bookings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Booking));
+    const bookings = snapshot.docs.map(doc => {
+        const { createdAt, ...data } = doc.data(); // Destructure to remove non-serializable Timestamp
+        return {
+            id: doc.id,
+            ...data
+        } as Booking;
+    });
 
     // Sort in code to avoid composite index
     bookings.sort((a, b) => b.bookingTimestamp.localeCompare(a.bookingTimestamp));
@@ -403,7 +408,13 @@ export async function getBookingsByStaffId(staffId: string): Promise<Booking[]> 
     const q = query(bookingsCollection, where('staffId', '==', staffId));
     
     const snapshot = await getDocs(q);
-    const allBookingsForStaff = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Booking));
+    const allBookingsForStaff = snapshot.docs.map(doc => {
+        const { createdAt, ...data } = doc.data(); // Destructure to remove non-serializable Timestamp
+        return {
+            id: doc.id,
+            ...data
+        } as Booking;
+    });
 
     // Filter for upcoming bookings and sort them in the application code.
     const upcomingBookings = allBookingsForStaff
@@ -428,7 +439,13 @@ export async function getBookingsForStaffOnDate(staffId: string, date: Date): Pr
     const q = query(bookingsCollection, where('staffId', '==', staffId));
 
     const snapshot = await getDocs(q);
-    const allBookingsForStaff = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Booking));
+    const allBookingsForStaff = snapshot.docs.map(doc => {
+        const { createdAt, ...data } = doc.data(); // Destructure to remove non-serializable Timestamp
+        return {
+            id: doc.id,
+            ...data
+        } as Booking;
+    });
 
     // Filter for the specific date in application code.
     return allBookingsForStaff.filter(b => {
@@ -512,3 +529,5 @@ export async function getClientLoyaltyData(locationId?: string): Promise<ClientL
 
     return clientsArray;
 }
+
+    
