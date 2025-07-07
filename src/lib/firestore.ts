@@ -125,9 +125,10 @@ export async function getAdminsFromFirestore(locationId?: string): Promise<Admin
         return Promise.resolve(dummyAdmins);
     }
     
+    // Simplified Query: Fetch based on location or get all, then sort in code.
     const q = locationId 
         ? query(adminsCollection, where('locationId', '==', locationId))
-        : query(adminsCollection, orderBy('email'));
+        : query(adminsCollection);
         
     const snapshot = await getDocs(q);
     const admins = snapshot.docs.map(doc => ({
@@ -135,9 +136,8 @@ export async function getAdminsFromFirestore(locationId?: string): Promise<Admin
         ...doc.data()
     } as AdminUser));
 
-    if (locationId) {
-        admins.sort((a, b) => a.email.localeCompare(b.email));
-    }
+    // Sort in code to avoid composite index
+    admins.sort((a, b) => a.email.localeCompare(b.email));
 
     return admins;
 }
@@ -241,16 +241,16 @@ export async function getServicesFromFirestore(locationId?: string): Promise<Ser
         if (locationId) return Promise.resolve(dummyServices.filter(s => s.locationId === locationId));
         return Promise.resolve(dummyServices);
     }
+    // Simplified Query: Fetch based on location or get all, then sort in code.
     const q = locationId 
         ? query(servicesCollection, where('locationId', '==', locationId))
-        : query(servicesCollection, orderBy('name'));
+        : query(servicesCollection);
 
     const snapshot = await getDocs(q);
     const services = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Service));
     
-    if (locationId) {
-        services.sort((a, b) => a.name.localeCompare(b.name));
-    }
+    // Sort in code to avoid composite index
+    services.sort((a, b) => a.name.localeCompare(b.name));
     
     return services;
 }
@@ -284,16 +284,16 @@ export async function getStaffFromFirestore(locationId?: string): Promise<Staff[
         if (locationId) return Promise.resolve(dummyStaff.filter(s => s.locationId === locationId));
         return Promise.resolve(dummyStaff);
     }
+    // Simplified Query: Fetch based on location or get all, then sort in code.
     const q = locationId
         ? query(staffCollection, where('locationId', '==', locationId))
-        : query(staffCollection, orderBy('name'));
+        : query(staffCollection);
     
     const snapshot = await getDocs(q);
     const staff = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Staff));
 
-    if (locationId) {
-        staff.sort((a,b) => a.name.localeCompare(b.name));
-    }
+    // Sort in code to avoid composite index
+    staff.sort((a,b) => a.name.localeCompare(b.name));
 
     return staff;
 }
@@ -371,14 +371,8 @@ export async function getBookingsFromFirestore(locationId?: string): Promise<Boo
         return Promise.resolve(sorted);
     }
 
-    let q;
-    if (locationId) {
-        // Query by location, but omit the ordering to avoid the composite index requirement.
-        q = query(bookingsCollection, where('locationId', '==', locationId));
-    } else {
-        // Query all bookings, ordered by timestamp. This is a simple index and is allowed.
-        q = query(bookingsCollection, orderBy('bookingTimestamp', 'desc'));
-    }
+    // Simplified Query: Fetch based on location or get all, then sort in code.
+    const q = locationId ? query(bookingsCollection, where('locationId', '==', locationId)) : query(bookingsCollection);
 
     const snapshot = await getDocs(q);
     const bookings = snapshot.docs.map(doc => {
@@ -390,10 +384,8 @@ export async function getBookingsFromFirestore(locationId?: string): Promise<Boo
         } as Booking;
     });
 
-    // If we filtered by location, we now need to sort the results in our code.
-    if (locationId) {
-        bookings.sort((a, b) => b.bookingTimestamp.localeCompare(a.bookingTimestamp));
-    }
+    // Sort in code to avoid composite index
+    bookings.sort((a, b) => b.bookingTimestamp.localeCompare(a.bookingTimestamp));
 
     return bookings;
 }
@@ -405,21 +397,13 @@ export async function getBookingsByPhoneFromFirestore(phone: string): Promise<Bo
         return Promise.resolve(sorted);
     }
 
-    const q = query(
-        bookingsCollection,
-        where('clientPhone', '==', phone)
-    );
+    // Simplified Query: Fetch based on phone, then sort in code.
+    const q = query(bookingsCollection, where('clientPhone', '==', phone));
 
     const snapshot = await getDocs(q);
-    const bookings = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-            id: doc.id,
-            ...data,
-            bookingTimestamp: data.bookingTimestamp,
-        } as Booking;
-    });
+    const bookings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Booking));
 
+    // Sort in code to avoid composite index
     bookings.sort((a, b) => b.bookingTimestamp.localeCompare(a.bookingTimestamp));
     return bookings;
 }
@@ -434,8 +418,7 @@ export async function getBookingsByStaffId(staffId: string): Promise<Booking[]> 
         return Promise.resolve(upcoming);
     }
 
-    // This query previously required a composite index.
-    // By removing the orderBy and filtering/sorting in code, we avoid the index requirement.
+    // Simplified Query: Fetch based on staffId, then filter and sort in code.
     const q = query(bookingsCollection, where('staffId', '==', staffId));
     
     const snapshot = await getDocs(q);
@@ -460,14 +443,13 @@ export async function getBookingsForStaffOnDate(staffId: string, date: Date): Pr
         return Promise.resolve(dayBookings);
     }
     
-    const q = query(
-        bookingsCollection,
-        where('staffId', '==', staffId)
-    );
+    // Simplified Query: Fetch based on staffId, then filter in code.
+    const q = query(bookingsCollection, where('staffId', '==', staffId));
 
     const snapshot = await getDocs(q);
     const allBookingsForStaff = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Booking));
 
+    // Filter for the specific date in application code.
     return allBookingsForStaff.filter(b => {
         return b.bookingTimestamp >= dayStartStr && b.bookingTimestamp <= dayEndStr;
     });
