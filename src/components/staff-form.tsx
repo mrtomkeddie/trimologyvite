@@ -4,8 +4,10 @@ import * as React from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { createUserWithEmailAndPassword, getAuth } from 'firebase/auth';
+import { app as mainApp, firebaseConfig } from '@/lib/firebase';
+import { initializeApp, getApp, deleteApp } from 'firebase/app';
+
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -243,28 +245,36 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                     return;
                  }
                  
-                 // 1. Create Auth user
-                 const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-                 const uid = userCredential.user.uid;
-                 
-                 // 2. Upload image if it exists
-                 let imageUrl = '';
-                 if (imageFile) {
-                    imageUrl = await uploadStaffImage(uid, imageFile);
-                 }
-                
-                 // 3. Create staff record in Firestore
-                 await setStaffRecord(uid, {
-                    name: data.name,
-                    specialization: data.specialization || '',
-                    locationId: data.locationId,
-                    locationName: location.name,
-                    email: data.email,
-                    imageUrl: imageUrl,
-                    isBookable: data.isBookable,
-                    workingHours: data.workingHours,
-                 });
-                 toast({ title: 'Success', description: 'Staff member added successfully.'});
+                const tempAppName = `temp-user-creation-${Date.now()}`;
+                const tempApp = initializeApp(firebaseConfig, tempAppName);
+                const tempAuth = getAuth(tempApp);
+
+                try {
+                     // 1. Create Auth user
+                    const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email, data.password);
+                    const uid = userCredential.user.uid;
+                    
+                    // 2. Upload image if it exists
+                    let imageUrl = '';
+                    if (imageFile) {
+                        imageUrl = await uploadStaffImage(uid, imageFile);
+                    }
+                    
+                    // 3. Create staff record in Firestore
+                    await setStaffRecord(uid, {
+                        name: data.name,
+                        specialization: data.specialization || '',
+                        locationId: data.locationId,
+                        locationName: location.name,
+                        email: data.email,
+                        imageUrl: imageUrl,
+                        isBookable: data.isBookable,
+                        workingHours: data.workingHours,
+                    });
+                    toast({ title: 'Success', description: 'Staff member added successfully.'});
+                } finally {
+                    await deleteApp(tempApp);
+                }
             }
             
             onSubmitted();

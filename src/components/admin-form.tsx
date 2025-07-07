@@ -4,8 +4,10 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { createUserWithEmailAndPassword, getAuth } from 'firebase/auth';
+import { app as mainApp, firebaseConfig } from '@/lib/firebase';
+import { initializeApp, getApp, deleteApp } from 'firebase/app';
+
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -68,7 +70,6 @@ export function AdminForm({ isOpen, setIsOpen, admin, locations, onSubmitted, cu
         try {
             if (admin) { // --- UPDATE PATH ---
                  const location = locations.find(l => l.id === data.locationId);
-                 // If admin is a super admin, we don't change their role.
                  const isUpdatingSuperAdmin = !admin.locationId;
 
                  const submissionData: Partial<AdminUser> = {
@@ -106,17 +107,26 @@ export function AdminForm({ isOpen, setIsOpen, admin, locations, onSubmitted, cu
                      return;
                 }
 
-                const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-                const uid = userCredential.user.uid;
+                // Use a temporary app instance to create the user without affecting the current auth state
+                const tempAppName = `temp-user-creation-${Date.now()}`;
+                const tempApp = initializeApp(firebaseConfig, tempAppName);
+                const tempAuth = getAuth(tempApp);
 
-                const submissionData = {
-                    email: data.email,
-                    locationId: location.id,
-                    locationName: location.name,
-                };
-                
-                await setAdminRecord(uid, submissionData);
-                toast({ title: 'Success', description: 'Branch Admin added successfully.' });
+                try {
+                    const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email, data.password);
+                    const uid = userCredential.user.uid;
+
+                    const submissionData = {
+                        email: data.email,
+                        locationId: location.id,
+                        locationName: location.name,
+                    };
+                    
+                    await setAdminRecord(uid, submissionData);
+                    toast({ title: 'Success', description: 'Branch Admin added successfully.' });
+                } finally {
+                    await deleteApp(tempApp);
+                }
             }
             onSubmitted();
             setIsOpen(false);
