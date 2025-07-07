@@ -18,9 +18,18 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash2, Edit, Loader2, Shield, MapPin } from 'lucide-react';
+import { PlusCircle, Trash2, Edit, Loader2, Shield, MapPin, Mail, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { auth } from '@/lib/firebase';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+} from '@/components/ui/dialog';
+import { Avatar, AvatarFallback } from './ui/avatar';
+import { Separator } from './ui/separator';
 
 type AdminsListProps = {
     initialAdmins: AdminUser[];
@@ -32,6 +41,7 @@ type AdminsListProps = {
 export function AdminsList({ initialAdmins, locations, currentUser, onDataChange }: AdminsListProps) {
     const [isFormOpen, setIsFormOpen] = React.useState(false);
     const [editingAdmin, setEditingAdmin] = React.useState<AdminUser | null>(null);
+    const [selectedAdmin, setSelectedAdmin] = React.useState<AdminUser | null>(null);
     const [isDeleting, setIsDeleting] = React.useState<string | null>(null);
     const { toast } = useToast();
     const currentUserId = auth.currentUser?.uid;
@@ -45,12 +55,14 @@ export function AdminsList({ initialAdmins, locations, currentUser, onDataChange
         setIsFormOpen(true);
     };
 
-    const handleEditClick = (admin: AdminUser) => {
+    const handleEditClick = (e: React.MouseEvent, admin: AdminUser) => {
+        e.stopPropagation();
         setEditingAdmin(admin);
         setIsFormOpen(true);
     };
 
-    const handleDelete = async (id: string) => {
+    const handleDelete = async (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
         if (id === currentUserId) {
             toast({ title: 'Error', description: 'You cannot delete your own admin account.', variant: 'destructive' });
             return;
@@ -66,6 +78,12 @@ export function AdminsList({ initialAdmins, locations, currentUser, onDataChange
             setIsDeleting(null);
         }
     };
+    
+    const handleRowClick = (admin: AdminUser) => {
+        if (window.innerWidth < 768) { // Only trigger pop-up on mobile
+            setSelectedAdmin(admin);
+        }
+    }
 
     if (!currentUser) return null;
 
@@ -92,17 +110,17 @@ export function AdminsList({ initialAdmins, locations, currentUser, onDataChange
                     <TableHeader>
                         <TableRow>
                             <TableHead>Email</TableHead>
-                            <TableHead>Role</TableHead>
-                            <TableHead>Assigned Location</TableHead>
+                            <TableHead className="hidden sm:table-cell">Role</TableHead>
+                            <TableHead className="hidden md:table-cell">Assigned Location</TableHead>
                             <TableHead className="text-right w-[120px]">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {initialAdmins.length > 0 ? (
                             initialAdmins.map(admin => (
-                                <TableRow key={admin.uid}>
+                                <TableRow key={admin.uid} onClick={() => handleRowClick(admin)} className="md:cursor-default cursor-pointer">
                                     <TableCell className="font-medium">{admin.email}</TableCell>
-                                    <TableCell>
+                                    <TableCell className="hidden sm:table-cell">
                                         {admin.locationId ? (
                                             <Badge variant="secondary">Branch Admin</Badge>
                                         ) : (
@@ -112,7 +130,7 @@ export function AdminsList({ initialAdmins, locations, currentUser, onDataChange
                                             </Badge>
                                         )}
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="hidden md:table-cell">
                                         {admin.locationName ? (
                                             <div className="flex items-center gap-2">
                                                 <MapPin className="h-4 w-4 text-muted-foreground" />
@@ -124,13 +142,13 @@ export function AdminsList({ initialAdmins, locations, currentUser, onDataChange
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex gap-2 justify-end">
-                                            <Button variant="ghost" size="icon" onClick={() => handleEditClick(admin)}>
+                                            <Button variant="ghost" size="icon" onClick={(e) => handleEditClick(e, admin)}>
                                                 <Edit className="h-4 w-4" />
                                             </Button>
                                             
                                             <AlertDialog>
                                                  <AlertDialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon" disabled={isDeleting === admin.uid || admin.uid === currentUserId}>
+                                                    <Button variant="ghost" size="icon" disabled={isDeleting === admin.uid || admin.uid === currentUserId} onClick={(e) => e.stopPropagation()}>
                                                         {isDeleting === admin.uid ? <Loader2 className="animate-spin" /> : <Trash2 className="h-4 w-4 text-destructive" />}
                                                     </Button>
                                                 </AlertDialogTrigger>
@@ -143,7 +161,7 @@ export function AdminsList({ initialAdmins, locations, currentUser, onDataChange
                                                     </AlertDialogHeader>
                                                     <AlertDialogFooter>
                                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => handleDelete(admin.uid)}>
+                                                        <AlertDialogAction onClick={(e) => handleDelete(e, admin.uid)}>
                                                             Revoke Permissions
                                                         </AlertDialogAction>
                                                     </AlertDialogFooter>
@@ -163,6 +181,43 @@ export function AdminsList({ initialAdmins, locations, currentUser, onDataChange
                     </TableBody>
                 </Table>
             </div>
+
+             <Dialog open={!!selectedAdmin} onOpenChange={(open) => !open && setSelectedAdmin(null)}>
+                <DialogContent className="sm:max-w-md">
+                    {selectedAdmin && (
+                        <>
+                            <DialogHeader>
+                                <div className="flex items-center gap-4">
+                                    <Avatar className="h-16 w-16">
+                                        <AvatarFallback className="text-2xl"><User /></AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex flex-col items-start">
+                                        <DialogTitle className="text-2xl font-headline">{selectedAdmin.locationId ? 'Branch Admin' : 'Super Admin'}</DialogTitle>
+                                        <DialogDescription>{selectedAdmin.email}</DialogDescription>
+                                    </div>
+                                </div>
+                            </DialogHeader>
+                            <div className="grid gap-4 pt-4">
+                                <Separator />
+                                <div className="space-y-2 text-sm">
+                                     <h4 className="font-medium text-muted-foreground mb-2">Permissions</h4>
+                                     <div className="flex items-center gap-3">
+                                        <Shield className="h-4 w-4 text-primary" />
+                                        <span>{selectedAdmin.locationId ? 'Branch Admin' : 'Super Admin'}</span>
+                                     </div>
+                                      {selectedAdmin.locationName && (
+                                         <div className="flex items-center gap-3">
+                                            <MapPin className="h-4 w-4 text-primary" />
+                                            <span>{selectedAdmin.locationName}</span>
+                                         </div>
+                                     )}
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </DialogContent>
+            </Dialog>
+
         </div>
     );
 }

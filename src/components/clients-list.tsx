@@ -79,9 +79,9 @@ export function ClientsList({ initialClients, locations }: ClientsListProps) {
                             <TableHead className="w-[250px]">Client</TableHead>
                             <TableHead>Total Visits</TableHead>
                             <TableHead>Loyalty Tier</TableHead>
-                            <TableHead>Last Visit</TableHead>
-                            <TableHead className="hidden sm:table-cell">Contact</TableHead>
-                            <TableHead className="hidden md:table-cell">Locations Visited</TableHead>
+                            <TableHead className="hidden sm:table-cell">Last Visit</TableHead>
+                            <TableHead className="hidden md:table-cell">Contact</TableHead>
+                            <TableHead className="hidden lg:table-cell">Locations Visited</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -108,10 +108,10 @@ export function ClientsList({ initialClients, locations }: ClientsListProps) {
                                                 <span className="text-muted-foreground">New</span>
                                             )}
                                         </TableCell>
-                                        <TableCell>
+                                        <TableCell className="hidden sm:table-cell">
                                             {formatDistanceToNow(new Date(client.lastVisit), { addSuffix: true })}
                                         </TableCell>
-                                        <TableCell className="hidden sm:table-cell text-sm">
+                                        <TableCell className="hidden md:table-cell text-sm">
                                             <div className="flex items-center gap-2">
                                                 <Phone className="h-3 w-3 text-muted-foreground" />
                                                 {client.phone}
@@ -123,7 +123,7 @@ export function ClientsList({ initialClients, locations }: ClientsListProps) {
                                                  </div>
                                             )}
                                         </TableCell>
-                                        <TableCell className="hidden md:table-cell">
+                                        <TableCell className="hidden lg:table-cell">
                                             <div className="flex flex-wrap gap-1">
                                                 {client.locations.map(loc => <Badge key={loc} variant="secondary">{loc}</Badge>)}
                                             </div>
@@ -146,16 +146,17 @@ export function ClientsList({ initialClients, locations }: ClientsListProps) {
                 <DialogContent className="sm:max-w-md">
                     {selectedClient && (
                         <>
-                            <DialogHeader>
+                           <DialogHeader>
                                 <div className="flex items-center gap-4">
                                     <Avatar className="h-16 w-16">
                                         <AvatarFallback className="text-2xl">{selectedClient.name.charAt(0)}</AvatarFallback>
                                     </Avatar>
-                                    <div>
+                                    <div className="flex flex-col items-start">
                                         <DialogTitle className="text-2xl font-headline">{selectedClient.name}</DialogTitle>
-                                        <DialogDescription>
+                                        <Badge className={`${getTier(selectedClient.totalVisits).className} mt-1 gap-1`}>
+                                            {getTier(selectedClient.totalVisits).icon}
                                             {getTier(selectedClient.totalVisits).name}
-                                        </DialogDescription>
+                                        </Badge>
                                     </div>
                                 </div>
                             </DialogHeader>

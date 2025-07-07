@@ -18,8 +18,16 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash2, Edit, Loader2, Clock, PoundSterling, MapPin } from 'lucide-react';
+import { PlusCircle, Trash2, Edit, Loader2, Clock, PoundSterling, MapPin, Scissors } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+} from '@/components/ui/dialog';
+import { Badge } from './ui/badge';
 
 type ServicesListProps = {
     initialServices: Service[];
@@ -31,6 +39,7 @@ export function ServicesList({ initialServices, locations, onDataChange }: Servi
     const [services, setServices] = React.useState(initialServices);
     const [isFormOpen, setIsFormOpen] = React.useState(false);
     const [editingService, setEditingService] = React.useState<Service | null>(null);
+    const [selectedService, setSelectedService] = React.useState<Service | null>(null);
     const [isDeleting, setIsDeleting] = React.useState<string | null>(null);
     const [selectedLocation, setSelectedLocation] = React.useState<string>('all');
     const { toast } = useToast();
@@ -44,12 +53,14 @@ export function ServicesList({ initialServices, locations, onDataChange }: Servi
         setIsFormOpen(true);
     };
 
-    const handleEditClick = (service: Service) => {
+    const handleEditClick = (e: React.MouseEvent, service: Service) => {
+        e.stopPropagation();
         setEditingService(service);
         setIsFormOpen(true);
     };
 
-    const handleDelete = async (id: string) => {
+    const handleDelete = async (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
         setIsDeleting(id);
         try {
             await deleteService(id);
@@ -62,6 +73,12 @@ export function ServicesList({ initialServices, locations, onDataChange }: Servi
         }
     };
     
+    const handleRowClick = (service: Service) => {
+        if (window.innerWidth < 768) { // Only trigger pop-up on mobile
+            setSelectedService(service);
+        }
+    }
+
     React.useEffect(() => {
         setServices(initialServices);
     }, [initialServices]);
@@ -75,8 +92,8 @@ export function ServicesList({ initialServices, locations, onDataChange }: Servi
 
     return (
         <div className="w-full max-w-6xl mx-auto">
-            <div className="flex justify-between items-center mb-4">
-                 <div className="w-full max-w-xs">
+            <div className="flex flex-wrap gap-4 justify-between items-center mb-4">
+                 <div className="w-full sm:w-auto max-w-xs">
                     <Select onValueChange={setSelectedLocation} value={selectedLocation}>
                         <SelectTrigger>
                             <div className="flex items-center gap-2">
@@ -114,8 +131,8 @@ export function ServicesList({ initialServices, locations, onDataChange }: Servi
                     <TableHeader>
                         <TableRow>
                             <TableHead>Name</TableHead>
-                            <TableHead>Location</TableHead>
-                            <TableHead>Duration</TableHead>
+                            <TableHead className="hidden sm:table-cell">Location</TableHead>
+                            <TableHead className="hidden md:table-cell">Duration</TableHead>
                             <TableHead>Price</TableHead>
                             <TableHead className="text-right w-[120px]">Actions</TableHead>
                         </TableRow>
@@ -123,15 +140,15 @@ export function ServicesList({ initialServices, locations, onDataChange }: Servi
                     <TableBody>
                         {filteredServices.length > 0 ? (
                             filteredServices.map(service => (
-                                <TableRow key={service.id}>
+                                <TableRow key={service.id} onClick={() => handleRowClick(service)} className="md:cursor-default cursor-pointer">
                                     <TableCell className="font-medium">{service.name}</TableCell>
-                                    <TableCell>
+                                    <TableCell className="hidden sm:table-cell">
                                          <div className="flex items-center gap-2">
                                             <MapPin className="h-4 w-4 text-muted-foreground" />
                                             {service.locationName}
                                         </div>
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="hidden md:table-cell">
                                         <div className="flex items-center gap-2">
                                             <Clock className="h-4 w-4 text-muted-foreground" />
                                             {service.duration} min
@@ -145,13 +162,13 @@ export function ServicesList({ initialServices, locations, onDataChange }: Servi
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex gap-2 justify-end">
-                                            <Button variant="ghost" size="icon" onClick={() => handleEditClick(service)}>
+                                            <Button variant="ghost" size="icon" onClick={(e) => handleEditClick(e, service)}>
                                                 <Edit className="h-4 w-4" />
                                             </Button>
                                             
                                             <AlertDialog>
                                                  <AlertDialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon" disabled={isDeleting === service.id}>
+                                                    <Button variant="ghost" size="icon" disabled={isDeleting === service.id} onClick={(e) => e.stopPropagation()}>
                                                         {isDeleting === service.id ? <Loader2 className="animate-spin" /> : <Trash2 className="h-4 w-4 text-destructive" />}
                                                     </Button>
                                                 </AlertDialogTrigger>
@@ -164,7 +181,7 @@ export function ServicesList({ initialServices, locations, onDataChange }: Servi
                                                     </AlertDialogHeader>
                                                     <AlertDialogFooter>
                                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => handleDelete(service.id)}>
+                                                        <AlertDialogAction onClick={(e) => handleDelete(e, service.id)}>
                                                             Delete
                                                         </AlertDialogAction>
                                                     </AlertDialogFooter>
@@ -184,6 +201,37 @@ export function ServicesList({ initialServices, locations, onDataChange }: Servi
                     </TableBody>
                 </Table>
             </div>
+
+            <Dialog open={!!selectedService} onOpenChange={(open) => !open && setSelectedService(null)}>
+                <DialogContent className="sm:max-w-md">
+                    {selectedService && (
+                        <>
+                            <DialogHeader>
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <DialogTitle className="text-2xl font-headline">{selectedService.name}</DialogTitle>
+                                        <DialogDescription>
+                                           Service Details
+                                        </DialogDescription>
+                                    </div>
+                                    <Badge variant="outline" className="text-lg">£{selectedService.price.toFixed(2)}</Badge>
+                                </div>
+                            </DialogHeader>
+                            <div className="grid gap-4 pt-4">
+                                 <div className="flex items-center gap-3 text-sm">
+                                    <MapPin className="h-4 w-4 text-primary" />
+                                    <span>{selectedService.locationName}</span>
+                                </div>
+                                <div className="flex items-center gap-3 text-sm">
+                                    <Clock className="h-4 w-4 text-primary" />
+                                    <span>{selectedService.duration} minutes</span>
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </DialogContent>
+            </Dialog>
+
         </div>
     );
 }
