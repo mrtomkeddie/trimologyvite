@@ -37,31 +37,32 @@ async function getIndividualStaffTimes(
     });
 
     const availableSlots: string[] = [];
-    let currentTime = workDayStart;
+    let potentialSlotStart = workDayStart;
+    const now = new Date();
 
-    // --- Iterate through the workday to find slots ---
-    while (isBefore(addMinutes(currentTime, serviceDuration), workDayEnd) || currentTime.getTime() === workDayEnd.getTime() - (serviceDuration * 60000)) {
-        const slotStart = currentTime;
-        const slotEnd = addMinutes(slotStart, serviceDuration);
+    // Iterate through the workday in 15-minute intervals to find available slots
+    while (isBefore(potentialSlotStart, workDayEnd)) {
+        const potentialSlotEnd = addMinutes(potentialSlotStart, serviceDuration);
 
-        // Check against current time if it's today
-        const now = new Date();
-        if (isBefore(slotStart, now)) {
-             currentTime = addMinutes(currentTime, 15);
-             continue;
+        // Rule 1: The appointment must end on or before the workday ends.
+        if (isAfter(potentialSlotEnd, workDayEnd)) {
+            break; // No more possible slots will fit.
         }
 
-        // Check for conflicts with busy blocks
+        // Rule 2: If it's for today, the slot can't be in the past.
+        const isPastSlot = isBefore(potentialSlotStart, now);
+        
+        // Rule 3: The slot must not overlap with any existing busy blocks.
         const hasConflict = busyBlocks.some(busyBlock => 
-            (isBefore(slotStart, busyBlock.end) && isAfter(slotEnd, busyBlock.start))
+            (isBefore(potentialSlotStart, busyBlock.end) && isAfter(potentialSlotEnd, busyBlock.start))
         );
 
-        if (!hasConflict) {
-            availableSlots.push(format(slotStart, 'HH:mm'));
+        if (!isPastSlot && !hasConflict) {
+            availableSlots.push(format(potentialSlotStart, 'HH:mm'));
         }
 
-        // Move to the next 15-minute interval
-        currentTime = addMinutes(currentTime, 15);
+        // Move to the next potential 15-minute interval.
+        potentialSlotStart = addMinutes(potentialSlotStart, 15);
     }
     
     return availableSlots;
