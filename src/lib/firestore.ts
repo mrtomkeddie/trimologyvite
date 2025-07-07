@@ -24,19 +24,14 @@ const createDummyTimestamp = (date: Date, hour: number, minute: number): string 
 const dummyLocations: Location[] = [
     { id: 'downtown-1', name: 'Downtown Barbers', address: '123 Main St, Barberville', phone: '555-0101', email: 'contact@downtown.com' },
     { id: 'uptown-2', name: 'Uptown Cuts', address: '456 High St, Styletown', phone: '555-0102', email: 'hello@uptown.com' },
-    { id: 'soho-3', name: 'Soho Salon', address: '10 Fashion Ave, London', phone: '555-0103', email: 'contact@sohosalon.com' },
 ];
 
 const dummyServices: Service[] = [
     { id: 'svc-1', name: 'Classic Haircut', duration: 30, price: 25, locationId: 'downtown-1', locationName: 'Downtown Barbers' },
     { id: 'svc-2', name: 'Beard Trim', duration: 15, price: 15, locationId: 'downtown-1', locationName: 'Downtown Barbers' },
     { id: 'svc-3', name: 'Hot Towel Shave', duration: 45, price: 40, locationId: 'downtown-1', locationName: 'Downtown Barbers' },
-    { id: 'svc-6', name: 'Modern Fade', duration: 45, price: 35, locationId: 'downtown-1', locationName: 'Downtown Barbers' },
     { id: 'svc-4', name: 'Kids Cut', duration: 30, price: 20, locationId: 'uptown-2', locationName: 'Uptown Cuts' },
     { id: 'svc-5', name: 'Color & Cut', duration: 120, price: 90, locationId: 'uptown-2', locationName: 'Uptown Cuts' },
-    { id: 'svc-7', name: 'Luxury Manicure', duration: 60, price: 50, locationId: 'uptown-2', locationName: 'Uptown Cuts' },
-    { id: 'svc-8', name: 'Creative Color', duration: 180, price: 150, locationId: 'soho-3', locationName: 'Soho Salon' },
-    { id: 'svc-9', name: 'Signature Cut', duration: 60, price: 75, locationId: 'soho-3', locationName: 'Soho Salon' },
 ];
 
 const defaultWorkingHours = {
@@ -50,38 +45,24 @@ const defaultWorkingHours = {
 };
 
 const dummyStaff: Staff[] = [
-    { id: 'staff-uid-alex', name: 'Alex Smith', specialization: 'Master Barber', locationId: 'downtown-1', locationName: 'Downtown Barbers', email: 'alex@trimology.com', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: defaultWorkingHours },
+    { id: 'branch-admin-uid', name: 'Alex Smith', specialization: 'Master Barber', locationId: 'downtown-1', locationName: 'Downtown Barbers', email: 'branchadmin@trimology.com', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: defaultWorkingHours },
     { id: 'staff-uid-maria', name: 'Maria Garcia', specialization: 'Senior Stylist', locationId: 'downtown-1', locationName: 'Downtown Barbers', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: { ...defaultWorkingHours, wednesday: 'off' } },
-    { id: 'staff-uid-laura', name: 'Laura Palmer', specialization: 'Stylist', locationId: 'downtown-1', locationName: 'Downtown Barbers', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: defaultWorkingHours },
-    { id: 'staff-uid-john', name: 'John Doe', specialization: '', locationId: 'uptown-2', locationName: 'Uptown Cuts', imageUrl: 'https://placehold.co/100x100.png', isBookable: false },
-    { id: 'staff-uid-jane', name: 'Jane Roe', specialization: 'Color Specialist', locationId: 'uptown-2', locationName: 'Uptown Cuts', email: 'jane@trimology.com', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: { ...defaultWorkingHours, saturday: 'off', sunday: 'off' } },
-    { id: 'staff-uid-casey', name: 'Casey Jones', specialization: 'Hair Artist', locationId: 'soho-3', locationName: 'Soho Salon', email: 'casey@trimology.com', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: defaultWorkingHours },
-    { id: 'staff@trimology.com', name: 'Demo Staff', specialization: 'Stylist', locationId: 'downtown-1', locationName: 'Downtown Barbers', email: 'staff@trimology.com', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: defaultWorkingHours },
+    { id: 'staff-uid-jane', name: 'Jane Roe', specialization: 'Color Specialist', locationId: 'uptown-2', locationName: 'Uptown Cuts', email: 'staff@trimology.com', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: { ...defaultWorkingHours, saturday: 'off', sunday: 'off' } },
 ];
 
 
 let dummyBookings: Booking[] = [
-    { id: 'book-1', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-uid-alex', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 1), 10, 0), clientName: 'Bob Johnson', clientPhone: '555-1111', clientEmail: 'bob@example.com' },
-    { id: 'book-2', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-2', serviceName: 'Beard Trim', servicePrice: 15, serviceDuration: 15, staffId: 'staff-uid-alex', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 2), 14, 30), clientName: 'Charlie Brown', clientPhone: '555-2222' },
+    { id: 'book-1', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'branch-admin-uid', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 1), 10, 0), clientName: 'Bob Johnson', clientPhone: '555-1111', clientEmail: 'bob@example.com' },
+    { id: 'book-2', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-2', serviceName: 'Beard Trim', servicePrice: 15, serviceDuration: 15, staffId: 'branch-admin-uid', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 2), 14, 30), clientName: 'Charlie Brown', clientPhone: '555-2222' },
     { id: 'book-3', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-5', serviceName: 'Color & Cut', servicePrice: 90, serviceDuration: 120, staffId: 'staff-uid-jane', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 3), 11, 0), clientName: 'Diana Prince', clientPhone: '555-3333', clientEmail: 'diana@example.com' },
     { id: 'book-4', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-uid-maria', staffName: 'Maria Garcia', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 1), 11, 30), clientName: 'Peter Parker', clientPhone: '555-4444' },
-    { id: 'book-5', locationId: 'soho-3', locationName: 'Soho Salon', serviceId: 'svc-9', serviceName: 'Signature Cut', servicePrice: 75, serviceDuration: 60, staffId: 'staff-uid-casey', staffName: 'Casey Jones', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 4), 15, 0), clientName: 'Bruce Wayne', clientPhone: '555-5555' },
-    { id: 'book-6', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-4', serviceName: 'Kids Cut', servicePrice: 20, serviceDuration: 30, staffId: 'staff-uid-jane', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 1), 9, 0), clientName: 'Anakin Skywalker', clientPhone: '555-6666' },
-    { id: 'book-7', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-3', serviceName: 'Hot Towel Shave', servicePrice: 40, serviceDuration: 45, staffId: 'staff-uid-alex', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 5), 16, 0), clientName: 'Tony Stark', clientPhone: '555-7777', clientEmail: 'tony@example.com' },
-    { id: 'book-8', locationId: 'soho-3', locationName: 'Soho Salon', serviceId: 'svc-8', serviceName: 'Creative Color', servicePrice: 150, serviceDuration: 180, staffId: 'staff-uid-casey', staffName: 'Casey Jones', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 6), 10, 0), clientName: 'Natasha Romanoff', clientPhone: '555-8888' },
-    { id: 'book-9', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-uid-laura', staffName: 'Laura Palmer', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 2), 13, 0), clientName: 'Clark Kent', clientPhone: '555-9999' },
-    { id: 'book-10', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-7', serviceName: 'Luxury Manicure', servicePrice: 50, serviceDuration: 60, staffId: 'staff-uid-jane', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(subDays(new Date(), 1), 12, 0), clientName: 'Lois Lane', clientPhone: '555-1010' },
-    { id: 'book-11', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-6', serviceName: 'Modern Fade', servicePrice: 35, serviceDuration: 45, staffId: 'staff-uid-alex', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(subDays(new Date(), 2), 11, 0), clientName: 'Jimmy Olsen', clientPhone: '555-1212' },
-    { id: 'book-12', locationId: 'soho-3', locationName: 'Soho Salon', serviceId: 'svc-9', serviceName: 'Signature Cut', servicePrice: 75, serviceDuration: 60, staffId: 'staff-uid-casey', staffName: 'Casey Jones', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(new Date(), 14, 0), clientName: 'Perry White', clientPhone: '555-1313' },
-    // Add more bookings for loyalty data
-    { id: 'book-13', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-uid-alex', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(subDays(new Date(), 10), 10, 0), clientName: 'Bob Johnson', clientPhone: '555-1111', clientEmail: 'bob@example.com' },
-    { id: 'book-14', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-uid-maria', staffName: 'Maria Garcia', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(subDays(new Date(), 20), 10, 0), clientName: 'Bob Johnson', clientPhone: '555-1111', clientEmail: 'bob@example.com' },
-    { id: 'book-15', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-4', serviceName: 'Kids Cut', servicePrice: 20, serviceDuration: 30, staffId: 'staff-uid-jane', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(subDays(new Date(), 5), 9, 0), clientName: 'Anakin Skywalker', clientPhone: '555-6666' },
+    { id: 'book-10', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-4', serviceName: 'Kids Cut', servicePrice: 20, serviceDuration: 30, staffId: 'staff-uid-jane', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(subDays(new Date(), 1), 12, 0), clientName: 'Lois Lane', clientPhone: '555-1010' },
+    // Past booking for loyalty data
+    { id: 'book-13', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'branch-admin-uid', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(subDays(new Date(), 10), 10, 0), clientName: 'Bob Johnson', clientPhone: '555-1111', clientEmail: 'bob@example.com' },
 ];
 
 const dummyAdmins: AdminUser[] = [
     { id: 'owner-uid', email: 'owner@trimology.com' },
-    { id: 'super-admin-uid', email: 'superadmin@trimology.com' },
     { id: 'branch-admin-uid', email: 'branchadmin@trimology.com', locationId: 'downtown-1', locationName: 'Downtown Barbers' },
 ];
 
