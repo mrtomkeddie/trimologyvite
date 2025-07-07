@@ -2,17 +2,18 @@
 'use client';
 
 import * as React from 'react';
-import { getAdminsFromFirestore, getLocationsFromFirestore } from "@/lib/firestore";
+import { getAdminsFromFirestore, getLocationsFromFirestore, getStaffFromFirestore } from "@/lib/firestore";
 import { AdminsList } from "@/components/admins-list";
 import { ArrowLeft, Loader2, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import type { AdminUser, Location } from '@/lib/types';
+import type { AdminUser, Location, Staff } from '@/lib/types';
 import { useAdmin } from '@/contexts/AdminContext';
 
 export default function ManageAdminsPage() {
     const { adminUser } = useAdmin();
     const [admins, setAdmins] = React.useState<AdminUser[]>([]);
+    const [staff, setStaff] = React.useState<Staff[]>([]);
     const [locations, setLocations] = React.useState<Location[]>([]);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
@@ -23,12 +24,14 @@ export default function ManageAdminsPage() {
         setLoading(true);
         setError(null);
         try {
-            const [fetchedAdmins, fetchedLocations] = await Promise.all([
+            const [fetchedAdmins, fetchedLocations, fetchedStaff] = await Promise.all([
                 getAdminsFromFirestore(adminUser.locationId),
-                getLocationsFromFirestore(adminUser.locationId)
+                getLocationsFromFirestore(adminUser.locationId),
+                getStaffFromFirestore(adminUser.locationId)
             ]);
             setAdmins(fetchedAdmins);
             setLocations(fetchedLocations);
+            setStaff(fetchedStaff);
         } catch (e) {
             setError("Failed to fetch admin data. Please try refreshing the page.");
             console.error(e);
@@ -78,6 +81,7 @@ export default function ManageAdminsPage() {
                 <AdminsList 
                     initialAdmins={admins} 
                     locations={locations} 
+                    staff={staff}
                     currentUser={adminUser} 
                     onDataChange={handleDataChange}
                 />

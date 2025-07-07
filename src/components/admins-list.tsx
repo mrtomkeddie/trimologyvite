@@ -1,7 +1,7 @@
 
 'use client';
 import * as React from 'react';
-import type { AdminUser, Location } from '@/lib/types';
+import type { AdminUser, Location, Staff } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AdminForm } from './admin-form';
@@ -34,11 +34,12 @@ import { Separator } from './ui/separator';
 type AdminsListProps = {
     initialAdmins: AdminUser[];
     locations: Location[];
+    staff: Staff[];
     currentUser: AdminUser | null;
     onDataChange: () => void;
 };
 
-export function AdminsList({ initialAdmins, locations, currentUser, onDataChange }: AdminsListProps) {
+export function AdminsList({ initialAdmins, locations, staff, currentUser, onDataChange }: AdminsListProps) {
     const [isFormOpen, setIsFormOpen] = React.useState(false);
     const [editingAdmin, setEditingAdmin] = React.useState<AdminUser | null>(null);
     const [selectedAdmin, setSelectedAdmin] = React.useState<AdminUser | null>(null);
@@ -101,6 +102,8 @@ export function AdminsList({ initialAdmins, locations, currentUser, onDataChange
                 setIsOpen={setIsFormOpen}
                 admin={editingAdmin}
                 locations={locations}
+                staff={staff}
+                allAdmins={initialAdmins}
                 onSubmitted={handleFormSubmit}
                 currentUser={currentUser}
             />
