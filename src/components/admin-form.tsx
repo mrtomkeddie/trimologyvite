@@ -156,19 +156,15 @@ export function AdminForm({ isOpen, setIsOpen, admin, locations, onSubmitted, cu
                     </DialogDescription>
                 </DialogHeader>
 
-                {isCreatingNewAdmin && (
-                    <Alert>
-                        <Info className="h-4 w-4" />
-                        <AlertTitle>Creating a New Admin</AlertTitle>
-                        <AlertDescription>
-                            This will create a new login and grant them admin permissions for a specific branch. Only the app provider can create Super Admins.
-                        </AlertDescription>
-                    </Alert>
-                )}
-
-
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
+                        <Alert variant="default">
+                            <Info className="h-4 w-4" />
+                            <AlertTitle>Admin & Staff Roles</AlertTitle>
+                            <AlertDescription>
+                                To make an Admin also a bookable stylist, ensure you create a profile for them in the <strong>Manage Staff</strong> section using the same email address.
+                            </AlertDescription>
+                        </Alert>
                          <FormField
                             control={form.control}
                             name="email"
