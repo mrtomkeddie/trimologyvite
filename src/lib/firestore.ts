@@ -126,14 +126,20 @@ export async function getAdminsFromFirestore(locationId?: string): Promise<Admin
     }
     
     const q = locationId 
-        ? query(adminsCollection, where('locationId', '==', locationId), orderBy('email')) 
+        ? query(adminsCollection, where('locationId', '==', locationId))
         : query(adminsCollection, orderBy('email'));
         
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
+    const admins = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
     } as AdminUser));
+
+    if (locationId) {
+        admins.sort((a, b) => a.email.localeCompare(b.email));
+    }
+
+    return admins;
 }
 
 export async function setAdminRecord(uid: string, data: { email: string; locationId: string; locationName: string; }) {
@@ -236,11 +242,17 @@ export async function getServicesFromFirestore(locationId?: string): Promise<Ser
         return Promise.resolve(dummyServices);
     }
     const q = locationId 
-        ? query(servicesCollection, where('locationId', '==', locationId), orderBy('name'))
+        ? query(servicesCollection, where('locationId', '==', locationId))
         : query(servicesCollection, orderBy('name'));
 
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Service));
+    const services = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Service));
+    
+    if (locationId) {
+        services.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    
+    return services;
 }
 
 export async function addService(data: { name: string; duration: number; price: number; locationId: string; locationName: string; }) {
@@ -273,11 +285,17 @@ export async function getStaffFromFirestore(locationId?: string): Promise<Staff[
         return Promise.resolve(dummyStaff);
     }
     const q = locationId
-        ? query(staffCollection, where('locationId', '==', locationId), orderBy('name'))
+        ? query(staffCollection, where('locationId', '==', locationId))
         : query(staffCollection, orderBy('name'));
     
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Staff));
+    const staff = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Staff));
+
+    if (locationId) {
+        staff.sort((a,b) => a.name.localeCompare(b.name));
+    }
+
+    return staff;
 }
 
 export async function setStaffRecord(uid: string, data: Omit<Staff, 'id'>) {
