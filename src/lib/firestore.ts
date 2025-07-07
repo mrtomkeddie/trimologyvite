@@ -407,12 +407,11 @@ export async function getBookingsByPhoneFromFirestore(phone: string): Promise<Bo
 
     const q = query(
         bookingsCollection,
-        where('clientPhone', '==', phone),
-        orderBy('bookingTimestamp', 'desc')
+        where('clientPhone', '==', phone)
     );
 
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => {
+    const bookings = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
             id: doc.id,
@@ -420,6 +419,9 @@ export async function getBookingsByPhoneFromFirestore(phone: string): Promise<Bo
             bookingTimestamp: data.bookingTimestamp,
         } as Booking;
     });
+
+    bookings.sort((a, b) => b.bookingTimestamp.localeCompare(a.bookingTimestamp));
+    return bookings;
 }
 
 export async function getBookingsByStaffId(staffId: string): Promise<Booking[]> {
@@ -448,7 +450,6 @@ export async function getBookingsByStaffId(staffId: string): Promise<Booking[]> 
 }
 
 export async function getBookingsForStaffOnDate(staffId: string, date: Date): Promise<Booking[]> {
-    // Construct UTC-based start and end of day strings for reliable querying
     const dayStartStr = format(date, 'yyyy-MM-dd') + 'T00:00:00.000Z';
     const dayEndStr = format(date, 'yyyy-MM-dd') + 'T23:59:59.999Z';
     
@@ -459,19 +460,17 @@ export async function getBookingsForStaffOnDate(staffId: string, date: Date): Pr
         return Promise.resolve(dayBookings);
     }
     
-    // The previous query with two inequality filters on 'bookingTimestamp' required a composite index.
-    // To avoid this, we perform a broader query and filter the results in the application.
     const q = query(
         bookingsCollection,
-        where('staffId', '==', staffId),
-        where('bookingTimestamp', '>=', dayStartStr)
+        where('staffId', '==', staffId)
     );
 
     const snapshot = await getDocs(q);
-    const bookingsFromStartOfDay = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Booking));
+    const allBookingsForStaff = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Booking));
 
-    // Now, filter out bookings that are not on the same day.
-    return bookingsFromStartOfDay.filter(b => b.bookingTimestamp <= dayEndStr);
+    return allBookingsForStaff.filter(b => {
+        return b.bookingTimestamp >= dayStartStr && b.bookingTimestamp <= dayEndStr;
+    });
 }
 
 export async function addBooking(data: NewBooking) {
