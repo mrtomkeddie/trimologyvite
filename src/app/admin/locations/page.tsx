@@ -6,10 +6,65 @@ import { getLocationsFromFirestore } from '@/lib/firestore';
 import type { Location } from '@/lib/types';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Loader2, QrCode, ShieldAlert, UploadCloud, Download } from "lucide-react";
+import { ArrowLeft, Loader2, QrCode, ShieldAlert, Download } from "lucide-react";
 import Link from "next/link";
-import { QrCodeUploadDialog } from '@/components/qr-upload-dialog';
-import Image from 'next/image';
+import { QRCodeCanvas } from 'qrcode.react';
+
+// QR Code Display Component
+const QrCodeDisplay = ({ location, origin }: { location: Location; origin: string }) => {
+  const qrRef = React.useRef<HTMLDivElement>(null);
+  const checkinUrl = `${origin}/check-in/${location.id}`;
+
+  const handleDownload = () => {
+    if (qrRef.current) {
+      const canvas = qrRef.current.querySelector('canvas');
+      if (canvas) {
+        const pngUrl = canvas
+          .toDataURL("image/png")
+          .replace("image/png", "image/octet-stream");
+        let downloadLink = document.createElement("a");
+        downloadLink.href = pngUrl;
+        downloadLink.download = `${location.name}-QR-Code.png`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+      }
+    }
+  };
+
+  return (
+    <div className='text-center w-full p-4 flex flex-col items-center justify-center gap-4'>
+      <div className="relative w-48 h-48 mx-auto border-4 border-primary rounded-lg overflow-hidden p-2 bg-white" ref={qrRef}>
+        <QRCodeCanvas
+          value={checkinUrl}
+          size={256} // High resolution for canvas
+          bgColor={"#ffffff"}
+          fgColor={"#000000"}
+          level={"L"}
+          includeMargin={false}
+          style={{ width: '100%', height: '100%' }}
+        />
+      </div>
+      <div className="flex gap-2 mt-2 justify-center">
+        <Button onClick={handleDownload}>
+          <Download className="mr-2 h-4 w-4" />
+          Download
+        </Button>
+      </div>
+      <div className="mt-2 max-w-xs mx-auto w-full">
+        <label className="text-xs text-muted-foreground">Check-in URL:</label>
+        <input
+          type="text"
+          readOnly
+          value={checkinUrl}
+          className="w-full bg-background border border-input rounded-md px-3 py-2 text-sm text-center mt-1"
+          onFocus={(e) => e.target.select()}
+        />
+      </div>
+    </div>
+  );
+};
+
 
 export default function ManageLocationsPage() {
     const { adminUser } = useAdmin();
@@ -17,8 +72,6 @@ export default function ManageLocationsPage() {
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
     const [origin, setOrigin] = React.useState('');
-    const [isUploadDialogOpen, setIsUploadDialogOpen] = React.useState(false);
-    const [selectedLocation, setSelectedLocation] = React.useState<Location | null>(null);
 
     const fetchData = React.useCallback(async () => {
         if (!adminUser) return;
@@ -38,17 +91,6 @@ export default function ManageLocationsPage() {
         setOrigin(window.location.origin);
         fetchData();
     }, [fetchData]);
-
-    const handleUploadClick = (location: Location) => {
-        setSelectedLocation(location);
-        setIsUploadDialogOpen(true);
-    };
-    
-    const handleUploadComplete = () => {
-        setIsUploadDialogOpen(false);
-        setSelectedLocation(null);
-        fetchData(); // Re-fetch data to show the new QR code
-    }
 
     if (loading) {
         return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
@@ -84,7 +126,7 @@ export default function ManageLocationsPage() {
                 <div className="text-center max-w-2xl">
                     <h2 className="text-2xl font-bold">Manage Walk-in Customer Check-in</h2>
                     <p className="text-muted-foreground mt-2">
-                        For each location, you can upload the QR code image you've created. This keeps everything in one place, ready to print or display.
+                        For each location, a unique QR code is automatically generated. You can download this code to print or display for walk-in customers.
                     </p>
                 </div>
 
@@ -99,51 +141,8 @@ export default function ManageLocationsPage() {
                                     </div>
                                     <CardDescription>{location.address}</CardDescription>
                                 </CardHeader>
-                                <CardContent className="flex flex-col items-center justify-center gap-4">
-                                    {location.qrCodeUrl ? (
-                                        <div className='text-center w-full'>
-                                             <div className="relative w-48 h-48 mx-auto border-4 border-primary rounded-lg overflow-hidden">
-                                                <Image 
-                                                    src={location.qrCodeUrl} 
-                                                    alt={`${location.name} QR Code`} 
-                                                    layout="fill"
-                                                    objectFit='contain'
-                                                    data-ai-hint="qr code"
-                                                />
-                                            </div>
-                                            <div className="flex gap-2 mt-4 justify-center">
-                                                <Button asChild variant="secondary">
-                                                    <a href={location.qrCodeUrl} download={`${location.name}-QR-Code.png`}>
-                                                         <Download className="mr-2 h-4 w-4" />
-                                                         Download
-                                                    </a>
-                                                </Button>
-                                                <Button variant="outline" onClick={() => handleUploadClick(location)}>Replace</Button>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className='text-center w-full p-4'>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleUploadClick(location)}
-                                                className="h-48 w-48 mx-auto flex flex-col items-center justify-center border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted transition-colors text-muted-foreground"
-                                            >
-                                                <UploadCloud className="h-10 w-10 text-primary" />
-                                                <span className="font-semibold text-foreground mt-2">Upload QR Code</span>
-                                                <span className="text-xs mt-1">Click to upload image</span>
-                                            </button>
-                                            <div className="mt-4 max-w-xs mx-auto">
-                                                <label className="text-xs text-muted-foreground">Or generate one using this link:</label>
-                                                <input 
-                                                    type="text" 
-                                                    readOnly 
-                                                    value={`${origin}/check-in/${location.id}`} 
-                                                    className="w-full bg-background border border-input rounded-md px-3 py-2 text-sm text-center mt-1"
-                                                    onFocus={(e) => e.target.select()}
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
+                                <CardContent>
+                                    <QrCodeDisplay location={location} origin={origin} />
                                 </CardContent>
                             </Card>
                         ))}
@@ -152,14 +151,6 @@ export default function ManageLocationsPage() {
                     <p className="text-muted-foreground mt-8">No locations found.</p>
                 )}
             </main>
-             {selectedLocation && (
-                <QrCodeUploadDialog
-                    isOpen={isUploadDialogOpen}
-                    setIsOpen={setIsUploadDialogOpen}
-                    location={selectedLocation}
-                    onUploadComplete={handleUploadComplete}
-                />
-            )}
         </div>
     );
 }

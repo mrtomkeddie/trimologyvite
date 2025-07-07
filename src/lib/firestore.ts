@@ -22,9 +22,9 @@ const createDummyTimestamp = (date: Date, hour: number, minute: number): string 
 
 
 const dummyLocations: Location[] = [
-    { id: 'downtown-1', name: 'Downtown Barbers', address: '123 Main St, Barberville', phone: '555-0101', email: 'contact@downtown.com', qrCodeUrl: '' },
-    { id: 'uptown-2', name: 'Uptown Cuts', address: '456 High St, Styletown', phone: '555-0102', email: 'hello@uptown.com', qrCodeUrl: '' },
-    { id: 'soho-3', name: 'Soho Salon', address: '10 Fashion Ave, London', phone: '555-0103', email: 'contact@sohosalon.com', qrCodeUrl: '' },
+    { id: 'downtown-1', name: 'Downtown Barbers', address: '123 Main St, Barberville', phone: '555-0101', email: 'contact@downtown.com' },
+    { id: 'uptown-2', name: 'Uptown Cuts', address: '456 High St, Styletown', phone: '555-0102', email: 'hello@uptown.com' },
+    { id: 'soho-3', name: 'Soho Salon', address: '10 Fashion Ave, London', phone: '555-0103', email: 'contact@sohosalon.com' },
 ];
 
 const dummyServices: Service[] = [
