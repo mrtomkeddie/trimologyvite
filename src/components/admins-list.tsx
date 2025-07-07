@@ -159,7 +159,7 @@ export function AdminsList({ initialAdmins, locations, staff, currentUser, onDat
                                                     <AlertDialogHeader>
                                                         <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                                         <AlertDialogDescription>
-                                                            This action cannot be undone. This will permanently revoke admin permissions for this user. It will not delete their login account.
+                                                            This action cannot be undone. This will permanently revoke admin permissions for this user. Their login account and staff profile (if one exists) will not be affected.
                                                         </AlertDialogDescription>
                                                     </AlertDialogHeader>
                                                     <AlertDialogFooter>
