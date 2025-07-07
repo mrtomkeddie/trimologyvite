@@ -9,7 +9,7 @@ import { addDays, startOfDay, endOfDay, subDays, format } from 'date-fns';
 
 // --- DUMMY DATA SWITCH ---
 // Change this to 'false' to use your live Firestore database.
-const USE_DUMMY_DATA = true;
+const USE_DUMMY_DATA = false;
 
 // --- DUMMY DATA DEFINITIONS ---
 
@@ -491,9 +491,6 @@ export async function getBookingsForStaffOnDate(staffId: string, date: Date): Pr
 
 export async function addBooking(data: NewBooking) {
     if (USE_DUMMY_DATA) { 
-        // IMPORTANT: In dummy mode, this mutation is temporary and will not persist across requests.
-        // This is why bookings appear to vanish after being created in dummy mode.
-        // Switch to live Firestore data for proper booking persistence.
         const newBooking = { ...data, id: `book-${Date.now()}`};
         dummyBookings.push(newBooking);
         revalidatePath('/admin/bookings'); 
