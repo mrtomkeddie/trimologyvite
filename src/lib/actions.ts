@@ -9,7 +9,18 @@ import { addBooking, getBookingsForStaffOnDate } from './firestore';
 // Helper to map JS day index (Sun=0) to our string keys
 const dayMap: (keyof Staff['workingHours'])[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
-// New non-AI helper function to get available times for a single staff member
+// --- Reusable Conflict Check Helper Function ---
+const checkForConflicts = async (staffId: string, start: Date, end: Date): Promise<boolean> => {
+    const existingBookings = await getBookingsForStaffOnDate(staffId, start);
+    return existingBookings.some(b => {
+        const existingStart = new Date(b.bookingTimestamp);
+        const existingEnd = addMinutes(existingStart, b.serviceDuration);
+        // Check for overlap: (StartA < EndB) and (EndA > StartB)
+        return isBefore(start, existingEnd) && isAfter(end, existingStart);
+    });
+};
+
+// Helper function to get available times for a single staff member
 async function getIndividualStaffTimes(
     serviceDuration: number,
     preferredDate: Date,
@@ -24,17 +35,8 @@ async function getIndividualStaffTimes(
         return [];
     }
     
-    // --- Define the working day boundaries ---
     const workDayStart = parse(dayHours.start, 'HH:mm', preferredDate);
     const workDayEnd = parse(dayHours.end, 'HH:mm', preferredDate);
-
-    // --- Get existing bookings and create "busy" blocks ---
-    const existingBookings = await getBookingsForStaffOnDate(staffMember.id, preferredDate);
-    const busyBlocks = existingBookings.map(b => {
-        const start = new Date(b.bookingTimestamp);
-        const end = addMinutes(start, b.serviceDuration);
-        return { start, end };
-    });
 
     const availableSlots: string[] = [];
     let potentialSlotStart = workDayStart;
@@ -52,13 +54,12 @@ async function getIndividualStaffTimes(
         // Rule 2: If it's for today, the slot can't be in the past.
         const isPastSlot = isBefore(potentialSlotStart, now);
         
-        // Rule 3: The slot must not overlap with any existing busy blocks.
-        const hasConflict = busyBlocks.some(busyBlock => 
-            (isBefore(potentialSlotStart, busyBlock.end) && isAfter(potentialSlotEnd, busyBlock.start))
-        );
-
-        if (!isPastSlot && !hasConflict) {
-            availableSlots.push(format(potentialSlotStart, 'HH:mm'));
+        // Rule 3: The slot must not have a conflict.
+        if (!isPastSlot) {
+            const hasConflict = await checkForConflicts(staffMember.id, potentialSlotStart, potentialSlotEnd);
+            if (!hasConflict) {
+                availableSlots.push(format(potentialSlotStart, 'HH:mm'));
+            }
         }
 
         // Move to the next potential 15-minute interval.
@@ -125,6 +126,7 @@ export async function createBooking(bookingData: BookingData) {
         throw new Error("Missing required booking information.");
     }
      
+    // --- Data Fetching ---
     const allLocations = await getLocations();
     const allServices = await getServices();
     const allStaff = await getStaff();
@@ -136,18 +138,19 @@ export async function createBooking(bookingData: BookingData) {
         throw new Error("Invalid location or service selected.");
     }
 
-    let staffMember: Staff | undefined | null = allStaff.find(s => s.id === bookingData.staffId);
-    let assignedStaffId = bookingData.staffId;
+    // --- Determine Booking Time Window ---
+    const bookingStart = new Date(bookingData.date);
+    const [hours, minutes] = bookingData.time.split(':').map(Number);
+    bookingStart.setHours(hours, minutes, 0, 0);
+    const bookingEnd = addMinutes(bookingStart, service.duration);
 
+    let assignedStaff: Staff | undefined | null = null;
+
+    // --- Assign Staff and Perform Final, Definitive Conflict Check ---
     if (bookingData.staffId === 'any') {
-        const bookingStart = new Date(bookingData.date);
-        const [hours, minutes] = bookingData.time.split(':').map(Number);
-        bookingStart.setHours(hours, minutes, 0, 0);
-        const bookingEnd = addMinutes(bookingStart, service.duration);
-        
         const bookableStaffAtLocation = allStaff.filter(s => s.locationId === bookingData.locationId && s.isBookable !== false && s.workingHours);
         
-        let foundStaff = null;
+        // Find the first staff member who is free at the requested time
         for (const potentialStaff of bookableStaffAtLocation) {
             const dayOfWeek = dayMap[getDay(bookingStart)];
             const dayHours = potentialStaff.workingHours?.[dayOfWeek];
@@ -157,43 +160,43 @@ export async function createBooking(bookingData: BookingData) {
             const dayEndTime = parse(dayHours.end, 'HH:mm', bookingStart);
             if (isBefore(bookingStart, dayStartTime) || isAfter(bookingEnd, dayEndTime)) continue;
 
-            const existingBookings = await getBookingsForStaffOnDate(potentialStaff.id, bookingStart);
-            const conflict = existingBookings.some(b => {
-                const existingStart = new Date(b.bookingTimestamp);
-                const existingEnd = addMinutes(existingStart, b.serviceDuration);
-                return isBefore(bookingStart, existingEnd) && isAfter(bookingEnd, existingStart);
-            });
+            const hasConflict = await checkForConflicts(potentialStaff.id, bookingStart, bookingEnd);
 
-            if (!conflict) {
-                foundStaff = potentialStaff;
+            if (!hasConflict) {
+                assignedStaff = potentialStaff; // Tentatively assign
                 break;
             }
         }
 
-        if (foundStaff) {
-            staffMember = foundStaff;
-            assignedStaffId = foundStaff.id;
-        } else {
-            throw new Error("Sorry, that time slot was just taken. Please choose another slot.");
+        if (!assignedStaff) {
+            throw new Error("Sorry, no staff is available for that time slot. It may have just been taken.");
+        }
+    } else {
+        // A specific staff member was chosen, find them.
+        assignedStaff = allStaff.find(s => s.id === bookingData.staffId);
+        if (!assignedStaff) {
+            throw new Error("The selected staff member could not be found.");
+        }
+        
+        // For the chosen staff, perform the definitive conflict check.
+        const hasConflict = await checkForConflicts(assignedStaff.id, bookingStart, bookingEnd);
+        if (hasConflict) {
+            throw new Error("Sorry, that time slot is no longer available for the selected staff member. Please choose another time.");
         }
     }
 
-
-    const [hours, minutes] = bookingData.time.split(':').map(Number);
-    const bookingTimestamp = new Date(bookingData.date);
-    bookingTimestamp.setHours(hours, minutes);
-
+    // --- Create the booking since all checks have passed ---
     const newBooking: NewBooking = {
         locationId: bookingData.locationId,
         locationName: location.name,
-        serviceId: bookingData.serviceId,
+        serviceId: service.id,
         serviceName: service.name,
         servicePrice: service.price,
         serviceDuration: service.duration,
-        staffId: assignedStaffId,
-        staffName: staffMember?.name || 'Any Available',
-        staffImageUrl: staffMember?.imageUrl || '',
-        bookingTimestamp: bookingTimestamp.toISOString(),
+        staffId: assignedStaff.id, // Use the ID of the definitively assigned staff
+        staffName: assignedStaff.name,
+        staffImageUrl: assignedStaff.imageUrl || '',
+        bookingTimestamp: bookingStart.toISOString(),
         clientName: bookingData.clientName,
         clientPhone: bookingData.clientPhone,
         clientEmail: bookingData.clientEmail || '',
