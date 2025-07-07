@@ -2,18 +2,19 @@
 'use client';
 
 import * as React from 'react';
-import { getStaffFromFirestore, getLocationsFromFirestore } from "@/lib/firestore";
+import { getStaffFromFirestore, getLocationsFromFirestore, getAdminsFromFirestore } from "@/lib/firestore";
 import { StaffList } from "@/components/staff-list";
 import { ArrowLeft, Loader2, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import type { Staff, Location } from '@/lib/types';
+import type { Staff, Location, AdminUser } from '@/lib/types';
 import { useAdmin } from '@/contexts/AdminContext';
 
 export default function ManageStaffPage() {
     const { adminUser } = useAdmin();
     const [staff, setStaff] = React.useState<Staff[]>([]);
     const [locations, setLocations] = React.useState<Location[]>([]);
+    const [admins, setAdmins] = React.useState<AdminUser[]>([]);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
     const [refreshKey, setRefreshKey] = React.useState(0);
@@ -23,12 +24,14 @@ export default function ManageStaffPage() {
         setLoading(true);
         setError(null);
         try {
-            const [fetchedStaff, fetchedLocations] = await Promise.all([
+            const [fetchedStaff, fetchedLocations, fetchedAdmins] = await Promise.all([
                 getStaffFromFirestore(adminUser.locationId),
                 getLocationsFromFirestore(adminUser.locationId),
+                getAdminsFromFirestore(adminUser.locationId),
             ]);
             setStaff(fetchedStaff);
             setLocations(fetchedLocations);
+            setAdmins(fetchedAdmins);
         } catch (e) {
             setError("Failed to fetch staff data. Please try refreshing the page.");
             console.error(e);
@@ -76,7 +79,8 @@ export default function ManageStaffPage() {
             <main className="flex-1 p-4 sm:p-6 lg:p-8">
                 <StaffList 
                     initialStaff={staff} 
-                    locations={locations} 
+                    locations={locations}
+                    admins={admins} 
                     onDataChange={handleDataChange}
                 />
             </main>

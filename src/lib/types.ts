@@ -134,7 +134,7 @@ const StaffWorkingHoursSchema = WorkingHoursSchema.superRefine((workingHours, ct
 });
 
 export const StaffFormSchema = z.object({
-  id: z.string().optional(), // Used to hold the UID when editing
+  id: z.string().optional(), // Used to hold the UID when editing or linking an admin
   name: z.string().min(2, 'Name must be at least 2 characters.'),
   specialization: z.string().optional().or(z.literal('')),
   imageUrl: z.string().url().optional().or(z.literal('')),
@@ -154,7 +154,7 @@ export const StaffFormSchema = z.object({
   isBookable: z.boolean().optional(),
   workingHours: StaffWorkingHoursSchema.optional(),
 }).superRefine((data, ctx) => {
-    // When creating a new staff member (no ID yet), email and password are required.
+    // When creating a brand new user (no pre-existing ID), email and password are required.
     if (!data.id) { 
         if (!data.email) {
             ctx.addIssue({

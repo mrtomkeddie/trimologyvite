@@ -1,7 +1,7 @@
 
 'use client';
 import * as React from 'react';
-import type { Staff, Location } from '@/lib/types';
+import type { Staff, Location, AdminUser } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { StaffForm } from './staff-form';
@@ -34,12 +34,13 @@ import { Badge } from '@/components/ui/badge';
 type StaffListProps = {
     initialStaff: Staff[];
     locations: Location[];
+    admins: AdminUser[];
     onDataChange: () => void;
 };
 
 const daysOfWeek = [ 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday' ] as const;
 
-export function StaffList({ initialStaff, locations, onDataChange }: StaffListProps) {
+export function StaffList({ initialStaff, locations, admins, onDataChange }: StaffListProps) {
     const [staff, setStaff] = React.useState(initialStaff);
     const [isFormOpen, setIsFormOpen] = React.useState(false);
     const [editingStaff, setEditingStaff] = React.useState<Staff | null>(null);
@@ -121,6 +122,8 @@ export function StaffList({ initialStaff, locations, onDataChange }: StaffListPr
                 setIsOpen={setIsFormOpen}
                 staffMember={editingStaff}
                 locations={locations}
+                admins={admins}
+                allStaff={initialStaff}
                 onSubmitted={handleFormSubmit}
             />
 

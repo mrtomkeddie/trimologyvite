@@ -16,14 +16,15 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { setStaffRecord, updateStaff } from '@/lib/firestore';
-import { StaffFormSchema, type Staff, type Location, WorkingHoursSchema } from '@/lib/types';
-import { Loader2, User, Info, UploadCloud } from 'lucide-react';
+import { StaffFormSchema, type Staff, type Location, WorkingHoursSchema, type AdminUser } from '@/lib/types';
+import { Loader2, User, Info, UploadCloud, UserPlus, Link2 } from 'lucide-react';
 import { uploadStaffImage } from '@/lib/storage';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from './ui/separator';
 
 type StaffFormValues = z.infer<typeof StaffFormSchema>;
 
@@ -53,6 +54,8 @@ type StaffFormProps = {
     setIsOpen: (isOpen: boolean) => void;
     staffMember: Staff | null;
     locations: Location[];
+    admins: AdminUser[];
+    allStaff: Staff[];
     onSubmitted: () => void;
 };
 
@@ -136,9 +139,10 @@ function WorkingHoursFormPart({ control, form }: { control: any, form: any }) {
     );
 }
 
-export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitted }: StaffFormProps) {
+export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, allStaff, onSubmitted }: StaffFormProps) {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const { toast } = useToast();
+    const [linkExistingAdminId, setLinkExistingAdminId] = React.useState<string | undefined>();
     
     const form = useForm<StaffFormValues>({
         resolver: zodResolver(StaffFormSchema),
@@ -159,6 +163,27 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
     const imageFile = form.watch('imageFile');
     const [imagePreview, setImagePreview] = React.useState<string | null>(null);
 
+    const adminsNotStaff = React.useMemo(() => {
+        const staffEmails = new Set(allStaff.map(s => s.email));
+        return admins.filter(a => !staffEmails.has(a.email));
+    }, [admins, allStaff]);
+
+    React.useEffect(() => {
+        if (linkExistingAdminId) {
+            const admin = admins.find(a => a.id === linkExistingAdminId);
+            if (admin) {
+                form.setValue('email', admin.email);
+                form.setValue('name', form.getValues('name') || admin.email.split('@')[0]);
+                form.setValue('id', admin.id); // Set the UID to link the profile
+            }
+        } else {
+             if (!staffMember) { // only reset if creating new, not editing
+                form.setValue('id', undefined);
+             }
+        }
+    }, [linkExistingAdminId, admins, form, staffMember]);
+
+
      React.useEffect(() => {
         if (imageFile && imageFile.length > 0 && imageFile[0] instanceof File) {
             const file = imageFile[0];
@@ -174,6 +199,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
 
     React.useEffect(() => {
         if (isOpen) {
+            setLinkExistingAdminId(undefined); // Reset on open
             if (staffMember) {
                 form.reset({
                     id: staffMember.id,
@@ -239,42 +265,60 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                 toast({ title: 'Success', description: 'Staff member updated successfully.' });
 
             } else { // --- CREATE PATH ---
-                 if (!data.email || !data.password) {
-                    toast({ title: "Validation Error", description: "Email and password are required for new staff.", variant: "destructive" });
+                 
+                let uid = data.id; // UID might be pre-filled if linking an admin
+                
+                // If there's no UID, it's a new user, so create auth entry.
+                if (!uid) {
+                    if (!data.email || !data.password) {
+                        toast({ title: "Validation Error", description: "Email and a temporary password are required for new staff members.", variant: "destructive" });
+                        setIsSubmitting(false);
+                        return;
+                    }
+                    const tempAppName = `temp-user-creation-${Date.now()}`;
+                    const tempApp = initializeApp(firebaseConfig, tempAppName);
+                    const tempAuth = getAuth(tempApp);
+                    try {
+                        const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email, data.password);
+                        uid = userCredential.user.uid;
+                    } catch (error) {
+                        if (error instanceof Error && (error as any).code === 'auth/email-already-in-use') {
+                             toast({
+                                title: 'Email Already In Use',
+                                description: "This email is already registered. If they are an admin, please use the 'Link to Existing Admin' option.",
+                                variant: 'destructive',
+                            });
+                            setIsSubmitting(false);
+                            return;
+                        }
+                        throw error; // re-throw other errors
+                    } finally {
+                         await deleteApp(tempApp);
+                    }
+                }
+                
+                if (!uid) {
+                    toast({ title: 'Error', description: 'Could not determine user ID for staff member.', variant: 'destructive' });
                     setIsSubmitting(false);
                     return;
-                 }
-                 
-                const tempAppName = `temp-user-creation-${Date.now()}`;
-                const tempApp = initializeApp(firebaseConfig, tempAppName);
-                const tempAuth = getAuth(tempApp);
-
-                try {
-                     // 1. Create Auth user
-                    const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email, data.password);
-                    const uid = userCredential.user.uid;
-                    
-                    // 2. Upload image if it exists
-                    let imageUrl = '';
-                    if (imageFile) {
-                        imageUrl = await uploadStaffImage(uid, imageFile);
-                    }
-                    
-                    // 3. Create staff record in Firestore
-                    await setStaffRecord(uid, {
-                        name: data.name,
-                        specialization: data.specialization || '',
-                        locationId: data.locationId,
-                        locationName: location.name,
-                        email: data.email,
-                        imageUrl: imageUrl,
-                        isBookable: data.isBookable,
-                        workingHours: data.workingHours,
-                    });
-                    toast({ title: 'Success', description: 'Staff member added successfully.'});
-                } finally {
-                    await deleteApp(tempApp);
                 }
+
+                let imageUrl = '';
+                if (imageFile) {
+                    imageUrl = await uploadStaffImage(uid, imageFile);
+                }
+                
+                await setStaffRecord(uid, {
+                    name: data.name,
+                    specialization: data.specialization || '',
+                    locationId: data.locationId,
+                    locationName: location.name,
+                    email: data.email,
+                    imageUrl: imageUrl,
+                    isBookable: data.isBookable,
+                    workingHours: data.workingHours,
+                });
+                toast({ title: 'Success', description: 'Staff member added successfully.'});
             }
             
             onSubmitted();
@@ -293,6 +337,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
     };
 
     const isCreating = !staffMember;
+    const isLinkingAdmin = isCreating && !!linkExistingAdminId;
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -302,13 +347,36 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                          <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0 border-b">
                             <DialogTitle>{isCreating ? 'Add New Staff Member' : 'Edit Staff Member'}</DialogTitle>
                             <DialogDescription>
-                                {isCreating ? 'Create a profile and login for a new staff member.' : 'Update the details of this staff member.'}
+                                {isCreating ? 'Create a profile for a new or existing admin.' : 'Update the details of this staff member.'}
                             </DialogDescription>
                         </DialogHeader>
 
                         <div className="flex-1 min-h-0">
                            <ScrollArea className="h-full">
                                 <div className="px-6 py-6 space-y-6">
+                                    {isCreating && (
+                                        <div className="space-y-4 rounded-md border p-4 bg-muted/30">
+                                            <div className="flex items-center gap-3">
+                                                <Link2 className="h-5 w-5 text-primary" />
+                                                <h4 className="font-medium text-base">Link to Admin</h4>
+                                            </div>
+                                            <p className="text-sm text-muted-foreground">If this staff member is also an admin, select them here to create their bookable profile.</p>
+                                            <Select onValueChange={setLinkExistingAdminId} value={linkExistingAdminId}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Or, create a new user below..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="new-user">-- Create New Staff User --</SelectItem>
+                                                    {adminsNotStaff.map(admin => (
+                                                        <SelectItem key={admin.id} value={admin.id}>
+                                                            {admin.email}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    )}
+                                    
                                     <FormField
                                         control={form.control}
                                         name="name"
@@ -426,8 +494,12 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                                     <WorkingHoursFormPart control={form.control} form={form} />
 
                                     <div className='space-y-4 rounded-md border border-input p-4 bg-muted/50'>
-                                        <h4 className="text-sm font-medium">{isCreating ? 'Create Staff Login' : 'Staff Login Details'}</h4>
-                                        {isCreating && (
+                                        <div className="flex items-center gap-3">
+                                                <UserPlus className="h-5 w-5 text-primary" />
+                                                <h4 className="text-sm font-medium">{isCreating ? 'Create Staff Login' : 'Staff Login Details'}</h4>
+                                        </div>
+
+                                        {(isCreating && !isLinkingAdmin) && (
                                             <Alert variant="default" className="bg-background">
                                                 <Info className="h-4 w-4" />
                                                 <AlertTitle>Action Required</AlertTitle>
@@ -443,13 +515,13 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                                                 <FormItem>
                                                     <FormLabel>Login Email</FormLabel>
                                                     <FormControl>
-                                                        <Input type="email" placeholder="staff.member@example.com" {...field} disabled={!isCreating} />
+                                                        <Input type="email" placeholder="staff.member@example.com" {...field} disabled={!isCreating || isLinkingAdmin} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
                                             )}
                                         />
-                                        {isCreating && (
+                                        {(isCreating && !isLinkingAdmin) && (
                                             <FormField
                                                 control={form.control}
                                                 name="password"
@@ -464,9 +536,9 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                                                 )}
                                             />
                                         )}
-                                        {!isCreating && (
+                                        {(!isCreating || isLinkingAdmin) && (
                                             <FormDesc className="text-xs">
-                                                To change a password, the staff member must use the "Forgot Password" link on the Staff Login page.
+                                                The login email cannot be changed. To change a password, the staff member must use the "Forgot Password" link on the Staff Login page.
                                             </FormDesc>
                                         )}
                                     </div>
