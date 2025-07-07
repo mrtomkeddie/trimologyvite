@@ -459,15 +459,19 @@ export async function getBookingsForStaffOnDate(staffId: string, date: Date): Pr
         return Promise.resolve(dayBookings);
     }
     
+    // The previous query with two inequality filters on 'bookingTimestamp' required a composite index.
+    // To avoid this, we perform a broader query and filter the results in the application.
     const q = query(
         bookingsCollection,
         where('staffId', '==', staffId),
-        where('bookingTimestamp', '>=', dayStartStr),
-        where('bookingTimestamp', '<=', dayEndStr)
+        where('bookingTimestamp', '>=', dayStartStr)
     );
 
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Booking));
+    const bookingsFromStartOfDay = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Booking));
+
+    // Now, filter out bookings that are not on the same day.
+    return bookingsFromStartOfDay.filter(b => b.bookingTimestamp <= dayEndStr);
 }
 
 export async function addBooking(data: NewBooking) {
@@ -546,5 +550,3 @@ export async function getClientLoyaltyData(locationId?: string): Promise<ClientL
 
     return clientsArray;
 }
-
-    
