@@ -68,6 +68,12 @@ export function BookingsList({ initialBookings, locations, onDataChange }: Booki
         }
         return bookings.filter(b => b.locationId === selectedLocation);
     }, [bookings, selectedLocation]);
+    
+    const handleRowClick = (booking: Booking) => {
+        if (window.innerWidth < 768) { // Only trigger pop-up on mobile
+            setSelectedBooking(booking);
+        }
+    }
 
     return (
         <div className="w-full max-w-7xl mx-auto">
@@ -107,7 +113,7 @@ export function BookingsList({ initialBookings, locations, onDataChange }: Booki
                     <TableBody>
                         {filteredBookings.length > 0 ? (
                             filteredBookings.map(booking => (
-                                <TableRow key={booking.id} onClick={() => setSelectedBooking(booking)} className="cursor-pointer hover:bg-muted/50">
+                                <TableRow key={booking.id} onClick={() => handleRowClick(booking)} className="md:cursor-default cursor-pointer hover:bg-muted/50">
                                     <TableCell className="font-medium">
                                         <div className="hidden sm:block whitespace-nowrap">{format(new Date(booking.bookingTimestamp), 'PP p')}</div>
                                         <div className="sm:hidden">
@@ -190,7 +196,7 @@ export function BookingsList({ initialBookings, locations, onDataChange }: Booki
                     {selectedBooking && (
                         <>
                             <DialogHeader>
-                                <div className="flex items-start justify-between">
+                                <div className="flex items-center justify-between">
                                     <div>
                                         <DialogTitle className="text-2xl font-headline">{selectedBooking.clientName}</DialogTitle>
                                         <DialogDescription>
