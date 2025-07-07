@@ -401,14 +401,19 @@ export async function getBookingsByStaffId(staffId: string): Promise<Booking[]> 
         return Promise.resolve(upcoming);
     }
 
-    const q = query(
-        bookingsCollection, 
-        where('staffId', '==', staffId),
-        where('bookingTimestamp', '>=', nowString),
-        orderBy('bookingTimestamp', 'asc')
-    );
+    // This query previously required a composite index.
+    // By removing the orderBy and filtering/sorting in code, we avoid the index requirement.
+    const q = query(bookingsCollection, where('staffId', '==', staffId));
+    
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Booking));
+    const allBookingsForStaff = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Booking));
+
+    // Filter for upcoming bookings and sort them in the application code.
+    const upcomingBookings = allBookingsForStaff
+        .filter(b => b.bookingTimestamp >= nowString)
+        .sort((a,b) => a.bookingTimestamp.localeCompare(b.bookingTimestamp));
+
+    return upcomingBookings;
 }
 
 export async function getBookingsForStaffOnDate(staffId: string, date: Date): Promise<Booking[]> {
@@ -510,3 +515,5 @@ export async function getClientLoyaltyData(locationId?: string): Promise<ClientL
 
     return clientsArray;
 }
+
+    
