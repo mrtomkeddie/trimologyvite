@@ -5,7 +5,7 @@ import { db } from './firebase';
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, orderBy, query, Timestamp, where, getDoc, setDoc, limit } from 'firebase/firestore';
 import type { Location, Service, Staff, Booking, NewBooking, AdminUser, ClientLoyalty } from './types';
 import { revalidatePath } from 'next/cache';
-import { addDays, startOfDay, endOfDay, subDays } from 'date-fns';
+import { addDays, startOfDay, endOfDay, subDays, format } from 'date-fns';
 
 // --- DUMMY DATA SWITCH ---
 // Change this to 'false' to use your live Firestore database.
@@ -51,23 +51,30 @@ const dummyStaff: Staff[] = [
     { id: 'staff-7', name: 'Demo Staff', specialization: 'Stylist', locationId: 'downtown-1', locationName: 'Downtown Barbers', uid: 'staff@trimology.com', email: 'staff@trimology.com', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: defaultWorkingHours },
 ];
 
+// Helper to create timezone-unaware timestamp strings for dummy data
+const createDummyTimestamp = (date: Date, hour: number, minute: number) => {
+    const d = new Date(date);
+    d.setHours(hour, minute, 0, 0);
+    return format(d, "yyyy-MM-dd'T'HH:mm:ss");
+};
+
 const dummyBookings: Booking[] = [
-    { id: 'book-1', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: new Date(addDays(startOfDay(new Date()), 1).setHours(10, 0)).toISOString(), clientName: 'Bob Johnson', clientPhone: '555-1111', clientEmail: 'bob@example.com' },
-    { id: 'book-2', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-2', serviceName: 'Beard Trim', servicePrice: 15, serviceDuration: 15, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: new Date(addDays(startOfDay(new Date()), 2).setHours(14, 30)).toISOString(), clientName: 'Charlie Brown', clientPhone: '555-2222' },
-    { id: 'book-3', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-5', serviceName: 'Color & Cut', servicePrice: 90, serviceDuration: 120, staffId: 'staff-4', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: new Date(addDays(startOfDay(new Date()), 3).setHours(11, 0)).toISOString(), clientName: 'Diana Prince', clientPhone: '555-3333', clientEmail: 'diana@example.com' },
-    { id: 'book-4', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-2', staffName: 'Maria Garcia', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: new Date(addDays(startOfDay(new Date()), 1).setHours(11, 30)).toISOString(), clientName: 'Peter Parker', clientPhone: '555-4444' },
-    { id: 'book-5', locationId: 'soho-3', locationName: 'Soho Salon', serviceId: 'svc-9', serviceName: 'Signature Cut', servicePrice: 75, serviceDuration: 60, staffId: 'staff-5', staffName: 'Casey Jones', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: new Date(addDays(startOfDay(new Date()), 4).setHours(15, 0)).toISOString(), clientName: 'Bruce Wayne', clientPhone: '555-5555' },
-    { id: 'book-6', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-4', serviceName: 'Kids Cut', servicePrice: 20, serviceDuration: 30, staffId: 'staff-4', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: new Date(addDays(startOfDay(new Date()), 1).setHours(9, 0)).toISOString(), clientName: 'Anakin Skywalker', clientPhone: '555-6666' },
-    { id: 'book-7', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-3', serviceName: 'Hot Towel Shave', servicePrice: 40, serviceDuration: 45, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: new Date(addDays(startOfDay(new Date()), 5).setHours(16, 0)).toISOString(), clientName: 'Tony Stark', clientPhone: '555-7777', clientEmail: 'tony@example.com' },
-    { id: 'book-8', locationId: 'soho-3', locationName: 'Soho Salon', serviceId: 'svc-8', serviceName: 'Creative Color', servicePrice: 150, serviceDuration: 180, staffId: 'staff-5', staffName: 'Casey Jones', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: new Date(addDays(startOfDay(new Date()), 6).setHours(10, 0)).toISOString(), clientName: 'Natasha Romanoff', clientPhone: '555-8888' },
-    { id: 'book-9', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-6', staffName: 'Laura Palmer', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: new Date(addDays(startOfDay(new Date()), 2).setHours(13, 0)).toISOString(), clientName: 'Clark Kent', clientPhone: '555-9999' },
-    { id: 'book-10', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-7', serviceName: 'Luxury Manicure', servicePrice: 50, serviceDuration: 60, staffId: 'staff-4', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: new Date(subDays(startOfDay(new Date()), 1).setHours(12, 0)).toISOString(), clientName: 'Lois Lane', clientPhone: '555-1010' },
-    { id: 'book-11', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-6', serviceName: 'Modern Fade', servicePrice: 35, serviceDuration: 45, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: new Date(subDays(startOfDay(new Date()), 2).setHours(11, 0)).toISOString(), clientName: 'Jimmy Olsen', clientPhone: '555-1212' },
-    { id: 'book-12', locationId: 'soho-3', locationName: 'Soho Salon', serviceId: 'svc-9', serviceName: 'Signature Cut', servicePrice: 75, serviceDuration: 60, staffId: 'staff-5', staffName: 'Casey Jones', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: new Date(startOfDay(new Date()).setHours(14, 0)).toISOString(), clientName: 'Perry White', clientPhone: '555-1313' },
+    { id: 'book-1', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 1), 10, 0), clientName: 'Bob Johnson', clientPhone: '555-1111', clientEmail: 'bob@example.com' },
+    { id: 'book-2', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-2', serviceName: 'Beard Trim', servicePrice: 15, serviceDuration: 15, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 2), 14, 30), clientName: 'Charlie Brown', clientPhone: '555-2222' },
+    { id: 'book-3', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-5', serviceName: 'Color & Cut', servicePrice: 90, serviceDuration: 120, staffId: 'staff-4', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 3), 11, 0), clientName: 'Diana Prince', clientPhone: '555-3333', clientEmail: 'diana@example.com' },
+    { id: 'book-4', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-2', staffName: 'Maria Garcia', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 1), 11, 30), clientName: 'Peter Parker', clientPhone: '555-4444' },
+    { id: 'book-5', locationId: 'soho-3', locationName: 'Soho Salon', serviceId: 'svc-9', serviceName: 'Signature Cut', servicePrice: 75, serviceDuration: 60, staffId: 'staff-5', staffName: 'Casey Jones', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 4), 15, 0), clientName: 'Bruce Wayne', clientPhone: '555-5555' },
+    { id: 'book-6', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-4', serviceName: 'Kids Cut', servicePrice: 20, serviceDuration: 30, staffId: 'staff-4', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 1), 9, 0), clientName: 'Anakin Skywalker', clientPhone: '555-6666' },
+    { id: 'book-7', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-3', serviceName: 'Hot Towel Shave', servicePrice: 40, serviceDuration: 45, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 5), 16, 0), clientName: 'Tony Stark', clientPhone: '555-7777', clientEmail: 'tony@example.com' },
+    { id: 'book-8', locationId: 'soho-3', locationName: 'Soho Salon', serviceId: 'svc-8', serviceName: 'Creative Color', servicePrice: 150, serviceDuration: 180, staffId: 'staff-5', staffName: 'Casey Jones', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 6), 10, 0), clientName: 'Natasha Romanoff', clientPhone: '555-8888' },
+    { id: 'book-9', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-6', staffName: 'Laura Palmer', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(addDays(new Date(), 2), 13, 0), clientName: 'Clark Kent', clientPhone: '555-9999' },
+    { id: 'book-10', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-7', serviceName: 'Luxury Manicure', servicePrice: 50, serviceDuration: 60, staffId: 'staff-4', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(subDays(new Date(), 1), 12, 0), clientName: 'Lois Lane', clientPhone: '555-1010' },
+    { id: 'book-11', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-6', serviceName: 'Modern Fade', servicePrice: 35, serviceDuration: 45, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(subDays(new Date(), 2), 11, 0), clientName: 'Jimmy Olsen', clientPhone: '555-1212' },
+    { id: 'book-12', locationId: 'soho-3', locationName: 'Soho Salon', serviceId: 'svc-9', serviceName: 'Signature Cut', servicePrice: 75, serviceDuration: 60, staffId: 'staff-5', staffName: 'Casey Jones', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(new Date(), 14, 0), clientName: 'Perry White', clientPhone: '555-1313' },
     // Add more bookings for loyalty data
-    { id: 'book-13', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: new Date(subDays(startOfDay(new Date()), 10).setHours(10, 0)).toISOString(), clientName: 'Bob Johnson', clientPhone: '555-1111', clientEmail: 'bob@example.com' },
-    { id: 'book-14', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-2', staffName: 'Maria Garcia', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: new Date(subDays(startOfDay(new Date()), 20).setHours(10, 0)).toISOString(), clientName: 'Bob Johnson', clientPhone: '555-1111', clientEmail: 'bob@example.com' },
-    { id: 'book-15', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-4', serviceName: 'Kids Cut', servicePrice: 20, serviceDuration: 30, staffId: 'staff-4', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: new Date(subDays(startOfDay(new Date()), 5).setHours(9, 0)).toISOString(), clientName: 'Anakin Skywalker', clientPhone: '555-6666' },
+    { id: 'book-13', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-1', staffName: 'Alex Smith', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(subDays(new Date(), 10), 10, 0), clientName: 'Bob Johnson', clientPhone: '555-1111', clientEmail: 'bob@example.com' },
+    { id: 'book-14', locationId: 'downtown-1', locationName: 'Downtown Barbers', serviceId: 'svc-1', serviceName: 'Classic Haircut', servicePrice: 25, serviceDuration: 30, staffId: 'staff-2', staffName: 'Maria Garcia', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(subDays(new Date(), 20), 10, 0), clientName: 'Bob Johnson', clientPhone: '555-1111', clientEmail: 'bob@example.com' },
+    { id: 'book-15', locationId: 'uptown-2', locationName: 'Uptown Cuts', serviceId: 'svc-4', serviceName: 'Kids Cut', servicePrice: 20, serviceDuration: 30, staffId: 'staff-4', staffName: 'Jane Roe', staffImageUrl: 'https://placehold.co/100x100.png', bookingTimestamp: createDummyTimestamp(subDays(new Date(), 5), 9, 0), clientName: 'Anakin Skywalker', clientPhone: '555-6666' },
 ];
 
 const dummyAdmins: AdminUser[] = [
@@ -397,7 +404,7 @@ export async function getBookingsFromFirestore(locationId?: string): Promise<Boo
         if (locationId) return Promise.resolve(sorted.filter(b => b.locationId === locationId));
         return Promise.resolve(sorted);
     }
-     const q = locationId
+     const q = locationId 
         ? query(bookingsCollection, where('locationId', '==', locationId), orderBy('bookingTimestamp', 'desc'))
         : query(bookingsCollection, orderBy('bookingTimestamp', 'desc'));
 
@@ -443,10 +450,13 @@ export async function getBookingsByStaffId(staffId: string): Promise<Booking[]> 
             .sort((a,b) => new Date(a.bookingTimestamp).getTime() - new Date(b.bookingTimestamp).getTime());
         return Promise.resolve(upcoming);
     }
+    // Get current time in a timezone-unaware string format for comparison
+    const nowString = format(new Date(), "yyyy-MM-dd'T'HH:mm:ss");
+
     const q = query(
         bookingsCollection, 
         where('staffId', '==', staffId),
-        where('bookingTimestamp', '>=', new Date().toISOString()),
+        where('bookingTimestamp', '>=', nowString), // Compare strings
         orderBy('bookingTimestamp', 'asc')
     );
     const snapshot = await getDocs(q);
@@ -454,23 +464,21 @@ export async function getBookingsByStaffId(staffId: string): Promise<Booking[]> 
 }
 
 export async function getBookingsForStaffOnDate(staffId: string, date: Date): Promise<Booking[]> {
+    const dayStartStr = format(date, 'yyyy-MM-dd') + 'T00:00:00';
+    const dayEndStr = format(date, 'yyyy-MM-dd') + 'T23:59:59';
+    
     if (USE_DUMMY_DATA) {
-        const checkDate = startOfDay(date);
         const dayBookings = dummyBookings.filter(b => {
-            if (b.staffId !== staffId) return false;
-            const bookingDate = startOfDay(new Date(b.bookingTimestamp));
-            return bookingDate.getTime() === checkDate.getTime();
+            return b.staffId === staffId && b.bookingTimestamp >= dayStartStr && b.bookingTimestamp <= dayEndStr;
         });
         return Promise.resolve(dayBookings);
     }
-    const dayStart = startOfDay(date).toISOString();
-    const dayEnd = endOfDay(date).toISOString();
-
+    
     const q = query(
         bookingsCollection,
         where('staffId', '==', staffId),
-        where('bookingTimestamp', '>=', dayStart),
-        where('bookingTimestamp', '<=', dayEnd)
+        where('bookingTimestamp', '>=', dayStartStr),
+        where('bookingTimestamp', '<=', dayEndStr)
     );
 
     const snapshot = await getDocs(q);
