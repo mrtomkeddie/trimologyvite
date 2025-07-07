@@ -196,7 +196,7 @@ export function BookingsList({ initialBookings, locations, onDataChange }: Booki
                     {selectedBooking && (
                         <>
                             <DialogHeader className="flex flex-row items-center justify-between">
-                                <div>
+                                <div className="text-left">
                                     <DialogTitle className="text-2xl font-headline">{selectedBooking.clientName}</DialogTitle>
                                     <DialogDescription>
                                         {format(new Date(selectedBooking.bookingTimestamp), 'eeee, MMMM do, yyyy')}
