@@ -165,14 +165,14 @@ export async function createBooking(bookingData: BookingData) {
             }
         }
 
-        if (!assignedStaff) throw new Error("Sorry, no staff is available for that time slot. It may have just been taken.");
+        if (!assignedStaff) throw new Error("No staff are available for the selected time. Please try another time or speak with our receptionist.");
     
     } else {
         assignedStaff = allStaff.find(s => s.id === bookingData.staffId);
         if (!assignedStaff) throw new Error("The selected staff member could not be found.");
         
         const hasConflict = await checkForConflicts(assignedStaff.id, bookingStart, bookingEnd);
-        if (hasConflict) throw new Error("Sorry, that time slot is no longer available. Please choose another time.");
+        if (hasConflict) throw new Error("The selected staff member is unavailable for that time. Please choose another time or staff member.");
     }
 
     const newBooking: NewBooking = {
