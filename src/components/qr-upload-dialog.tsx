@@ -142,7 +142,7 @@ export function QrCodeUploadDialog({ isOpen, setIsOpen, location, onUploadComple
                                 ) : (
                                     <UploadCloud className="mr-2 h-4 w-4" />
                                 )}
-                                {isUploading ? 'Uploading...' : 'Upload and Save'}
+                                {isUploading ? 'Saving...' : 'Save QR Code'}
                             </Button>
                         </DialogFooter>
                     </form>
