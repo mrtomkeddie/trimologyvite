@@ -34,9 +34,10 @@ import { Badge } from './ui/badge';
 type BookingsListProps = {
     initialBookings: Booking[];
     locations: Location[];
+    onDataChange: () => void;
 };
 
-export function BookingsList({ initialBookings, locations }: BookingsListProps) {
+export function BookingsList({ initialBookings, locations, onDataChange }: BookingsListProps) {
     const [bookings, setBookings] = React.useState(initialBookings);
     const [isDeleting, setIsDeleting] = React.useState<string | null>(null);
     const [selectedLocation, setSelectedLocation] = React.useState<string>('all');
@@ -49,6 +50,7 @@ export function BookingsList({ initialBookings, locations }: BookingsListProps) 
         try {
             await deleteBooking(id);
             toast({ title: 'Success', description: 'Booking deleted successfully.' });
+            onDataChange();
         } catch (error) {
             toast({ title: 'Error', description: 'Failed to delete booking.', variant: 'destructive' });
         } finally {

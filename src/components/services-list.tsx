@@ -24,9 +24,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 type ServicesListProps = {
     initialServices: Service[];
     locations: Location[];
+    onDataChange: () => void;
 };
 
-export function ServicesList({ initialServices, locations }: ServicesListProps) {
+export function ServicesList({ initialServices, locations, onDataChange }: ServicesListProps) {
     const [services, setServices] = React.useState(initialServices);
     const [isFormOpen, setIsFormOpen] = React.useState(false);
     const [editingService, setEditingService] = React.useState<Service | null>(null);
@@ -35,7 +36,7 @@ export function ServicesList({ initialServices, locations }: ServicesListProps) 
     const { toast } = useToast();
 
     const handleFormSubmit = () => {
-       // Revalidation from server action will handle UI updates
+       onDataChange();
     };
     
     const handleAddClick = () => {
@@ -53,6 +54,7 @@ export function ServicesList({ initialServices, locations }: ServicesListProps) 
         try {
             await deleteService(id);
             toast({ title: 'Success', description: 'Service deleted successfully.' });
+            onDataChange();
         } catch (error) {
             toast({ title: 'Error', description: 'Failed to delete service.', variant: 'destructive' });
         } finally {

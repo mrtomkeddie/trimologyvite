@@ -268,7 +268,6 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
         }
     };
 
-    const currentImageUrl = form.watch('imageUrl');
     const isCreating = !staffMember;
 
     return (
@@ -321,7 +320,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, onSubmitt
                                             <FormLabel>Staff Photo</FormLabel>
                                             <div className="flex items-center gap-4">
                                                 <Avatar className="h-24 w-24">
-                                                    <AvatarImage src={imagePreview} alt={form.getValues('name')} />
+                                                    <AvatarImage src={imagePreview ?? staffMember?.imageUrl} alt={form.getValues('name')} />
                                                     <AvatarFallback><User className="h-8 w-8" /></AvatarFallback>
                                                 </Avatar>
                                     

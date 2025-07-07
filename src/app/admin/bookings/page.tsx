@@ -1,39 +1,66 @@
 
+'use client';
+
 import * as React from 'react';
 import { getBookingsFromFirestore, getLocationsFromFirestore } from "@/lib/firestore";
 import { BookingsList } from "@/components/bookings-list";
-import { ArrowLeft, PlusCircle } from "lucide-react";
+import { ArrowLeft, PlusCircle, Loader2, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import type { AdminUser } from '@/lib/types';
-import { auth } from '@/lib/firebase';
-import { getAdminUser } from '@/lib/firestore';
-import { redirect } from 'next/navigation';
+import type { Booking, Location } from '@/lib/types';
+import { useAdmin } from '@/contexts/AdminContext';
 
-async function getPageData(user: AdminUser) {
-    const userLocationId = user.locationId;
-    const [filteredBookings, filteredLocations] = await Promise.all([
-        getBookingsFromFirestore(userLocationId),
-        getLocationsFromFirestore(userLocationId),
-    ]);
-    return { bookings: filteredBookings, locations: filteredLocations };
-}
+export default function ManageBookingsPage() {
+    const { adminUser } = useAdmin();
+    const [bookings, setBookings] = React.useState<Booking[]>([]);
+    const [locations, setLocations] = React.useState<Location[]>([]);
+    const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState<string | null>(null);
+    const [refreshKey, setRefreshKey] = React.useState(0);
 
-export default async function ManageBookingsPage() {
-    const currentUser = auth.currentUser;
-    // This is a protected route. Redirect to login if not authenticated.
-    if (!currentUser || !currentUser.email) {
-        redirect('/admin');
+    const fetchData = React.useCallback(async () => {
+        if (!adminUser) return;
+        setLoading(true);
+        setError(null);
+        try {
+            const [fetchedBookings, fetchedLocations] = await Promise.all([
+                getBookingsFromFirestore(adminUser.locationId),
+                getLocationsFromFirestore(adminUser.locationId),
+            ]);
+            setBookings(fetchedBookings);
+            setLocations(fetchedLocations);
+        } catch (e) {
+            setError("Failed to fetch booking data. Please try refreshing the page.");
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    }, [adminUser]);
+
+    React.useEffect(() => {
+        fetchData();
+    }, [fetchData, refreshKey]);
+
+    const handleDataChange = () => {
+        setRefreshKey(prev => prev + 1);
+    };
+
+    if (loading) {
+        return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
     }
-    
-    const adminUser = await getAdminUser(currentUser.uid, currentUser.email);
-    
-    // Or if they are not a valid admin user in Firestore.
-    if (!adminUser) {
-        redirect('/admin');
-    }
 
-    const { bookings, locations } = await getPageData(adminUser);
+     if (error) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-background text-center p-4">
+                <div>
+                    <ShieldAlert className="h-16 w-16 text-destructive mx-auto mb-4" />
+                    <h1 className="text-2xl font-bold mb-2">Error</h1>
+                    <p className="text-muted-foreground mb-6">{error}</p>
+                    <Button onClick={fetchData}>Try Again</Button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -55,7 +82,11 @@ export default async function ManageBookingsPage() {
                 </Button>
             </header>
             <main className="flex-1 p-4 sm:p-6 lg:p-8">
-                <BookingsList initialBookings={bookings} locations={locations} />
+                <BookingsList 
+                    initialBookings={bookings} 
+                    locations={locations}
+                    onDataChange={handleDataChange}
+                />
             </main>
         </div>
     );

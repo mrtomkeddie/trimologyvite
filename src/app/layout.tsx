@@ -21,10 +21,11 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet" />
         
         {/* Favicon and App Icon Links */}
-        <link rel="manifest" href="/manifest.json?v=8" />
+        <link rel="manifest" href="/manifest.json?v=9" />
         <meta name="theme-color" content="#000000" />
-        <link rel="icon" href="/trimology-logo.png?v=8" type="image/png" sizes="any" />
-        <link rel="apple-touch-icon" href="/trimology-black.png?v=8" />
+        <link rel="icon" href="/trimology-logo.png?v=9" type="image/png" />
+        <link rel="shortcut icon" href="/trimology-logo.png?v=9" type="image/png" />
+        <link rel="apple-touch-icon" href="/trimology-black.png?v=9" />
 
       </head>
       <body className="font-body antialiased">

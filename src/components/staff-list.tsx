@@ -34,11 +34,12 @@ import { Badge } from '@/components/ui/badge';
 type StaffListProps = {
     initialStaff: Staff[];
     locations: Location[];
+    onDataChange: () => void;
 };
 
 const daysOfWeek = [ 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday' ] as const;
 
-export function StaffList({ initialStaff, locations }: StaffListProps) {
+export function StaffList({ initialStaff, locations, onDataChange }: StaffListProps) {
     const [staff, setStaff] = React.useState(initialStaff);
     const [isFormOpen, setIsFormOpen] = React.useState(false);
     const [editingStaff, setEditingStaff] = React.useState<Staff | null>(null);
@@ -62,14 +63,17 @@ export function StaffList({ initialStaff, locations }: StaffListProps) {
         setIsFormOpen(true);
     };
 
+    const handleFormSubmit = () => {
+        onDataChange();
+    }
+
     const handleDelete = async (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
         setIsDeleting(id);
         try {
             await deleteStaff(id);
             toast({ title: 'Success', description: 'Staff member deleted successfully.' });
-            // Let revalidation handle data updates. We just update the local state for now.
-            setStaff(prev => prev.filter(s => s.id !== id));
+            onDataChange();
         } catch (error) {
             toast({ title: 'Error', description: 'Failed to delete staff member.', variant: 'destructive' });
         } finally {
@@ -117,10 +121,7 @@ export function StaffList({ initialStaff, locations }: StaffListProps) {
                 setIsOpen={setIsFormOpen}
                 staffMember={editingStaff}
                 locations={locations}
-                onSubmitted={() => {
-                    // This could be updated to use revalidateTag if we want to get fancy
-                    // For now, we just assume the parent page will handle revalidation on load
-                }}
+                onSubmitted={handleFormSubmit}
             />
 
             <div className="rounded-lg border bg-card">

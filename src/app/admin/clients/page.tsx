@@ -1,40 +1,61 @@
 
+'use client';
+
 import * as React from 'react';
 import { getClientLoyaltyData, getLocationsFromFirestore } from "@/lib/firestore";
 import { ClientsList } from "@/components/clients-list";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import type { AdminUser } from '@/lib/types';
-import { auth } from '@/lib/firebase';
-import { getAdminUser } from '@/lib/firestore';
-import { redirect } from 'next/navigation';
+import type { ClientLoyalty, Location } from '@/lib/types';
+import { useAdmin } from '@/contexts/AdminContext';
 
-async function getPageData(user: AdminUser) {
-    const userLocationId = user.locationId;
-    const [filteredClients, filteredLocations] = await Promise.all([
-        getClientLoyaltyData(userLocationId),
-        getLocationsFromFirestore(userLocationId),
-    ]);
-    return { clients: filteredClients, locations: filteredLocations };
-}
+export default function ClientLoyaltyPage() {
+    const { adminUser } = useAdmin();
+    const [clients, setClients] = React.useState<ClientLoyalty[]>([]);
+    const [locations, setLocations] = React.useState<Location[]>([]);
+    const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState<string | null>(null);
 
+    const fetchData = React.useCallback(async () => {
+        if (!adminUser) return;
+        setLoading(true);
+        setError(null);
+        try {
+            const [fetchedClients, fetchedLocations] = await Promise.all([
+                getClientLoyaltyData(adminUser.locationId),
+                getLocationsFromFirestore(adminUser.locationId),
+            ]);
+            setClients(fetchedClients);
+            setLocations(fetchedLocations);
+        } catch (e) {
+            setError("Failed to fetch client data. Please try refreshing the page.");
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    }, [adminUser]);
 
-export default async function ClientLoyaltyPage() {
-    const currentUser = auth.currentUser;
-    // This is a protected route. Redirect to login if not authenticated.
-    if (!currentUser || !currentUser.email) {
-        redirect('/admin');
+     React.useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    if (loading) {
+        return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
     }
     
-    const adminUser = await getAdminUser(currentUser.uid, currentUser.email);
-    
-    // Or if they are not a valid admin user in Firestore.
-    if (!adminUser) {
-        redirect('/admin');
+    if (error) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-background text-center p-4">
+                <div>
+                    <ShieldAlert className="h-16 w-16 text-destructive mx-auto mb-4" />
+                    <h1 className="text-2xl font-bold mb-2">Error</h1>
+                    <p className="text-muted-foreground mb-6">{error}</p>
+                    <Button onClick={fetchData}>Try Again</Button>
+                </div>
+            </div>
+        );
     }
-    
-    const { clients, locations } = await getPageData(adminUser);
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
