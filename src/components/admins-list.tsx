@@ -18,7 +18,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash2, Edit, Loader2, Shield, MapPin, Mail, User } from 'lucide-react';
+import { PlusCircle, Trash2, Edit, Loader2, Shield, MapPin, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { auth } from '@/lib/firebase';
 import {
@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Separator } from './ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type AdminsListProps = {
     initialAdmins: AdminUser[];
@@ -46,6 +47,21 @@ export function AdminsList({ initialAdmins, locations, staff, currentUser, onDat
     const [isDeleting, setIsDeleting] = React.useState<string | null>(null);
     const { toast } = useToast();
     const currentUserId = auth.currentUser?.uid;
+    const [selectedLocation, setSelectedLocation] = React.useState<string>('all');
+
+    if (!currentUser) return null;
+
+    const isSuperAdmin = !currentUser.locationId;
+
+    const filteredAdmins = React.useMemo(() => {
+        if (!isSuperAdmin || selectedLocation === 'all') {
+            return initialAdmins;
+        }
+        if (selectedLocation === 'super') {
+            return initialAdmins.filter(a => !a.locationId);
+        }
+        return initialAdmins.filter(a => a.locationId === selectedLocation);
+    }, [initialAdmins, selectedLocation, isSuperAdmin]);
 
     const handleFormSubmit = () => {
        onDataChange();
@@ -86,12 +102,30 @@ export function AdminsList({ initialAdmins, locations, staff, currentUser, onDat
         }
     }
 
-    if (!currentUser) return null;
-
     return (
         <div className="w-full max-w-6xl mx-auto">
-            <div className="flex justify-end mb-4">
-                <Button onClick={handleAddClick}>
+            <div className="flex flex-wrap gap-4 justify-between items-center mb-4">
+                {isSuperAdmin && (
+                     <div className="w-full sm:w-auto max-w-xs">
+                        <Select onValueChange={setSelectedLocation} value={selectedLocation}>
+                            <SelectTrigger>
+                                <div className="flex items-center gap-2">
+                                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                                    <SelectValue placeholder="Filter by location..." />
+                                </div>
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Locations</SelectItem>
+                                {locations.map(location => (
+                                    <SelectItem key={location.id} value={location.id}>{location.name}</SelectItem>
+                                ))}
+                                <Separator />
+                                <SelectItem value="super">Super Admins Only</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                )}
+                <Button onClick={handleAddClick} className={!isSuperAdmin ? 'ml-auto' : ''}>
                     <PlusCircle className="mr-2" />
                     Add Admin
                 </Button>
@@ -119,8 +153,8 @@ export function AdminsList({ initialAdmins, locations, staff, currentUser, onDat
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {initialAdmins.length > 0 ? (
-                            initialAdmins.map(admin => (
+                        {filteredAdmins.length > 0 ? (
+                            filteredAdmins.map(admin => (
                                 <TableRow key={admin.id} onClick={() => handleRowClick(admin)} className="md:cursor-default cursor-pointer">
                                     <TableCell className="font-medium">{admin.email}</TableCell>
                                     <TableCell className="hidden sm:table-cell">
@@ -177,7 +211,7 @@ export function AdminsList({ initialAdmins, locations, staff, currentUser, onDat
                         ) : (
                             <TableRow>
                                 <TableCell colSpan={4} className="text-center h-24">
-                                    No admins found.
+                                    {selectedLocation === 'all' && initialAdmins.length === 0 ? 'No admins found.' : 'No admins found for this filter.'}
                                 </TableCell>
                             </TableRow>
                         )}
