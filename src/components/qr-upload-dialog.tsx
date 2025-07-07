@@ -75,9 +75,27 @@ export function QrCodeUploadDialog({ isOpen, setIsOpen, location, onUploadComple
             form.reset();
 
         } catch (error) {
+            console.error("QR Code Upload Failed:", error);
+            let description = 'Something went wrong. Please try again.';
+            
+            // Check for Firebase Storage specific error codes
+            if (error instanceof Error && 'code' in error) {
+                switch ((error as any).code) {
+                    case 'storage/unauthorized':
+                        description = 'Permission Denied. Please check your Firebase Storage security rules to allow writes to this path.';
+                        break;
+                    case 'storage/canceled':
+                        description = 'The upload was canceled.';
+                        break;
+                    case 'storage/unauthenticated':
+                         description = 'You must be logged in to upload files.';
+                         break;
+                }
+            }
+
             toast({
                 title: 'Upload Failed',
-                description: 'Something went wrong. Please try again.',
+                description: description,
                 variant: 'destructive',
             });
         } finally {
@@ -86,7 +104,13 @@ export function QrCodeUploadDialog({ isOpen, setIsOpen, location, onUploadComple
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <Dialog open={isOpen} onOpenChange={(open) => {
+            if (!open) {
+                form.reset();
+                setImagePreview(null);
+            }
+            setIsOpen(open);
+        }}>
             <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle>Upload QR Code for {location.name}</DialogTitle>
