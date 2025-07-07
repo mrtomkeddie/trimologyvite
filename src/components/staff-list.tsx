@@ -18,39 +18,58 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash2, Edit, Loader2, Star, MapPin, KeyRound, User, Check, X } from 'lucide-react';
+import { PlusCircle, Trash2, Edit, Loader2, Star, MapPin, KeyRound, User, Check, X, Clock, Calendar } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+} from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 
 type StaffListProps = {
     initialStaff: Staff[];
     locations: Location[];
-    onDataChange: () => void;
 };
 
-export function StaffList({ initialStaff, locations, onDataChange }: StaffListProps) {
+const daysOfWeek = [ 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday' ] as const;
+
+export function StaffList({ initialStaff, locations }: StaffListProps) {
+    const [staff, setStaff] = React.useState(initialStaff);
     const [isFormOpen, setIsFormOpen] = React.useState(false);
     const [editingStaff, setEditingStaff] = React.useState<Staff | null>(null);
     const [isDeleting, setIsDeleting] = React.useState<string | null>(null);
     const [selectedLocation, setSelectedLocation] = React.useState<string>('all');
+    const [selectedStaff, setSelectedStaff] = React.useState<Staff | null>(null);
     const { toast } = useToast();
+
+    React.useEffect(() => {
+        setStaff(initialStaff);
+    }, [initialStaff]);
     
     const handleAddClick = () => {
         setEditingStaff(null);
         setIsFormOpen(true);
     };
 
-    const handleEditClick = (staffMember: Staff) => {
+    const handleEditClick = (e: React.MouseEvent, staffMember: Staff) => {
+        e.stopPropagation();
         setEditingStaff(staffMember);
         setIsFormOpen(true);
     };
 
-    const handleDelete = async (id: string) => {
+    const handleDelete = async (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
         setIsDeleting(id);
         try {
             await deleteStaff(id);
             toast({ title: 'Success', description: 'Staff member deleted successfully.' });
-            onDataChange();
+            // Let revalidation handle data updates. We just update the local state for now.
+            setStaff(prev => prev.filter(s => s.id !== id));
         } catch (error) {
             toast({ title: 'Error', description: 'Failed to delete staff member.', variant: 'destructive' });
         } finally {
@@ -60,10 +79,10 @@ export function StaffList({ initialStaff, locations, onDataChange }: StaffListPr
 
     const filteredStaff = React.useMemo(() => {
         if (selectedLocation === 'all') {
-            return initialStaff;
+            return staff;
         }
-        return initialStaff.filter(s => s.locationId === selectedLocation);
-    }, [initialStaff, selectedLocation]);
+        return staff.filter(s => s.locationId === selectedLocation);
+    }, [staff, selectedLocation]);
 
     return (
         <div className="w-full max-w-6xl mx-auto">
@@ -98,7 +117,10 @@ export function StaffList({ initialStaff, locations, onDataChange }: StaffListPr
                 setIsOpen={setIsFormOpen}
                 staffMember={editingStaff}
                 locations={locations}
-                onSubmitted={onDataChange}
+                onSubmitted={() => {
+                    // This could be updated to use revalidateTag if we want to get fancy
+                    // For now, we just assume the parent page will handle revalidation on load
+                }}
             />
 
             <div className="rounded-lg border bg-card">
@@ -106,9 +128,9 @@ export function StaffList({ initialStaff, locations, onDataChange }: StaffListPr
                     <TableHeader>
                         <TableRow>
                             <TableHead>Name</TableHead>
-                            <TableHead>Email</TableHead>
-                            <TableHead>Specialization</TableHead>
-                            <TableHead>Location</TableHead>
+                            <TableHead className="hidden sm:table-cell">Email</TableHead>
+                            <TableHead className="hidden md:table-cell">Specialization</TableHead>
+                            <TableHead className="hidden lg:table-cell">Location</TableHead>
                             <TableHead>Bookable</TableHead>
                             <TableHead className="text-right w-[120px]">Actions</TableHead>
                         </TableRow>
@@ -116,7 +138,7 @@ export function StaffList({ initialStaff, locations, onDataChange }: StaffListPr
                     <TableBody>
                         {filteredStaff.length > 0 ? (
                             filteredStaff.map(staffMember => (
-                                <TableRow key={staffMember.id}>
+                                <TableRow key={staffMember.id} onClick={() => setSelectedStaff(staffMember)} className="cursor-pointer">
                                     <TableCell className="font-medium">
                                         <div className="flex items-center gap-3">
                                             <Avatar>
@@ -128,7 +150,7 @@ export function StaffList({ initialStaff, locations, onDataChange }: StaffListPr
                                             {staffMember.name}
                                         </div>
                                     </TableCell>
-                                     <TableCell>
+                                     <TableCell className="hidden sm:table-cell">
                                         {staffMember.email ? (
                                             <div className='flex items-center gap-2'>
                                                 {staffMember.uid && <KeyRound className="h-4 w-4 text-primary" title="Login Enabled" />}
@@ -138,7 +160,7 @@ export function StaffList({ initialStaff, locations, onDataChange }: StaffListPr
                                             <span className='text-muted-foreground'>N/A</span>
                                         )}
                                      </TableCell>
-                                    <TableCell>
+                                    <TableCell className="hidden md:table-cell">
                                         {staffMember.specialization ? (
                                             <div className="flex items-center gap-2">
                                                 <Star className="h-4 w-4 text-muted-foreground" />
@@ -148,7 +170,7 @@ export function StaffList({ initialStaff, locations, onDataChange }: StaffListPr
                                             <span className="text-muted-foreground">Not specified</span>
                                         )}
                                     </TableCell>
-                                     <TableCell>
+                                     <TableCell className="hidden lg:table-cell">
                                         <div className="flex items-center gap-2">
                                             <MapPin className="h-4 w-4 text-muted-foreground" />
                                             {staffMember.locationName}
@@ -157,21 +179,21 @@ export function StaffList({ initialStaff, locations, onDataChange }: StaffListPr
                                     <TableCell>
                                         <div className='flex justify-center'>
                                             {staffMember.isBookable !== false ? (
-                                                <Check className="h-5 w-5 text-primary" />
+                                                <Check className="h-5 w-5 text-green-500" />
                                             ) : (
-                                                <X className="h-5 w-5 text-muted-foreground" />
+                                                <X className="h-5 w-5 text-destructive" />
                                             )}
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex gap-2 justify-end">
-                                            <Button variant="ghost" size="icon" onClick={() => handleEditClick(staffMember)}>
+                                            <Button variant="ghost" size="icon" onClick={(e) => handleEditClick(e, staffMember)}>
                                                 <Edit className="h-4 w-4" />
                                             </Button>
                                             
                                             <AlertDialog>
                                                  <AlertDialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon" disabled={isDeleting === staffMember.id}>
+                                                    <Button variant="ghost" size="icon" disabled={isDeleting === staffMember.id} onClick={(e) => e.stopPropagation()}>
                                                         {isDeleting === staffMember.id ? <Loader2 className="animate-spin" /> : <Trash2 className="h-4 w-4 text-destructive" />}
                                                     </Button>
                                                 </AlertDialogTrigger>
@@ -184,7 +206,7 @@ export function StaffList({ initialStaff, locations, onDataChange }: StaffListPr
                                                     </AlertDialogHeader>
                                                     <AlertDialogFooter>
                                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => handleDelete(staffMember.id)}>
+                                                        <AlertDialogAction onClick={(e) => handleDelete(e, staffMember.id)}>
                                                             Delete
                                                         </AlertDialogAction>
                                                     </AlertDialogFooter>
@@ -204,6 +226,67 @@ export function StaffList({ initialStaff, locations, onDataChange }: StaffListPr
                     </TableBody>
                 </Table>
             </div>
+             <Dialog open={!!selectedStaff} onOpenChange={(open) => !open && setSelectedStaff(null)}>
+                <DialogContent className="sm:max-w-md">
+                    {selectedStaff && (
+                        <>
+                            <DialogHeader>
+                                <div className="flex items-center gap-4">
+                                    <Avatar className="h-16 w-16">
+                                        <AvatarImage src={selectedStaff.imageUrl} alt={selectedStaff.name} data-ai-hint="person portrait" />
+                                        <AvatarFallback><User className="h-8 w-8 text-muted-foreground" /></AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <DialogTitle className="text-2xl font-headline">{selectedStaff.name}</DialogTitle>
+                                        <DialogDescription>
+                                            {selectedStaff.specialization || "Staff Member"} at {selectedStaff.locationName}
+                                        </DialogDescription>
+                                        <Badge variant={selectedStaff.isBookable !== false ? "default" : "secondary"} className="mt-2">
+                                            {selectedStaff.isBookable !== false ? "Bookable" : "Not Bookable"}
+                                        </Badge>
+                                    </div>
+                                </div>
+                            </DialogHeader>
+                            <div className="grid gap-4 pt-4">
+                                <Separator />
+                                <div className="space-y-2">
+                                    <h4 className="font-medium text-muted-foreground mb-2 flex items-center gap-2">
+                                        <Calendar className="h-4 w-4" />
+                                        Weekly Schedule
+                                    </h4>
+                                    <div className="space-y-1 text-sm pl-2">
+                                        {selectedStaff.workingHours ? daysOfWeek.map(day => {
+                                            const hours = selectedStaff.workingHours?.[day];
+                                            const isOff = !hours || hours === 'off';
+                                            return (
+                                                <div key={day} className="flex justify-between">
+                                                    <span className="capitalize">{day}</span>
+                                                    {isOff ? (
+                                                        <span className="text-muted-foreground">Off</span>
+                                                    ) : (
+                                                        <span className="font-mono text-primary">{hours.start} - {hours.end}</span>
+                                                    )}
+                                                </div>
+                                            )
+                                        }) : <p className="text-muted-foreground">No schedule set.</p>}
+                                    </div>
+                                </div>
+                                <Separator />
+                                <div className="space-y-2 text-sm">
+                                     <h4 className="font-medium text-muted-foreground mb-2">Contact Information</h4>
+                                      {selectedStaff.email ? (
+                                         <div className="flex items-center gap-3">
+                                            <span>{selectedStaff.email}</span>
+                                         </div>
+                                     ) : (
+                                        <p className="text-muted-foreground">No email on file.</p>
+                                     )}
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

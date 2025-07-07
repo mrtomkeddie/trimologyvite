@@ -88,13 +88,6 @@ async function createFirebaseUser(email: string, password_do_not_log: string): P
     // THIS IS A MOCK FUNCTION.
     // In a real app, this would be a Firebase Cloud Function using the Admin SDK.
     // It would be called securely from the server to create a user.
-    console.log(`
-    =====================================================================
-    [SERVER-SIDE MOCK] Creating Firebase Auth user for: ${email}
-    This would normally happen in a secure backend environment.
-    A real UID would be returned from firebase.auth().createUser()
-    =====================================================================
-    `);
     // Return a predictable mock UID for dummy mode
     return `mock-uid-for-${email.split('@')[0]}`;
 }
@@ -151,7 +144,6 @@ export async function addAdminWithLogin(data: Omit<AdminUser, 'uid'> & { passwor
         throw new Error("Missing data to create a new branch admin.");
     }
     if (USE_DUMMY_DATA) {
-        console.log('DUMMY: addAdminWithLogin', data.email);
         const newUid = await createFirebaseUser(data.email, data.password);
         const newAdmin = { ...data, uid: newUid };
         delete (newAdmin as any).password;
@@ -171,7 +163,6 @@ export async function addAdminWithLogin(data: Omit<AdminUser, 'uid'> & { passwor
 
 export async function updateAdmin(uid: string, data: Partial<Omit<AdminUser, 'uid'>>) {
     if (USE_DUMMY_DATA) { 
-        console.log('DUMMY: updateAdmin', uid, data);
         const adminIndex = dummyAdmins.findIndex(a => a.uid === uid);
         if (adminIndex > -1) {
             dummyAdmins[adminIndex] = { ...dummyAdmins[adminIndex], ...data };
@@ -186,7 +177,6 @@ export async function updateAdmin(uid: string, data: Partial<Omit<AdminUser, 'ui
 
 export async function deleteAdmin(uid: string) {
     if (USE_DUMMY_DATA) { 
-        console.log('DUMMY: deleteAdmin', uid);
         const index = dummyAdmins.findIndex(a => a.uid === uid);
         if (index > -1) dummyAdmins.splice(index, 1);
         revalidatePath('/admin/admins'); 
@@ -216,7 +206,6 @@ export async function getLocationsFromFirestore(locationId?: string): Promise<Lo
 
 export async function addLocation(data: Omit<Location, 'id'>) {
     if (USE_DUMMY_DATA) {
-        console.log('DUMMY: addLocation', data);
         const newLocation = { ...data, id: `loc-${Date.now()}`};
         dummyLocations.push(newLocation as Location);
         revalidatePath('/admin/locations');
@@ -228,7 +217,6 @@ export async function addLocation(data: Omit<Location, 'id'>) {
 
 export async function updateLocation(id: string, data: Partial<Omit<Location, 'id'>>) {
     if (USE_DUMMY_DATA) {
-        console.log('DUMMY: updateLocation', id, data);
         const locIndex = dummyLocations.findIndex(l => l.id === id);
         if (locIndex > -1) {
             dummyLocations[locIndex] = { ...dummyLocations[locIndex], ...data };
@@ -243,7 +231,6 @@ export async function updateLocation(id: string, data: Partial<Omit<Location, 'i
 
 export async function deleteLocation(id: string) {
     if (USE_DUMMY_DATA) {
-        console.log('DUMMY: deleteLocation', id);
         const index = dummyLocations.findIndex(l => l.id === id);
         if (index > -1) dummyLocations.splice(index, 1);
         revalidatePath('/admin/locations');
@@ -270,14 +257,14 @@ export async function getServicesFromFirestore(locationId?: string): Promise<Ser
 }
 
 export async function addService(data: { name: string; duration: number; price: number; locationId: string; locationName: string; }) {
-    if (USE_DUMMY_DATA) { console.log('DUMMY: addService', data); revalidatePath('/admin/services'); revalidatePath('/'); return; }
+    if (USE_DUMMY_DATA) { revalidatePath('/admin/services'); revalidatePath('/'); return; }
     await addDoc(servicesCollection, data);
     revalidatePath('/admin/services');
     revalidatePath('/');
 }
 
 export async function updateService(id: string, data: { name: string; duration: number; price: number; locationId: string; locationName: string; }) {
-    if (USE_DUMMY_DATA) { console.log('DUMMY: updateService', id, data); revalidatePath('/admin/services'); revalidatePath('/'); return; }
+    if (USE_DUMMY_DATA) { revalidatePath('/admin/services'); revalidatePath('/'); return; }
     const serviceDoc = doc(db, 'services', id);
     await updateDoc(serviceDoc, data);
     revalidatePath('/admin/services');
@@ -285,7 +272,7 @@ export async function updateService(id: string, data: { name: string; duration: 
 }
 
 export async function deleteService(id: string) {
-    if (USE_DUMMY_DATA) { console.log('DUMMY: deleteService', id); revalidatePath('/admin/services'); revalidatePath('/'); return; }
+    if (USE_DUMMY_DATA) { revalidatePath('/admin/services'); revalidatePath('/'); return; }
     const serviceDoc = doc(db, 'services', id);
     await deleteDoc(serviceDoc);
     revalidatePath('/admin/services');
@@ -323,7 +310,6 @@ export async function addStaffWithLogin(data: Omit<Staff, 'id' | 'uid' | 'locati
     const newStaffId = `staff-${Date.now()}`;
 
     if (USE_DUMMY_DATA) {
-        console.log("DUMMY: addStaffWithLogin", data.email);
         const newUid = await createFirebaseUser(data.email, data.password);
         const newStaffMember: Staff = {
             ...data,
@@ -357,7 +343,6 @@ export async function addStaffWithLogin(data: Omit<Staff, 'id' | 'uid' | 'locati
 
 export async function updateStaff(id: string, data: Partial<Omit<Staff, 'id'>>) {
     if (USE_DUMMY_DATA) {
-        console.log('DUMMY: updateStaff', id, data);
         const staffIndex = dummyStaff.findIndex(s => s.id === id);
         if (staffIndex > -1) {
             dummyStaff[staffIndex] = { ...dummyStaff[staffIndex], ...data };
@@ -372,7 +357,6 @@ export async function updateStaff(id: string, data: Partial<Omit<Staff, 'id'>>) 
 
 export async function deleteStaff(id: string) {
     if (USE_DUMMY_DATA) { 
-        console.log('DUMMY: deleteStaff', id);
         const index = dummyStaff.findIndex(s => s.id === id);
         if (index > -1) dummyStaff.splice(index, 1);
         revalidatePath('/admin/staff'); 
@@ -495,7 +479,6 @@ export async function getBookingsForStaffOnDate(staffId: string, date: Date): Pr
 
 export async function addBooking(data: NewBooking) {
     if (USE_DUMMY_DATA) { 
-        console.log('DUMMY: addBooking', data);
         const newBooking = { ...data, id: `book-${Date.now()}`};
         dummyBookings.push(newBooking);
         revalidatePath('/admin/bookings'); 
@@ -512,7 +495,6 @@ export async function addBooking(data: NewBooking) {
 
 export async function deleteBooking(id: string) {
     if (USE_DUMMY_DATA) { 
-        console.log('DUMMY: deleteBooking', id);
         const index = dummyBookings.findIndex(b => b.id === id);
         if (index > -1) dummyBookings.splice(index, 1);
         revalidatePath('/admin/bookings'); 
@@ -556,7 +538,7 @@ export async function getClientLoyaltyData(locationId?: string): Promise<ClientL
              clientsMap.set(clientIdentifier, {
                 id: clientIdentifier,
                 name: booking.clientName,
-                phone: booking.clientPhone,
+                phone: booking.phone,
                 email: booking.clientEmail,
                 totalVisits: 1,
                 lastVisit: booking.bookingTimestamp,
@@ -571,9 +553,3 @@ export async function getClientLoyaltyData(locationId?: string): Promise<ClientL
 
     return clientsArray;
 }
-    
-
-
-
-    
-

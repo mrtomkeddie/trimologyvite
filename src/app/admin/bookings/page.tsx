@@ -1,64 +1,39 @@
 
-'use client';
 import * as React from 'react';
 import { getBookingsFromFirestore, getLocationsFromFirestore } from "@/lib/firestore";
 import { BookingsList } from "@/components/bookings-list";
-import { ArrowLeft, Loader2, PlusCircle, ShieldAlert } from "lucide-react";
+import { ArrowLeft, PlusCircle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import type { Booking, Location } from '@/lib/types';
-import { useAdmin } from '@/contexts/AdminContext';
+import type { AdminUser } from '@/lib/types';
+import { auth } from '@/lib/firebase';
+import { getAdminUser } from '@/lib/firestore';
+import { redirect } from 'next/navigation';
 
-export default function ManageBookingsPage() {
-    const { adminUser } = useAdmin();
-    const [bookings, setBookings] = React.useState<Booking[]>([]);
-    const [locations, setLocations] = React.useState<Location[]>([]);
-    const [loading, setLoading] = React.useState(true);
-    const [error, setError] = React.useState<string | null>(null);
+async function getPageData(user: AdminUser) {
+    const userLocationId = user.locationId;
+    const [filteredBookings, filteredLocations] = await Promise.all([
+        getBookingsFromFirestore(userLocationId),
+        getLocationsFromFirestore(userLocationId),
+    ]);
+    return { bookings: filteredBookings, locations: filteredLocations };
+}
 
-     React.useEffect(() => {
-        if (!adminUser) return; // Wait for admin context
-
-        const fetchData = async () => {
-            setLoading(true);
-            try {
-                const userLocationId = adminUser.locationId;
-                // Fetch only the data relevant to the admin's scope.
-                const [filteredBookings, filteredLocations] = await Promise.all([
-                    getBookingsFromFirestore(userLocationId),
-                    getLocationsFromFirestore(userLocationId),
-                ]);
-
-                setBookings(filteredBookings);
-                setLocations(filteredLocations);
-            } catch (e) {
-                setError(e instanceof Error ? e.message : "Failed to fetch booking data.");
-                console.error(e);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchData();
-    }, [adminUser]);
-
-    if (loading) {
-        return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
+export default async function ManageBookingsPage() {
+    const currentUser = auth.currentUser;
+    // This is a protected route. Redirect to login if not authenticated.
+    if (!currentUser || !currentUser.email) {
+        redirect('/admin');
+    }
+    
+    const adminUser = await getAdminUser(currentUser.uid, currentUser.email);
+    
+    // Or if they are not a valid admin user in Firestore.
+    if (!adminUser) {
+        redirect('/admin');
     }
 
-    if (error) {
-        return (
-            <div className="flex min-h-screen items-center justify-center bg-background text-center p-4">
-                <div>
-                    <ShieldAlert className="h-16 w-16 text-destructive mx-auto mb-4" />
-                    <h1 className="text-2xl font-bold mb-2">Error Fetching Data</h1>
-                    <p className="text-muted-foreground mb-6">{error}</p>
-                    <Button asChild>
-                        <Link href="/admin">Return to Dashboard</Link>
-                    </Button>
-                </div>
-            </div>
-        );
-    }
+    const { bookings, locations } = await getPageData(adminUser);
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">

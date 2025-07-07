@@ -74,7 +74,6 @@ export async function getSuggestedTimes(
     staffId: string,
     locationId: string,
 ) {
-    console.log(`Getting times for staff ${staffId} on ${preferredDateStr} for a ${serviceDuration} min service.`);
     const preferredDate = parse(preferredDateStr, 'yyyy-MM-dd', new Date());
     
     // --- Logic for 'any' staff ---
@@ -92,7 +91,6 @@ export async function getSuggestedTimes(
         });
 
         const sortedSlots = Array.from(allAvailableSlots).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-        console.log(`Found ${sortedSlots.length} total available slots for 'any' staff.`);
         return { success: true, times: sortedSlots };
     }
 
@@ -101,12 +99,10 @@ export async function getSuggestedTimes(
     const staffMember = allStaff.find(s => s.id === staffId);
     
     if (!staffMember) {
-        console.log("Staff not found.");
         return { success: true, times: [] };
     }
 
     const availableSlots = await getIndividualStaffTimes(serviceDuration, preferredDate, staffMember);
-    console.log(`Found ${availableSlots.length} available slots for ${staffMember.name}.`);
     
     return { success: true, times: availableSlots };
 }
@@ -206,33 +202,9 @@ export async function createBooking(bookingData: BookingData) {
     await addBooking(newBooking);
 
     if (bookingData.clientEmail) {
-        try {
-            const emailBody = `
-Dear ${bookingData.clientName},
-
-Thank you for booking with Trimology!
-
-Your appointment details:
-Service: ${service?.name || 'N/A'} (£${service.price.toFixed(2)})
-Location: ${location?.name || 'N/A'}
-Date: ${format(bookingData.date, 'PPP')}
-Time: ${bookingData.time}
-Staff: ${staffMember?.name || 'Any Available'}
-
-We look forward to seeing you!
-
-- The Trimology Team
-            `.trim().replace(/^ +/gm, '');
-
-            console.log("--- Sending Confirmation Email ---");
-            console.log(`To: ${bookingData.clientEmail}`);
-            console.log(`Subject: Your Trimology Booking Confirmation`);
-            console.log(emailBody);
-            console.log("---------------------------------");
-
-        } catch (error) {
-            console.error("Failed to prepare confirmation email content:", error);
-        }
+        // In a real app, you would integrate a proper email service here.
+        // For this demo, we'll just log the intent to send an email.
+        console.log(`Email confirmation would be sent to ${bookingData.clientEmail}`);
     }
 
     return { success: true };

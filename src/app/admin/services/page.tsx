@@ -1,65 +1,36 @@
 
-'use client';
 import * as React from 'react';
 import { getServicesFromFirestore, getLocationsFromFirestore } from "@/lib/firestore";
 import { ServicesList } from "@/components/services-list";
-import { ArrowLeft, Loader2, ShieldAlert } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import type { Service, Location } from '@/lib/types';
-import { useAdmin } from '@/contexts/AdminContext';
+import type { AdminUser } from '@/lib/types';
+import { auth } from '@/lib/firebase';
+import { getAdminUser } from '@/lib/firestore';
+import { redirect } from 'next/navigation';
 
-export default function ManageServicesPage() {
-    const { adminUser } = useAdmin();
-    const [services, setServices] = React.useState<Service[]>([]);
-    const [locations, setLocations] = React.useState<Location[]>([]);
-    const [loading, setLoading] = React.useState(true);
-    const [error, setError] = React.useState<string | null>(null);
+async function getPageData(user: AdminUser) {
+    const userLocationId = user.locationId;
+    const [filteredServices, filteredLocations] = await Promise.all([
+       getServicesFromFirestore(userLocationId),
+       getLocationsFromFirestore(userLocationId),
+   ]);
+   return { services: filteredServices, locations: filteredLocations };
+}
 
-    React.useEffect(() => {
-        if (!adminUser) return; // Wait for admin context
-
-        const fetchData = async () => {
-            setLoading(true);
-            try {
-                 const userLocationId = adminUser.locationId;
-                 // Fetch only the data relevant to the admin's scope.
-                 const [filteredServices, filteredLocations] = await Promise.all([
-                    getServicesFromFirestore(userLocationId),
-                    getLocationsFromFirestore(userLocationId),
-                ]);
-
-                setServices(filteredServices);
-                setLocations(filteredLocations);
-            } catch (e) {
-                setError(e instanceof Error ? e.message : "Failed to fetch service data.");
-                console.error(e);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchData();
-    }, [adminUser]);
-
-    if (loading) {
-        return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
+export default async function ManageServicesPage() {
+    const currentUser = auth.currentUser;
+    if (!currentUser || !currentUser.email) {
+        redirect('/admin');
+    }
+    
+    const adminUser = await getAdminUser(currentUser.uid, currentUser.email);
+    if (!adminUser) {
+        redirect('/admin');
     }
 
-     if (error) {
-        return (
-            <div className="flex min-h-screen items-center justify-center bg-background text-center p-4">
-                <div>
-                    <ShieldAlert className="h-16 w-16 text-destructive mx-auto mb-4" />
-                    <h1 className="text-2xl font-bold mb-2">Error Fetching Data</h1>
-                    <p className="text-muted-foreground mb-6">{error}</p>
-                    <Button asChild>
-                        <Link href="/admin">Return to Dashboard</Link>
-                    </Button>
-                </div>
-            </div>
-        );
-    }
+    const { services, locations } = await getPageData(adminUser);
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
