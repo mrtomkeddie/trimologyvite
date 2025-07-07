@@ -139,9 +139,16 @@ export async function createBooking(bookingData: BookingData) {
     }
 
     // --- Determine Booking Time Window ---
-    const bookingStart = new Date(bookingData.date);
-    const [hours, minutes] = bookingData.time.split(':').map(Number);
-    bookingStart.setHours(hours, minutes, 0, 0);
+    // This is the new, robust way to construct the date, avoiding timezone issues.
+    const datePart = format(bookingData.date, 'yyyy-MM-dd');
+    const fullDateTimeString = `${datePart}T${bookingData.time}:00`;
+    const bookingStart = new Date(fullDateTimeString);
+
+    // Check for invalid date creation, which can happen with bad inputs.
+    if (isNaN(bookingStart.getTime())) {
+        throw new Error("Could not create a valid booking date from the provided inputs.");
+    }
+    
     const bookingEnd = addMinutes(bookingStart, service.duration);
 
     let assignedStaff: Staff | undefined | null = null;
