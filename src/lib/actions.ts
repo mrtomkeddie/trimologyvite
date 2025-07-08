@@ -1,10 +1,10 @@
 
 'use server';
 
-import { format, parse, addMinutes, getDay, isBefore, isAfter, startOfDay, endOfDay } from 'date-fns';
+import { format, parse, addMinutes, getDay, isBefore, isAfter, startOfDay, startOfMonth, endOfMonth, isSameDay } from 'date-fns';
 import { getLocations, getServices, getStaff } from './data';
-import type { NewBooking, Staff } from './types';
-import { addBooking, getBookingsForStaffOnDate } from './firestore';
+import type { Booking, NewBooking, Staff } from './types';
+import { addBooking, getBookingsForStaffOnDate, getBookingsForStaffInRange } from './firestore';
 
 // Helper to map JS day index (Sun=0) to our string keys
 const dayMap: (keyof Staff['workingHours'])[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -198,4 +198,102 @@ export async function createBooking(bookingData: BookingData) {
     }
 
     return { success: true };
+}
+
+
+// --- Monthly Availability Calculation ---
+
+const hasConflictWithFetchedBookings = (bookings: Booking[], start: Date, end: Date): boolean => {
+    return bookings.some(b => {
+        const existingStart = new Date(b.bookingTimestamp);
+        const existingEnd = addMinutes(existingStart, b.serviceDuration);
+        return isBefore(start, existingEnd) && isAfter(end, existingStart);
+    });
+};
+
+export async function getUnavailableDays(month: Date, serviceId: string, staffId: string, locationId: string) {
+    try {
+        const allServices = await getServices();
+        const service = allServices.find(s => s.id === serviceId);
+        if (!service) return { success: false, unavailableDays: [] };
+        
+        const serviceDuration = service.duration;
+        const allStaff = await getStaff();
+        const staffToCheck = staffId === 'any'
+            ? allStaff.filter(s => s.locationId === locationId)
+            : allStaff.filter(s => s.id === staffId);
+    
+        const monthStart = startOfMonth(month);
+        const monthEnd = endOfMonth(month);
+        
+        // If there's no staff available to book, all days are unavailable.
+        if (staffToCheck.length === 0) {
+            const allDays = [];
+            let day = monthStart;
+            while (day <= monthEnd) {
+                allDays.push(format(day, 'yyyy-MM-dd'));
+                day = addDays(day, 1);
+            }
+            return { success: true, unavailableDays: allDays };
+        }
+
+        const allBookingsForMonth = await getBookingsForStaffInRange(staffToCheck.map(s => s.id), monthStart, monthEnd);
+        const bookingsByStaffId: Record<string, Booking[]> = allBookingsForMonth.reduce((acc, booking) => {
+            if (!acc[booking.staffId]) acc[booking.staffId] = [];
+            acc[booking.staffId].push(booking);
+            return acc;
+        }, {} as Record<string, Booking[]>);
+
+        const unavailableDays: string[] = [];
+        let currentDay = monthStart;
+        const today = startOfDay(new Date());
+
+        while (currentDay <= monthEnd) {
+            let isDayAvailable = false;
+            
+            for (const staffMember of staffToCheck) {
+                const dayOfWeek = dayMap[getDay(currentDay)];
+                const dayHours = staffMember.workingHours?.[dayOfWeek];
+
+                if (!dayHours || dayHours === 'off') continue;
+
+                const workDayStart = parse(dayHours.start, 'HH:mm', currentDay);
+                const workDayEnd = parse(dayHours.end, 'HH:mm', currentDay);
+                const staffBookingsForDay = bookingsByStaffId[staffMember.id]?.filter(b => isSameDay(new Date(b.bookingTimestamp), currentDay)) || [];
+                
+                let potentialSlotStart = workDayStart;
+                const now = new Date();
+                
+                 if (isSameDay(currentDay, today)) {
+                    potentialSlotStart = isBefore(potentialSlotStart, now) ? parse(format(addMinutes(now, 15 - now.getMinutes() % 15), 'HH:mm'), 'HH:mm', currentDay) : potentialSlotStart;
+                }
+
+                while (isBefore(potentialSlotStart, workDayEnd)) {
+                    const potentialSlotEnd = addMinutes(potentialSlotStart, serviceDuration);
+                    if (isAfter(potentialSlotEnd, workDayEnd)) break;
+
+                    const hasConflict = hasConflictWithFetchedBookings(staffBookingsForDay, potentialSlotStart, potentialSlotEnd);
+
+                    if (!hasConflict) {
+                        isDayAvailable = true;
+                        break;
+                    }
+                    potentialSlotStart = addMinutes(potentialSlotStart, 15);
+                }
+                if (isDayAvailable) break;
+            }
+
+            if (!isDayAvailable) {
+                unavailableDays.push(format(currentDay, 'yyyy-MM-dd'));
+            }
+
+            currentDay = addDays(new Date(currentDay.valueOf()), 1);
+        }
+
+        return { success: true, unavailableDays };
+
+    } catch (error) {
+        console.error("Error fetching unavailable days:", error);
+        return { success: false, unavailableDays: [] };
+    }
 }

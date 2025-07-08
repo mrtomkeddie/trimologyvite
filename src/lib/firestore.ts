@@ -45,9 +45,9 @@ const defaultWorkingHours = {
 };
 
 const dummyStaff: Staff[] = [
-    { id: 'branch-admin-uid', name: 'Alex Smith', specialization: 'Master Barber', locationId: 'downtown-1', locationName: 'Downtown Barbers', email: 'branchadmin@trimology.com', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: defaultWorkingHours },
-    { id: 'staff-uid-maria', name: 'Maria Garcia', specialization: 'Senior Stylist', locationId: 'downtown-1', locationName: 'Downtown Barbers', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: { ...defaultWorkingHours, wednesday: 'off' } },
-    { id: 'staff-uid-jane', name: 'Jane Roe', specialization: 'Color Specialist', locationId: 'uptown-2', locationName: 'Uptown Cuts', email: 'staff@trimology.com', imageUrl: 'https://placehold.co/100x100.png', isBookable: true, workingHours: { ...defaultWorkingHours, saturday: 'off', sunday: 'off' } },
+    { id: 'branch-admin-uid', name: 'Alex Smith', specialization: 'Master Barber', locationId: 'downtown-1', locationName: 'Downtown Barbers', email: 'branchadmin@trimology.com', imageUrl: 'https://placehold.co/100x100.png', workingHours: defaultWorkingHours },
+    { id: 'staff-uid-maria', name: 'Maria Garcia', specialization: 'Senior Stylist', locationId: 'downtown-1', locationName: 'Downtown Barbers', imageUrl: 'https://placehold.co/100x100.png', workingHours: { ...defaultWorkingHours, wednesday: 'off' } },
+    { id: 'staff-uid-jane', name: 'Jane Roe', specialization: 'Color Specialist', locationId: 'uptown-2', locationName: 'Uptown Cuts', email: 'staff@trimology.com', imageUrl: 'https://placehold.co/100x100.png', workingHours: { ...defaultWorkingHours, saturday: 'off', sunday: 'off' } },
 ];
 
 
@@ -453,6 +453,29 @@ export async function getBookingsForStaffOnDate(staffId: string, date: Date): Pr
     });
 }
 
+export async function getBookingsForStaffInRange(staffIds: string[], startDate: Date, endDate: Date): Promise<Booking[]> {
+    if (USE_DUMMY_DATA) {
+        const startStr = startDate.toISOString();
+        const endStr = endDate.toISOString();
+        return Promise.resolve(dummyBookings.filter(b => 
+            staffIds.includes(b.staffId) &&
+            b.bookingTimestamp >= startStr &&
+            b.bookingTimestamp <= endStr
+        ));
+    }
+    
+    if (staffIds.length === 0) return [];
+    
+    const q = query(bookingsCollection, 
+        where('staffId', 'in', staffIds),
+        where('bookingTimestamp', '>=', startDate.toISOString()),
+        where('bookingTimestamp', '<=', endDate.toISOString())
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Booking));
+}
+
+
 export async function addBooking(data: NewBooking) {
     if (USE_DUMMY_DATA) { 
         const newBooking = { ...data, id: `book-${Date.now()}`};
@@ -529,5 +552,3 @@ export async function getClientLoyaltyData(locationId?: string): Promise<ClientL
 
     return clientsArray;
 }
-
-    

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import type { z } from 'zod';
-import { format } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 import { CalendarIcon, Loader2, User, Phone, Mail, Search, Clock, MapPin, PlusCircle } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -36,7 +36,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { AdminBookingFormSchema, type Service, type Staff, type Location, type AdminUser } from '@/lib/types';
-import { getSuggestedTimes, createBooking } from '@/lib/actions';
+import { getSuggestedTimes, createBooking, getUnavailableDays } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
@@ -55,6 +55,9 @@ export function AdminBookingForm({ adminUser, locations, services, staff }: Admi
   const [suggestedTimes, setSuggestedTimes] = React.useState<string[]>([]);
   const [isLoadingTimes, setIsLoadingTimes] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [unavailableDates, setUnavailableDates] = React.useState<Date[]>([]);
+  const [isLoadingAvailability, setIsLoadingAvailability] = React.useState(false);
+  const [currentMonth, setCurrentMonth] = React.useState(new Date());
 
   const isBranchAdmin = !!adminUser.locationId;
 
@@ -93,6 +96,28 @@ export function AdminBookingForm({ adminUser, locations, services, staff }: Admi
     if (!locationId) return [];
     return staff.filter((s) => s.locationId === locationId);
   }, [locationId, staff]);
+  
+  React.useEffect(() => {
+    const fetchAvailability = async () => {
+        if (!locationId || !serviceId || !staffId) {
+            setUnavailableDates([]);
+            return;
+        }
+        setIsLoadingAvailability(true);
+        try {
+            const result = await getUnavailableDays(currentMonth, serviceId, staffId, locationId);
+            if (result.success && result.unavailableDays) {
+                const dates = result.unavailableDays.map(dStr => new Date(`${dStr}T00:00:00`));
+                setUnavailableDates(dates);
+            }
+        } catch (error) {
+            toast({ title: "Error", description: "Could not check month availability.", variant: "destructive" });
+        } finally {
+            setIsLoadingAvailability(false);
+        }
+    };
+    fetchAvailability();
+  }, [locationId, serviceId, staffId, currentMonth, toast]);
 
   React.useEffect(() => {
     if (!isBranchAdmin) {
@@ -263,7 +288,24 @@ export function AdminBookingForm({ adminUser, locations, services, staff }: Admi
                                 </FormControl>
                               </PopoverTrigger>
                               <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))} initialFocus />
+                                <Calendar 
+                                    mode="single" 
+                                    selected={field.value} 
+                                    onSelect={field.onChange} 
+                                    month={currentMonth}
+                                    onMonthChange={setCurrentMonth}
+                                    disabled={(date) => {
+                                      const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
+                                      const isUnavailable = unavailableDates.some(
+                                          (unavailableDate) => isSameDay(date, unavailableDate)
+                                      );
+                                      return isPast || isUnavailable;
+                                    }} 
+                                    initialFocus 
+                                    footer={
+                                        isLoadingAvailability && <div className="flex items-center justify-center p-2"><Loader2 className="h-4 w-4 animate-spin" /> <span className="text-xs ml-2 text-muted-foreground">Checking availability...</span></div>
+                                    }
+                                />
                               </PopoverContent>
                             </Popover>
                             <FormMessage />
