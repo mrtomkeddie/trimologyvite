@@ -31,7 +31,7 @@ async function getIndividualStaffTimes(
     preferredDateStr: string, // Expects 'yyyy-MM-dd'
     staffMember: Staff
 ): Promise<string[]> {
-    if (!staffMember.workingHours || staffMember.isBookable === false) return [];
+    if (!staffMember.workingHours) return [];
     
     // Construct a date object from the preferred date string. It will be interpreted in the server's local timezone.
     const preferredDate = new Date(`${preferredDateStr}T00:00:00`);
@@ -78,7 +78,7 @@ export async function getSuggestedTimes(
     locationId: string,
 ) {
     if (staffId === 'any') {
-        const allStaffAtLocation = (await getStaff()).filter(s => s.locationId === locationId && s.isBookable !== false);
+        const allStaffAtLocation = (await getStaff()).filter(s => s.locationId === locationId);
         const allAvailableSlots = new Set<string>();
 
         const timePromises = allStaffAtLocation.map(staffMember => 
@@ -141,7 +141,7 @@ export async function createBooking(bookingData: BookingData) {
     let assignedStaff: Staff | undefined | null = null;
 
     if (bookingData.staffId === 'any') {
-        const bookableStaffAtLocation = allStaff.filter(s => s.locationId === bookingData.locationId && s.isBookable !== false);
+        const bookableStaffAtLocation = allStaff.filter(s => s.locationId === bookingData.locationId);
         
         for (const potentialStaff of bookableStaffAtLocation) {
             const dayOfWeek = dayMap[getDay(bookingStart)];

@@ -20,11 +20,9 @@ import { StaffFormSchema, type Staff, type Location, WorkingHoursSchema, type Ad
 import { Loader2, User, Info, UploadCloud, UserPlus, Link2 } from 'lucide-react';
 import { uploadStaffImage } from '@/lib/storage';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from './ui/separator';
 
 type StaffFormValues = z.infer<typeof StaffFormSchema>;
 
@@ -139,6 +137,7 @@ function WorkingHoursFormPart({ control, form }: { control: any, form: any }) {
     );
 }
 
+import { Switch } from '@/components/ui/switch';
 export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, allStaff, onSubmitted }: StaffFormProps) {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const { toast } = useToast();
@@ -155,7 +154,6 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, a
             password: '',
             imageUrl: '',
             imageFile: undefined,
-            isBookable: true,
             workingHours: defaultWorkingHours,
         }
     });
@@ -210,7 +208,6 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, a
                     password: '', // Never show existing password
                     imageUrl: staffMember.imageUrl || '',
                     imageFile: undefined,
-                    isBookable: staffMember.isBookable !== false, // default to true if undefined
                     workingHours: staffMember.workingHours || defaultWorkingHours,
                 });
                  setImagePreview(staffMember.imageUrl || null);
@@ -224,7 +221,6 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, a
                     password: '',
                     imageUrl: '',
                     imageFile: undefined,
-                    isBookable: true,
                     workingHours: defaultWorkingHours,
                 });
                  setImagePreview(null);
@@ -257,7 +253,6 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, a
                     locationId: data.locationId,
                     locationName: location.name,
                     imageUrl: finalImageUrl,
-                    isBookable: data.isBookable,
                     workingHours: data.workingHours,
                 };
                 
@@ -315,7 +310,6 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, a
                     locationName: location.name,
                     email: data.email,
                     imageUrl: imageUrl,
-                    isBookable: data.isBookable,
                     workingHours: data.workingHours,
                 });
                 toast({ title: 'Success', description: 'Staff member added successfully.'});
@@ -468,26 +462,6 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, a
                                                 </Select>
                                                 <FormMessage />
                                             </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="isBookable"
-                                        render={({ field }) => (
-                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                            <div className="space-y-0.5">
-                                                <FormLabel>Available for Client Booking</FormLabel>
-                                                <FormDesc>
-                                                    If enabled, clients can book appointments with this staff member.
-                                                </FormDesc>
-                                            </div>
-                                            <FormControl>
-                                                <Switch
-                                                    checked={field.value}
-                                                    onCheckedChange={field.onChange}
-                                                />
-                                            </FormControl>
-                                        </FormItem>
                                         )}
                                     />
                                     

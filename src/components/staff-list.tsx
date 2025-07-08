@@ -18,7 +18,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash2, Edit, Loader2, Star, MapPin, KeyRound, User, Check, X, Clock, Calendar } from 'lucide-react';
+import { PlusCircle, Trash2, Edit, Loader2, Star, MapPin, KeyRound, User, Calendar } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
@@ -29,7 +29,6 @@ import {
     DialogDescription,
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
 
 type StaffListProps = {
     initialStaff: Staff[];
@@ -135,7 +134,6 @@ export function StaffList({ initialStaff, locations, admins, onDataChange }: Sta
                             <TableHead className="hidden sm:table-cell">Email</TableHead>
                             <TableHead className="hidden md:table-cell">Specialization</TableHead>
                             <TableHead className="hidden lg:table-cell">Location</TableHead>
-                            <TableHead>Bookable</TableHead>
                             <TableHead className="text-right w-[120px]">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -180,15 +178,6 @@ export function StaffList({ initialStaff, locations, admins, onDataChange }: Sta
                                             {staffMember.locationName}
                                         </div>
                                     </TableCell>
-                                    <TableCell>
-                                        <div className='flex justify-center'>
-                                            {staffMember.isBookable !== false ? (
-                                                <Check className="h-5 w-5 text-green-500" />
-                                            ) : (
-                                                <X className="h-5 w-5 text-destructive" />
-                                            )}
-                                        </div>
-                                    </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex gap-2 justify-end">
                                             <Button variant="ghost" size="icon" onClick={(e) => handleEditClick(e, staffMember)}>
@@ -222,7 +211,7 @@ export function StaffList({ initialStaff, locations, admins, onDataChange }: Sta
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={6} className="text-center h-24">
+                                <TableCell colSpan={5} className="text-center h-24">
                                      {selectedLocation === 'all' && initialStaff.length === 0 ? 'No staff found. Add your first one!' : 'No staff found for this location.'}
                                 </TableCell>
                             </TableRow>
@@ -245,9 +234,6 @@ export function StaffList({ initialStaff, locations, admins, onDataChange }: Sta
                                         <DialogDescription>
                                             {selectedStaff.specialization || "Staff Member"} at {selectedStaff.locationName}
                                         </DialogDescription>
-                                        <Badge variant={selectedStaff.isBookable !== false ? "default" : "secondary"} className="mt-2">
-                                            {selectedStaff.isBookable !== false ? "Bookable" : "Not Bookable"}
-                                        </Badge>
                                     </div>
                                 </div>
                             </DialogHeader>

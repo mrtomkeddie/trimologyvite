@@ -1,3 +1,4 @@
+
 import { getLocations, getServices, getStaff } from '@/lib/data';
 import { WalkinForm } from '@/components/walk-in-form';
 import Image from 'next/image';
@@ -32,7 +33,7 @@ export default async function CheckinPage({ params }: { params: { locationId: st
 
   // Filter services and staff for the current location
   const servicesForLocation = allServices.filter(s => s.locationId === locationId);
-  const staffForLocation = allStaff.filter(s => s.locationId === locationId && s.isBookable !== false);
+  const staffForLocation = allStaff.filter(s => s.locationId === locationId);
 
   return (
     <div className="flex min-h-dvh w-full flex-col items-center justify-center bg-background p-4 sm:p-6 lg:p-8">

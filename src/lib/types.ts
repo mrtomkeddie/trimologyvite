@@ -46,7 +46,6 @@ export const StaffSchema = z.object({
   locationName: z.string(),
   email: z.string().email().optional().or(z.literal('')),
   imageUrl: z.string().url().optional().or(z.literal('')),
-  isBookable: z.boolean().optional(),
   workingHours: WorkingHoursSchema.optional(),
 });
 export type Staff = z.infer<typeof StaffSchema>;
@@ -66,9 +65,10 @@ export const BookingSchema = z.object({
     clientName: z.string(),
     clientPhone: z.string(),
     clientEmail: z.string().optional(),
+    createdAt: z.any().optional(), // Allow timestamp for reads, but exclude from serializable types
 });
 export type Booking = z.infer<typeof BookingSchema>;
-export type NewBooking = Omit<Booking, 'id'>;
+export type NewBooking = Omit<Booking, 'id' | 'createdAt'>;
 
 export const AdminUserSchema = z.object({
   id: z.string(), // This is the UID from Firebase Auth
@@ -150,7 +150,6 @@ export const StaffFormSchema = z.object({
   locationId: z.string({ required_error: 'Please assign a location.' }),
   email: z.string().email('Please enter a valid email.').optional().or(z.literal('')),
   password: z.string().optional(),
-  isBookable: z.boolean().optional(),
   workingHours: StaffWorkingHoursSchema.optional(),
 }).superRefine((data, ctx) => {
     // When creating a brand new user (no pre-existing ID), email and password are required.

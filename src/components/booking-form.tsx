@@ -87,8 +87,7 @@ export function BookingForm({ locations, services, staff }: BookingFormProps) {
 
   const filteredStaff = React.useMemo(() => {
     if (!locationId) return [];
-    // Only show staff that are bookable (isBookable is not false)
-    return staff.filter((s) => s.locationId === locationId && s.isBookable !== false);
+    return staff.filter((s) => s.locationId === locationId);
   }, [locationId, staff]);
 
   React.useEffect(() => {
