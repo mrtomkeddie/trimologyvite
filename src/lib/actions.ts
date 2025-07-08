@@ -1,7 +1,7 @@
 
 'use server';
 
-import { format, parse, addMinutes, getDay, isBefore, isAfter, startOfDay, startOfMonth, endOfMonth, isSameDay } from 'date-fns';
+import { format, parse, addMinutes, getDay, isBefore, isAfter, startOfDay, startOfMonth, endOfMonth, isSameDay, addDays } from 'date-fns';
 import { getLocations, getServices, getStaff } from './data';
 import type { Booking, NewBooking, Staff } from './types';
 import { addBooking, getBookingsForStaffOnDate, getBookingsForStaffInRange } from './firestore';
@@ -226,7 +226,6 @@ export async function getUnavailableDays(month: Date, serviceId: string, staffId
         const monthStart = startOfMonth(month);
         const monthEnd = endOfMonth(month);
         
-        // If there's no staff available to book, all days are unavailable.
         if (staffToCheck.length === 0) {
             const allDays = [];
             let day = monthStart;
@@ -238,11 +237,19 @@ export async function getUnavailableDays(month: Date, serviceId: string, staffId
         }
 
         const allBookingsForMonth = await getBookingsForStaffInRange(staffToCheck.map(s => s.id), monthStart, monthEnd);
-        const bookingsByStaffId: Record<string, Booking[]> = allBookingsForMonth.reduce((acc, booking) => {
-            if (!acc[booking.staffId]) acc[booking.staffId] = [];
-            acc[booking.staffId].push(booking);
-            return acc;
-        }, {} as Record<string, Booking[]>);
+        
+        // OPTIMIZATION: Pre-group bookings by day and then by staff for O(1) lookup inside the loops.
+        const bookingsByDayAndStaff: Record<string, Record<string, Booking[]>> = {};
+        allBookingsForMonth.forEach(booking => {
+            const dayStr = format(new Date(booking.bookingTimestamp), 'yyyy-MM-dd');
+            if (!bookingsByDayAndStaff[dayStr]) {
+                bookingsByDayAndStaff[dayStr] = {};
+            }
+            if (!bookingsByDayAndStaff[dayStr][booking.staffId]) {
+                bookingsByDayAndStaff[dayStr][booking.staffId] = [];
+            }
+            bookingsByDayAndStaff[dayStr][booking.staffId].push(booking);
+        });
 
         const unavailableDays: string[] = [];
         let currentDay = monthStart;
@@ -250,6 +257,7 @@ export async function getUnavailableDays(month: Date, serviceId: string, staffId
 
         while (currentDay <= monthEnd) {
             let isDayAvailable = false;
+            const currentDayStr = format(currentDay, 'yyyy-MM-dd');
             
             for (const staffMember of staffToCheck) {
                 const dayOfWeek = dayMap[getDay(currentDay)];
@@ -259,7 +267,9 @@ export async function getUnavailableDays(month: Date, serviceId: string, staffId
 
                 const workDayStart = parse(dayHours.start, 'HH:mm', currentDay);
                 const workDayEnd = parse(dayHours.end, 'HH:mm', currentDay);
-                const staffBookingsForDay = bookingsByStaffId[staffMember.id]?.filter(b => isSameDay(new Date(b.bookingTimestamp), currentDay)) || [];
+                
+                // OPTIMIZATION: Direct lookup instead of filtering the whole month's bookings every time.
+                const staffBookingsForDay = bookingsByDayAndStaff[currentDayStr]?.[staffMember.id] || [];
                 
                 let potentialSlotStart = workDayStart;
                 const now = new Date();

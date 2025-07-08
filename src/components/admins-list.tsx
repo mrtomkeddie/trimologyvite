@@ -126,11 +126,15 @@ export function AdminsList({ initialAdmins, locations, staff, currentUser }: Adm
                         </Select>
                     </div>
                 )}
-                <Button onClick={handleAddClick} className={!isSuperAdmin ? 'ml-auto' : ''}>
+                <Button onClick={handleAddClick} disabled={locations.length === 0} className={!isSuperAdmin ? 'ml-auto' : ''}>
                     <PlusCircle className="mr-2" />
                     Add Admin
                 </Button>
             </div>
+
+            {isSuperAdmin && locations.length === 0 && (
+                <p className="text-center text-muted-foreground mb-4">You must add a location before you can add a Branch Admin.</p>
+            )}
             
             <AdminForm
                 isOpen={isFormOpen}

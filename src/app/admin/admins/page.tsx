@@ -18,30 +18,30 @@ export default function ManageAdminsPage() {
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
 
-    React.useEffect(() => {
+    const fetchData = React.useCallback(async () => {
         if (!adminUser) return;
-        
-        const fetchData = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                const [fetchedAdmins, fetchedLocations, fetchedStaff] = await Promise.all([
-                    getAdminsFromFirestore(adminUser.locationId),
-                    getLocationsFromFirestore(adminUser.locationId),
-                    getStaffFromFirestore(adminUser.locationId)
-                ]);
-                setAdmins(fetchedAdmins);
-                setLocations(fetchedLocations);
-                setStaff(fetchedStaff);
-            } catch (e) {
-                setError("Failed to fetch admin data. Please try refreshing the page.");
-                console.error(e);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchData();
+        setLoading(true);
+        setError(null);
+        try {
+            const [fetchedAdmins, fetchedLocations, fetchedStaff] = await Promise.all([
+                getAdminsFromFirestore(adminUser.locationId),
+                getLocationsFromFirestore(adminUser.locationId),
+                getStaffFromFirestore(adminUser.locationId)
+            ]);
+            setAdmins(fetchedAdmins);
+            setLocations(fetchedLocations);
+            setStaff(fetchedStaff);
+        } catch (e) {
+            setError("Failed to fetch admin data. Please try refreshing the page.");
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
     }, [adminUser]);
+
+    React.useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
 
     if (loading) {
@@ -55,7 +55,7 @@ export default function ManageAdminsPage() {
                     <ShieldAlert className="h-16 w-16 text-destructive mx-auto mb-4" />
                     <h1 className="text-2xl font-bold mb-2">Error</h1>
                     <p className="text-muted-foreground mb-6">{error}</p>
-                    <Button onClick={() => window.location.reload()}>Try Again</Button>
+                    <Button onClick={fetchData}>Try Again</Button>
                 </div>
             </div>
         );
