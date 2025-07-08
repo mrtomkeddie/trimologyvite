@@ -16,7 +16,7 @@ Any customer can book an appointment directly from the homepage.
 2.  **Select Your Service:** Once a location is chosen, a list of available services will appear. They can select the desired service and see its price and duration.
 3.  **Select Your Staff (Optional):** They can choose a specific staff member or leave it as "Any Staff Member" to be assigned to the next available person.
 4.  **Choose Date & Time:**
-    *   Click "Pick a date" to open a calendar and select a day.
+    *   Click "Pick a date" to open a calendar and select a day. The system will automatically gray out and disable any dates that have no available slots for your selected service.
     *   Click the **"Find Available Times"** button. The system will show a list of open slots.
     *   Select one of the available time slots.
 5.  **Enter Your Details:** After a time is selected, the final section will appear. They must enter their full name and phone number. The email is optional but recommended for confirmations.
@@ -105,11 +105,11 @@ This is for manually booking an appointment for a client over the phone or in pe
 
 ### **3.6 Managing Staff**
 
-*   Navigate to **"Manage Staff"** from the dashboard.
+*   Navigate to **"Manage Staff"** from the dashboard. This page is **exclusively for creating and managing bookable staff profiles** (e.g., stylists, barbers). Anyone added here will appear in the public booking dropdown.
 *   **Add a New Staff Member:** Click **"Add Staff"**.
     *   **To create a brand new staff user:** Select "-- Create New Staff User --", and fill in all their details, including a temporary password for their login.
-    *   **To create a bookable profile for an existing Admin:** Select the admin from the "Link to Admin" dropdown. This creates a staff profile tied to their existing login.
-*   **Edit a Staff Member:** Click the **pencil icon** to update their name, specialization, photo, assigned location, or working hours. You can also make them "Not Bookable" if they don't take appointments.
+    *   **To create a bookable profile for an existing Admin:** Select the admin from the "Link to Admin" dropdown. This creates a staff profile tied to their existing login, making them bookable.
+*   **Edit a Staff Member:** Click the **pencil icon** to update their name, specialization, photo, assigned location, or working hours.
 *   **Delete a Staff Member:** Click the **trash can icon** to permanently remove their staff profile and login access.
 
 ### **3.7 Managing Client Loyalty**
