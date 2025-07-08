@@ -28,14 +28,15 @@ import {
     DialogDescription,
 } from '@/components/ui/dialog';
 import { Badge } from './ui/badge';
+import { useRouter } from 'next/navigation';
 
 type ServicesListProps = {
     initialServices: Service[];
     locations: Location[];
-    onDataChange: () => void;
 };
 
-export function ServicesList({ initialServices, locations, onDataChange }: ServicesListProps) {
+export function ServicesList({ initialServices, locations }: ServicesListProps) {
+    const router = useRouter();
     const [services, setServices] = React.useState(initialServices);
     const [isFormOpen, setIsFormOpen] = React.useState(false);
     const [editingService, setEditingService] = React.useState<Service | null>(null);
@@ -45,7 +46,7 @@ export function ServicesList({ initialServices, locations, onDataChange }: Servi
     const { toast } = useToast();
 
     const handleFormSubmit = () => {
-       onDataChange();
+       router.refresh();
     };
     
     const handleAddClick = () => {
@@ -65,7 +66,7 @@ export function ServicesList({ initialServices, locations, onDataChange }: Servi
         try {
             await deleteService(id);
             toast({ title: 'Success', description: 'Service deleted successfully.' });
-            onDataChange();
+            router.refresh();
         } catch (error) {
             toast({ title: 'Error', description: 'Failed to delete service.', variant: 'destructive' });
         } finally {

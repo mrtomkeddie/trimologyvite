@@ -5,7 +5,7 @@ import { db } from './firebase';
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, orderBy, query, Timestamp, where, getDoc, setDoc, limit } from 'firebase/firestore';
 import type { Location, Service, Staff, Booking, NewBooking, AdminUser, ClientLoyalty } from './types';
 import { revalidatePath } from 'next/cache';
-import { addDays, startOfDay, endOfDay, subDays, format } from 'date-fns';
+import { addDays, startOfDay, endOfDay, subDays, format, isSameDay } from 'date-fns';
 
 // --- DUMMY DATA SWITCH ---
 // Change this to 'false' to use your live Firestore database.
@@ -127,7 +127,6 @@ export async function setAdminRecord(uid: string, data: { email: string; locatio
     if (USE_DUMMY_DATA) {
         const newAdmin = { ...data, id: uid };
         dummyAdmins.push(newAdmin);
-        revalidatePath('/admin/admins');
         return;
     }
     const adminDoc = doc(db, 'admins', uid);
@@ -141,7 +140,6 @@ export async function updateAdmin(uid: string, data: Partial<Omit<AdminUser, 'id
         if (adminIndex > -1) {
             dummyAdmins[adminIndex] = { ...dummyAdmins[adminIndex], ...data };
         }
-        revalidatePath('/admin/admins'); 
         return; 
     }
     const adminDoc = doc(db, 'admins', uid);
@@ -153,7 +151,6 @@ export async function deleteAdmin(uid: string) {
     if (USE_DUMMY_DATA) { 
         const index = dummyAdmins.findIndex(a => a.id === uid);
         if (index > -1) dummyAdmins.splice(index, 1);
-        revalidatePath('/admin/admins'); 
         return; 
     }
     const adminDoc = doc(db, 'admins', uid);
@@ -182,7 +179,6 @@ export async function addLocation(data: Omit<Location, 'id'>) {
     if (USE_DUMMY_DATA) {
         const newLocation = { ...data, id: `loc-${Date.now()}`};
         dummyLocations.push(newLocation as Location);
-        revalidatePath('/admin/locations');
         return;
     }
     await addDoc(locationsCollection, data);
@@ -195,7 +191,6 @@ export async function updateLocation(id: string, data: Partial<Omit<Location, 'i
         if (locIndex > -1) {
             dummyLocations[locIndex] = { ...dummyLocations[locIndex], ...data };
         }
-        revalidatePath('/admin/locations');
         return;
     }
     const locDoc = doc(db, 'locations', id);
@@ -207,7 +202,6 @@ export async function deleteLocation(id: string) {
     if (USE_DUMMY_DATA) {
         const index = dummyLocations.findIndex(l => l.id === id);
         if (index > -1) dummyLocations.splice(index, 1);
-        revalidatePath('/admin/locations');
         return;
     }
     const locDoc = doc(db, 'locations', id);
@@ -237,14 +231,14 @@ export async function getServicesFromFirestore(locationId?: string): Promise<Ser
 }
 
 export async function addService(data: { name: string; duration: number; price: number; locationId: string; locationName: string; }) {
-    if (USE_DUMMY_DATA) { revalidatePath('/admin/services'); revalidatePath('/'); return; }
+    if (USE_DUMMY_DATA) { return; }
     await addDoc(servicesCollection, data);
     revalidatePath('/admin/services');
     revalidatePath('/');
 }
 
 export async function updateService(id: string, data: { name: string; duration: number; price: number; locationId: string; locationName: string; }) {
-    if (USE_DUMMY_DATA) { revalidatePath('/admin/services'); revalidatePath('/'); return; }
+    if (USE_DUMMY_DATA) { return; }
     const serviceDoc = doc(db, 'services', id);
     await updateDoc(serviceDoc, data);
     revalidatePath('/admin/services');
@@ -252,7 +246,7 @@ export async function updateService(id: string, data: { name: string; duration: 
 }
 
 export async function deleteService(id: string) {
-    if (USE_DUMMY_DATA) { revalidatePath('/admin/services'); revalidatePath('/'); return; }
+    if (USE_DUMMY_DATA) { return; }
     const serviceDoc = doc(db, 'services', id);
     await deleteDoc(serviceDoc);
     revalidatePath('/admin/services');
@@ -283,8 +277,6 @@ export async function setStaffRecord(uid: string, data: Omit<Staff, 'id'>) {
     if (USE_DUMMY_DATA) {
         const newStaff = { ...data, id: uid };
         dummyStaff.push(newStaff);
-        revalidatePath('/admin/staff');
-        revalidatePath('/');
         return;
     }
     
@@ -300,7 +292,7 @@ export async function updateStaff(uid: string, data: Partial<Omit<Staff, 'id'>>)
         if (staffIndex > -1) {
             dummyStaff[staffIndex] = { ...dummyStaff[staffIndex], ...data };
         }
-        revalidatePath('/admin/staff'); revalidatePath('/'); return;
+        return;
     }
     const staffDoc = doc(db, 'staff', uid);
     await updateDoc(staffDoc, data);
@@ -312,8 +304,6 @@ export async function deleteStaff(uid: string) {
     if (USE_DUMMY_DATA) { 
         const index = dummyStaff.findIndex(s => s.id === uid);
         if (index > -1) dummyStaff.splice(index, 1);
-        revalidatePath('/admin/staff'); 
-        revalidatePath('/'); 
         return; 
     }
     // In a real app, you would also want a Cloud Function to delete the corresponding Firebase Auth user.
@@ -352,22 +342,20 @@ export async function getBookingsFromFirestore(locationId?: string): Promise<Boo
         return Promise.resolve(sorted);
     }
 
-    // Simplified Query: Fetch based on location or get all, then sort in code.
-    const q = locationId ? query(bookingsCollection, where('locationId', '==', locationId)) : query(bookingsCollection);
+    const q = locationId 
+        ? query(bookingsCollection, where('locationId', '==', locationId), where('bookingTimestamp', '>=', new Date().toISOString()), orderBy('bookingTimestamp', 'asc'))
+        : query(bookingsCollection, where('bookingTimestamp', '>=', new Date().toISOString()), orderBy('bookingTimestamp', 'asc'));
 
     const snapshot = await getDocs(q);
-    const bookings = snapshot.docs.map(doc => {
-        const { createdAt, ...data } = doc.data(); // Destructure to remove non-serializable Timestamp
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        // Ensure createdAt is not passed to client components if it's a Firestore Timestamp
+        const { createdAt, ...rest } = data;
         return {
             id: doc.id,
-            ...data,
+            ...rest,
         } as Booking;
     });
-
-    // Sort in code to avoid composite index
-    bookings.sort((a, b) => b.bookingTimestamp.localeCompare(a.bookingTimestamp));
-
-    return bookings;
 }
 
 export async function getBookingsByPhoneFromFirestore(phone: string): Promise<Booking[]> {
@@ -377,21 +365,17 @@ export async function getBookingsByPhoneFromFirestore(phone: string): Promise<Bo
         return Promise.resolve(sorted);
     }
 
-    // Simplified Query: Fetch based on phone, then sort in code.
-    const q = query(bookingsCollection, where('clientPhone', '==', phone));
+    const q = query(bookingsCollection, where('clientPhone', '==', phone), orderBy('bookingTimestamp', 'desc'));
 
     const snapshot = await getDocs(q);
-    const bookings = snapshot.docs.map(doc => {
-        const { createdAt, ...data } = doc.data(); // Destructure to remove non-serializable Timestamp
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        const { createdAt, ...rest } = data;
         return {
             id: doc.id,
-            ...data
+            ...rest
         } as Booking;
     });
-
-    // Sort in code to avoid composite index
-    bookings.sort((a, b) => b.bookingTimestamp.localeCompare(a.bookingTimestamp));
-    return bookings;
 }
 
 export async function getBookingsByStaffId(staffId: string): Promise<Booking[]> {
@@ -404,29 +388,25 @@ export async function getBookingsByStaffId(staffId: string): Promise<Booking[]> 
         return Promise.resolve(upcoming);
     }
 
-    // Simplified Query: Fetch based on staffId, then filter and sort in code.
-    const q = query(bookingsCollection, where('staffId', '==', staffId));
+    const q = query(bookingsCollection, 
+        where('staffId', '==', staffId), 
+        where('bookingTimestamp', '>=', nowString),
+        orderBy('bookingTimestamp', 'asc')
+    );
     
     const snapshot = await getDocs(q);
-    const allBookingsForStaff = snapshot.docs.map(doc => {
-        const { createdAt, ...data } = doc.data(); // Destructure to remove non-serializable Timestamp
+    return snapshot.docs.map(doc => {
+        const { createdAt, ...data } = doc.data();
         return {
             id: doc.id,
             ...data
         } as Booking;
     });
-
-    // Filter for upcoming bookings and sort them in the application code.
-    const upcomingBookings = allBookingsForStaff
-        .filter(b => b.bookingTimestamp >= nowString)
-        .sort((a,b) => a.bookingTimestamp.localeCompare(b.bookingTimestamp));
-
-    return upcomingBookings;
 }
 
 export async function getBookingsForStaffOnDate(staffId: string, date: Date): Promise<Booking[]> {
-    const dayStartStr = format(date, 'yyyy-MM-dd') + 'T00:00:00.000Z';
-    const dayEndStr = format(date, 'yyyy-MM-dd') + 'T23:59:59.999Z';
+    const dayStartStr = startOfDay(date).toISOString();
+    const dayEndStr = endOfDay(date).toISOString();
     
     if (USE_DUMMY_DATA) {
         const dayBookings = dummyBookings.filter(b => {
@@ -435,21 +415,19 @@ export async function getBookingsForStaffOnDate(staffId: string, date: Date): Pr
         return Promise.resolve(dayBookings);
     }
     
-    // Simplified Query: Fetch based on staffId, then filter in code.
-    const q = query(bookingsCollection, where('staffId', '==', staffId));
+    const q = query(bookingsCollection, 
+        where('staffId', '==', staffId),
+        where('bookingTimestamp', '>=', dayStartStr),
+        where('bookingTimestamp', '<=', dayEndStr)
+    );
 
     const snapshot = await getDocs(q);
-    const allBookingsForStaff = snapshot.docs.map(doc => {
-        const { createdAt, ...data } = doc.data(); // Destructure to remove non-serializable Timestamp
+    return snapshot.docs.map(doc => {
+        const { createdAt, ...data } = doc.data();
         return {
             id: doc.id,
             ...data
         } as Booking;
-    });
-
-    // Filter for the specific date in application code.
-    return allBookingsForStaff.filter(b => {
-        return b.bookingTimestamp >= dayStartStr && b.bookingTimestamp <= dayEndStr;
     });
 }
 
@@ -480,15 +458,13 @@ export async function addBooking(data: NewBooking) {
     if (USE_DUMMY_DATA) { 
         const newBooking = { ...data, id: `book-${Date.now()}`};
         dummyBookings.push(newBooking);
-        revalidatePath('/admin/bookings'); 
-        revalidatePath('/my-schedule');
         return; 
     }
     await addDoc(bookingsCollection, {
         ...data,
         createdAt: Timestamp.now(),
     });
-    revalidatePath('/admin/bookings');
+    revalidatePath('/admin/bookings', 'layout');
     revalidatePath('/my-schedule');
 }
 
@@ -496,20 +472,23 @@ export async function deleteBooking(id: string) {
     if (USE_DUMMY_DATA) { 
         const index = dummyBookings.findIndex(b => b.id === id);
         if (index > -1) dummyBookings.splice(index, 1);
-        revalidatePath('/admin/bookings'); 
-        revalidatePath('/my-schedule'); 
         return; 
     }
     const bookingDoc = doc(db, 'bookings', id);
     await deleteDoc(bookingDoc);
-    revalidatePath('/admin/bookings');
+    revalidatePath('/admin/bookings', 'layout');
     revalidatePath('/my-schedule');
 }
 
 // Client Loyalty
 export async function getClientLoyaltyData(locationId?: string): Promise<ClientLoyalty[]> {
     // This function derives client data from the existing bookings.
-    const allBookings = await getBookingsFromFirestore(locationId);
+    const q = locationId 
+        ? query(bookingsCollection, where('locationId', '==', locationId))
+        : query(bookingsCollection);
+
+    const snapshot = await getDocs(q);
+    const allBookings = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()} as Booking));
     
     const clientsMap = new Map<string, ClientLoyalty>();
 

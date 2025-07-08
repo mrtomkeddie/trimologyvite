@@ -29,17 +29,18 @@ import {
     DialogDescription,
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
+import { useRouter } from 'next/navigation';
 
 type StaffListProps = {
     initialStaff: Staff[];
     locations: Location[];
     admins: AdminUser[];
-    onDataChange: () => void;
 };
 
 const daysOfWeek = [ 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday' ] as const;
 
-export function StaffList({ initialStaff, locations, admins, onDataChange }: StaffListProps) {
+export function StaffList({ initialStaff, locations, admins }: StaffListProps) {
+    const router = useRouter();
     const [staff, setStaff] = React.useState(initialStaff);
     const [isFormOpen, setIsFormOpen] = React.useState(false);
     const [editingStaff, setEditingStaff] = React.useState<Staff | null>(null);
@@ -64,7 +65,7 @@ export function StaffList({ initialStaff, locations, admins, onDataChange }: Sta
     };
 
     const handleFormSubmit = () => {
-        onDataChange();
+        router.refresh();
     }
 
     const handleDelete = async (e: React.MouseEvent, id: string) => {
@@ -73,7 +74,7 @@ export function StaffList({ initialStaff, locations, admins, onDataChange }: Sta
         try {
             await deleteStaff(id);
             toast({ title: 'Success', description: 'Staff member deleted successfully.' });
-            onDataChange();
+            router.refresh();
         } catch (error) {
             toast({ title: 'Error', description: 'Failed to delete staff member.', variant: 'destructive' });
         } finally {

@@ -31,16 +31,17 @@ import {
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Separator } from './ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useRouter } from 'next/navigation';
 
 type AdminsListProps = {
     initialAdmins: AdminUser[];
     locations: Location[];
     staff: Staff[];
     currentUser: AdminUser | null;
-    onDataChange: () => void;
 };
 
-export function AdminsList({ initialAdmins, locations, staff, currentUser, onDataChange }: AdminsListProps) {
+export function AdminsList({ initialAdmins, locations, staff, currentUser }: AdminsListProps) {
+    const router = useRouter();
     const [isFormOpen, setIsFormOpen] = React.useState(false);
     const [editingAdmin, setEditingAdmin] = React.useState<AdminUser | null>(null);
     const [selectedAdmin, setSelectedAdmin] = React.useState<AdminUser | null>(null);
@@ -64,7 +65,7 @@ export function AdminsList({ initialAdmins, locations, staff, currentUser, onDat
     }, [initialAdmins, selectedLocation, isSuperAdmin]);
 
     const handleFormSubmit = () => {
-       onDataChange();
+       router.refresh();
     };
     
     const handleAddClick = () => {
@@ -88,7 +89,7 @@ export function AdminsList({ initialAdmins, locations, staff, currentUser, onDat
         try {
             await deleteAdmin(id);
             toast({ title: 'Success', description: 'Admin permissions revoked successfully.' });
-            onDataChange();
+            router.refresh();
         } catch (error) {
             toast({ title: 'Error', description: 'Failed to delete admin.', variant: 'destructive' });
         } finally {

@@ -17,36 +17,33 @@ export default function ManageStaffPage() {
     const [admins, setAdmins] = React.useState<AdminUser[]>([]);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
-    const [refreshKey, setRefreshKey] = React.useState(0);
     
-    const fetchData = React.useCallback(async () => {
+    React.useEffect(() => {
         if (!adminUser) return;
-        setLoading(true);
-        setError(null);
-        try {
-            const [fetchedStaff, fetchedLocations, fetchedAdmins] = await Promise.all([
-                getStaffFromFirestore(adminUser.locationId),
-                getLocationsFromFirestore(adminUser.locationId),
-                getAdminsFromFirestore(adminUser.locationId),
-            ]);
-            setStaff(fetchedStaff);
-            setLocations(fetchedLocations);
-            setAdmins(fetchedAdmins);
-        } catch (e) {
-            setError("Failed to fetch staff data. Please try refreshing the page.");
-            console.error(e);
-        } finally {
-            setLoading(false);
-        }
+        
+        const fetchData = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const [fetchedStaff, fetchedLocations, fetchedAdmins] = await Promise.all([
+                    getStaffFromFirestore(adminUser.locationId),
+                    getLocationsFromFirestore(adminUser.locationId),
+                    getAdminsFromFirestore(adminUser.locationId),
+                ]);
+                setStaff(fetchedStaff);
+                setLocations(fetchedLocations);
+                setAdmins(fetchedAdmins);
+            } catch (e) {
+                setError("Failed to fetch staff data. Please try refreshing the page.");
+                console.error(e);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
     }, [adminUser]);
 
-    React.useEffect(() => {
-        fetchData();
-    }, [fetchData, refreshKey]);
-
-    const handleDataChange = () => {
-        setRefreshKey(prev => prev + 1);
-    };
 
     if (loading) {
         return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
@@ -59,7 +56,7 @@ export default function ManageStaffPage() {
                     <ShieldAlert className="h-16 w-16 text-destructive mx-auto mb-4" />
                     <h1 className="text-2xl font-bold mb-2">Error</h1>
                     <p className="text-muted-foreground mb-6">{error}</p>
-                    <Button onClick={fetchData}>Try Again</Button>
+                    <Button onClick={() => window.location.reload()}>Try Again</Button>
                 </div>
             </div>
         );
@@ -81,7 +78,6 @@ export default function ManageStaffPage() {
                     initialStaff={staff} 
                     locations={locations}
                     admins={admins} 
-                    onDataChange={handleDataChange}
                 />
             </main>
         </div>

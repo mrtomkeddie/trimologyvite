@@ -52,7 +52,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     });
 
     return () => unsubscribe();
-  }, [pathname]);
+  }, []); // Removed pathname dependency to prevent re-running on every navigation
 
   const contextValue = { adminUser, loading };
 

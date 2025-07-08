@@ -17,37 +17,32 @@ export default function ManageAdminsPage() {
     const [locations, setLocations] = React.useState<Location[]>([]);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
-    const [refreshKey, setRefreshKey] = React.useState(0);
-
-    const fetchData = React.useCallback(async () => {
-        if (!adminUser) return;
-        setLoading(true);
-        setError(null);
-        try {
-            const [fetchedAdmins, fetchedLocations, fetchedStaff] = await Promise.all([
-                getAdminsFromFirestore(adminUser.locationId),
-                getLocationsFromFirestore(adminUser.locationId),
-                getStaffFromFirestore(adminUser.locationId)
-            ]);
-            setAdmins(fetchedAdmins);
-            setLocations(fetchedLocations);
-            setStaff(fetchedStaff);
-        } catch (e) {
-            setError("Failed to fetch admin data. Please try refreshing the page.");
-            console.error(e);
-        } finally {
-            setLoading(false);
-        }
-    }, [adminUser]);
 
     React.useEffect(() => {
+        if (!adminUser) return;
+        
+        const fetchData = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const [fetchedAdmins, fetchedLocations, fetchedStaff] = await Promise.all([
+                    getAdminsFromFirestore(adminUser.locationId),
+                    getLocationsFromFirestore(adminUser.locationId),
+                    getStaffFromFirestore(adminUser.locationId)
+                ]);
+                setAdmins(fetchedAdmins);
+                setLocations(fetchedLocations);
+                setStaff(fetchedStaff);
+            } catch (e) {
+                setError("Failed to fetch admin data. Please try refreshing the page.");
+                console.error(e);
+            } finally {
+                setLoading(false);
+            }
+        };
         fetchData();
-    }, [fetchData, refreshKey]);
+    }, [adminUser]);
 
-
-    const handleDataChange = () => {
-        setRefreshKey(prev => prev + 1);
-    };
 
     if (loading) {
         return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
@@ -60,7 +55,7 @@ export default function ManageAdminsPage() {
                     <ShieldAlert className="h-16 w-16 text-destructive mx-auto mb-4" />
                     <h1 className="text-2xl font-bold mb-2">Error</h1>
                     <p className="text-muted-foreground mb-6">{error}</p>
-                    <Button onClick={fetchData}>Try Again</Button>
+                    <Button onClick={() => window.location.reload()}>Try Again</Button>
                 </div>
             </div>
         );
@@ -82,8 +77,7 @@ export default function ManageAdminsPage() {
                     initialAdmins={admins} 
                     locations={locations} 
                     staff={staff}
-                    currentUser={adminUser} 
-                    onDataChange={handleDataChange}
+                    currentUser={adminUser}
                 />
             </main>
         </div>

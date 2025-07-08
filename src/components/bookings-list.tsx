@@ -30,14 +30,15 @@ import {
 } from '@/components/ui/dialog';
 import { Separator } from './ui/separator';
 import { Badge } from './ui/badge';
+import { useRouter } from 'next/navigation';
 
 type BookingsListProps = {
     initialBookings: Booking[];
     locations: Location[];
-    onDataChange: () => void;
 };
 
-export function BookingsList({ initialBookings, locations, onDataChange }: BookingsListProps) {
+export function BookingsList({ initialBookings, locations }: BookingsListProps) {
+    const router = useRouter();
     const [bookings, setBookings] = React.useState(initialBookings);
     const [isDeleting, setIsDeleting] = React.useState<string | null>(null);
     const [selectedLocation, setSelectedLocation] = React.useState<string>('all');
@@ -50,7 +51,7 @@ export function BookingsList({ initialBookings, locations, onDataChange }: Booki
         try {
             await deleteBooking(id);
             toast({ title: 'Success', description: 'Booking deleted successfully.' });
-            onDataChange();
+            router.refresh();
         } catch (error) {
             toast({ title: 'Error', description: 'Failed to delete booking.', variant: 'destructive' });
         } finally {
