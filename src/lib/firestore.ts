@@ -342,12 +342,16 @@ export async function getBookingsFromFirestore(locationId?: string): Promise<Boo
         return Promise.resolve(sorted);
     }
 
-    const q = locationId 
-        ? query(bookingsCollection, where('locationId', '==', locationId), where('bookingTimestamp', '>=', new Date().toISOString()), orderBy('bookingTimestamp', 'asc'))
-        : query(bookingsCollection, where('bookingTimestamp', '>=', new Date().toISOString()), orderBy('bookingTimestamp', 'asc'));
-
+    // This query was causing an error as it requires a composite index.
+    // We will fetch all upcoming bookings and filter in code.
+    const q = query(
+        bookingsCollection, 
+        where('bookingTimestamp', '>=', new Date().toISOString()), 
+        orderBy('bookingTimestamp', 'asc')
+    );
+    
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => {
+    const allBookings = snapshot.docs.map(doc => {
         const data = doc.data();
         // Ensure createdAt is not passed to client components if it's a Firestore Timestamp
         const { createdAt, ...rest } = data;
@@ -356,6 +360,12 @@ export async function getBookingsFromFirestore(locationId?: string): Promise<Boo
             ...rest,
         } as Booking;
     });
+
+    if (locationId) {
+        return allBookings.filter(b => b.locationId === locationId);
+    }
+
+    return allBookings;
 }
 
 export async function getBookingsByPhoneFromFirestore(phone: string): Promise<Booking[]> {
@@ -531,3 +541,5 @@ export async function getClientLoyaltyData(locationId?: string): Promise<ClientL
 
     return clientsArray;
 }
+
+    
