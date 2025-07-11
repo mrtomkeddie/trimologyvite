@@ -44,6 +44,10 @@ export default function ManageStaffPage() {
         fetchData();
     }, [fetchData]);
 
+    const handleDataChanged = () => {
+        fetchData();
+    }
+
 
     if (loading) {
         return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
@@ -75,9 +79,10 @@ export default function ManageStaffPage() {
             </header>
             <main className="flex-1 p-4 sm:p-6 lg:p-8">
                 <StaffList 
-                    initialStaff={staff} 
+                    staff={staff} 
                     locations={locations}
                     admins={admins} 
+                    onStaffChanged={handleDataChanged}
                 />
             </main>
         </div>

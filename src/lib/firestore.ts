@@ -106,7 +106,6 @@ export async function getAdminsFromFirestore(locationId?: string): Promise<Admin
         return Promise.resolve(dummyAdmins);
     }
     
-    // Simplified Query: Fetch based on location or get all, then sort in code.
     const q = locationId 
         ? query(adminsCollection, where('locationId', '==', locationId))
         : query(adminsCollection);
@@ -117,7 +116,6 @@ export async function getAdminsFromFirestore(locationId?: string): Promise<Admin
         ...doc.data()
     } as AdminUser));
 
-    // Sort in code to avoid composite index
     admins.sort((a, b) => a.email.localeCompare(b.email));
 
     return admins;
@@ -127,6 +125,7 @@ export async function setAdminRecord(uid: string, data: { email: string; locatio
     if (USE_DUMMY_DATA) {
         const newAdmin = { ...data, id: uid };
         dummyAdmins.push(newAdmin);
+        revalidatePath('/admin/admins');
         return;
     }
     const adminDoc = doc(db, 'admins', uid);
@@ -140,6 +139,7 @@ export async function updateAdmin(uid: string, data: Partial<Omit<AdminUser, 'id
         if (adminIndex > -1) {
             dummyAdmins[adminIndex] = { ...dummyAdmins[adminIndex], ...data };
         }
+        revalidatePath('/admin/admins');
         return; 
     }
     const adminDoc = doc(db, 'admins', uid);
@@ -151,6 +151,7 @@ export async function deleteAdmin(uid: string) {
     if (USE_DUMMY_DATA) { 
         const index = dummyAdmins.findIndex(a => a.id === uid);
         if (index > -1) dummyAdmins.splice(index, 1);
+        revalidatePath('/admin/admins');
         return; 
     }
     const adminDoc = doc(db, 'admins', uid);
@@ -179,6 +180,7 @@ export async function addLocation(data: Omit<Location, 'id'>) {
     if (USE_DUMMY_DATA) {
         const newLocation = { ...data, id: `loc-${Date.now()}`};
         dummyLocations.push(newLocation as Location);
+        revalidatePath('/admin/locations');
         return;
     }
     await addDoc(locationsCollection, data);
@@ -191,6 +193,7 @@ export async function updateLocation(id: string, data: Partial<Omit<Location, 'i
         if (locIndex > -1) {
             dummyLocations[locIndex] = { ...dummyLocations[locIndex], ...data };
         }
+        revalidatePath('/admin/locations');
         return;
     }
     const locDoc = doc(db, 'locations', id);
@@ -202,6 +205,7 @@ export async function deleteLocation(id: string) {
     if (USE_DUMMY_DATA) {
         const index = dummyLocations.findIndex(l => l.id === id);
         if (index > -1) dummyLocations.splice(index, 1);
+        revalidatePath('/admin/locations');
         return;
     }
     const locDoc = doc(db, 'locations', id);
@@ -216,7 +220,7 @@ export async function getServicesFromFirestore(locationId?: string): Promise<Ser
         if (locationId) return Promise.resolve(dummyServices.filter(s => s.locationId === locationId));
         return Promise.resolve(dummyServices);
     }
-    // Simplified Query: Fetch based on location or get all, then sort in code.
+    
     const q = locationId 
         ? query(servicesCollection, where('locationId', '==', locationId))
         : query(servicesCollection);
@@ -224,21 +228,32 @@ export async function getServicesFromFirestore(locationId?: string): Promise<Ser
     const snapshot = await getDocs(q);
     const services = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Service));
     
-    // Sort in code to avoid composite index
     services.sort((a, b) => a.name.localeCompare(b.name));
     
     return services;
 }
 
 export async function addService(data: { name: string; duration: number; price: number; locationId: string; locationName: string; }) {
-    if (USE_DUMMY_DATA) { return; }
+    if (USE_DUMMY_DATA) {
+        const newService = {...data, id: `svc-${Date.now()}`}
+        dummyServices.push(newService);
+        revalidatePath('/admin/services');
+        revalidatePath('/');
+        return;
+    }
     await addDoc(servicesCollection, data);
     revalidatePath('/admin/services');
     revalidatePath('/');
 }
 
 export async function updateService(id: string, data: { name: string; duration: number; price: number; locationId: string; locationName: string; }) {
-    if (USE_DUMMY_DATA) { return; }
+    if (USE_DUMMY_DATA) {
+        const index = dummyServices.findIndex(s => s.id === id);
+        if(index > -1) dummyServices[index] = {...dummyServices[index], ...data};
+        revalidatePath('/admin/services');
+        revalidatePath('/');
+        return;
+    }
     const serviceDoc = doc(db, 'services', id);
     await updateDoc(serviceDoc, data);
     revalidatePath('/admin/services');
@@ -246,7 +261,13 @@ export async function updateService(id: string, data: { name: string; duration: 
 }
 
 export async function deleteService(id: string) {
-    if (USE_DUMMY_DATA) { return; }
+    if (USE_DUMMY_DATA) {
+        const index = dummyServices.findIndex(s => s.id === id);
+        if(index > -1) dummyServices.splice(index, 1);
+        revalidatePath('/admin/services');
+        revalidatePath('/');
+        return;
+     }
     const serviceDoc = doc(db, 'services', id);
     await deleteDoc(serviceDoc);
     revalidatePath('/admin/services');
@@ -259,7 +280,7 @@ export async function getStaffFromFirestore(locationId?: string): Promise<Staff[
         if (locationId) return Promise.resolve(dummyStaff.filter(s => s.locationId === locationId));
         return Promise.resolve(dummyStaff);
     }
-    // Simplified Query: Fetch based on location or get all, then sort in code.
+    
     const q = locationId
         ? query(staffCollection, where('locationId', '==', locationId))
         : query(staffCollection);
@@ -267,7 +288,6 @@ export async function getStaffFromFirestore(locationId?: string): Promise<Staff[
     const snapshot = await getDocs(q);
     const staff = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Staff));
 
-    // Sort in code to avoid composite index
     staff.sort((a,b) => a.name.localeCompare(b.name));
 
     return staff;
@@ -277,6 +297,8 @@ export async function setStaffRecord(uid: string, data: Omit<Staff, 'id'>) {
     if (USE_DUMMY_DATA) {
         const newStaff = { ...data, id: uid };
         dummyStaff.push(newStaff);
+        revalidatePath('/admin/staff');
+        revalidatePath('/');
         return;
     }
     
@@ -292,6 +314,8 @@ export async function updateStaff(uid: string, data: Partial<Omit<Staff, 'id'>>)
         if (staffIndex > -1) {
             dummyStaff[staffIndex] = { ...dummyStaff[staffIndex], ...data };
         }
+        revalidatePath('/admin/staff');
+        revalidatePath('/');
         return;
     }
     const staffDoc = doc(db, 'staff', uid);
@@ -304,9 +328,10 @@ export async function deleteStaff(uid: string) {
     if (USE_DUMMY_DATA) { 
         const index = dummyStaff.findIndex(s => s.id === uid);
         if (index > -1) dummyStaff.splice(index, 1);
+        revalidatePath('/admin/staff');
+        revalidatePath('/');
         return; 
     }
-    // In a real app, you would also want a Cloud Function to delete the corresponding Firebase Auth user.
     const staffDoc = doc(db, 'staff', uid);
     await deleteDoc(staffDoc);
     revalidatePath('/admin/staff');
@@ -323,7 +348,7 @@ export async function getStaffByUid(uid: string): Promise<Staff | null> {
     const staffDoc = await getDoc(staffDocRef);
 
     if (!staffDoc.exists()) {
-        const q = query(staffCollection, where('email', '==', uid), limit(1)); // Legacy lookup by email for demo
+        const q = query(staffCollection, where('email', '==', uid), limit(1));
         const snapshot = await getDocs(q);
         if (snapshot.empty) return null;
         const doc_1 = snapshot.docs[0];
@@ -341,9 +366,7 @@ export async function getBookingsFromFirestore(locationId?: string): Promise<Boo
         if (locationId) return Promise.resolve(sorted.filter(b => b.locationId === locationId));
         return Promise.resolve(sorted);
     }
-
-    // This query was causing an error as it requires a composite index.
-    // We will fetch all upcoming bookings and filter in code.
+    
     const q = query(
         bookingsCollection, 
         where('bookingTimestamp', '>=', new Date().toISOString()), 
@@ -353,7 +376,6 @@ export async function getBookingsFromFirestore(locationId?: string): Promise<Boo
     const snapshot = await getDocs(q);
     const allBookings = snapshot.docs.map(doc => {
         const data = doc.data();
-        // Ensure createdAt is not passed to client components if it's a Firestore Timestamp
         const { createdAt, ...rest } = data;
         return {
             id: doc.id,
@@ -468,6 +490,8 @@ export async function addBooking(data: NewBooking) {
     if (USE_DUMMY_DATA) { 
         const newBooking = { ...data, id: `book-${Date.now()}`};
         dummyBookings.push(newBooking);
+        revalidatePath('/admin/bookings', 'layout');
+        revalidatePath('/my-schedule');
         return; 
     }
     await addDoc(bookingsCollection, {
@@ -482,6 +506,8 @@ export async function deleteBooking(id: string) {
     if (USE_DUMMY_DATA) { 
         const index = dummyBookings.findIndex(b => b.id === id);
         if (index > -1) dummyBookings.splice(index, 1);
+        revalidatePath('/admin/bookings', 'layout');
+        revalidatePath('/my-schedule');
         return; 
     }
     const bookingDoc = doc(db, 'bookings', id);
@@ -492,7 +518,10 @@ export async function deleteBooking(id: string) {
 
 // Client Loyalty
 export async function getClientLoyaltyData(locationId?: string): Promise<ClientLoyalty[]> {
-    // This function derives client data from the existing bookings.
+    if (USE_DUMMY_DATA) {
+        // Dummy data implementation for loyalty
+    }
+    
     const q = locationId 
         ? query(bookingsCollection, where('locationId', '==', locationId))
         : query(bookingsCollection);
@@ -503,7 +532,6 @@ export async function getClientLoyaltyData(locationId?: string): Promise<ClientL
     const clientsMap = new Map<string, ClientLoyalty>();
 
     allBookings.forEach(booking => {
-        // Only process bookings with a phone number for loyalty tracking
         if (!booking.clientPhone || booking.clientPhone.trim() === '') {
             return;
         }
@@ -535,11 +563,8 @@ export async function getClientLoyaltyData(locationId?: string): Promise<ClientL
         }
     });
 
-    // Convert map to array and sort by most visits
     const clientsArray = Array.from(clientsMap.values());
     clientsArray.sort((a, b) => b.totalVisits - a.totalVisits);
 
     return clientsArray;
 }
-
-    

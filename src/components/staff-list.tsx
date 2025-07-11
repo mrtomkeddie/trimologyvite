@@ -18,7 +18,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash2, Edit, Loader2, Star, MapPin, KeyRound, User, Calendar } from 'lucide-react';
+import { PlusCircle, Trash2, Edit, Loader2, Star, MapPin, KeyRound, User, Calendar, Info } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
@@ -29,29 +29,24 @@ import {
     DialogDescription,
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
-import { useRouter } from 'next/navigation';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
 type StaffListProps = {
-    initialStaff: Staff[];
+    staff: Staff[];
     locations: Location[];
     admins: AdminUser[];
+    onStaffChanged: () => void;
 };
 
 const daysOfWeek = [ 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday' ] as const;
 
-export function StaffList({ initialStaff, locations, admins }: StaffListProps) {
-    const router = useRouter();
-    const [staff, setStaff] = React.useState(initialStaff);
+export function StaffList({ staff, locations, admins, onStaffChanged }: StaffListProps) {
     const [isFormOpen, setIsFormOpen] = React.useState(false);
     const [editingStaff, setEditingStaff] = React.useState<Staff | null>(null);
     const [isDeleting, setIsDeleting] = React.useState<string | null>(null);
     const [selectedLocation, setSelectedLocation] = React.useState<string>('all');
     const [selectedStaff, setSelectedStaff] = React.useState<Staff | null>(null);
     const { toast } = useToast();
-
-    React.useEffect(() => {
-        setStaff(initialStaff);
-    }, [initialStaff]);
     
     const handleAddClick = () => {
         setEditingStaff(null);
@@ -64,17 +59,13 @@ export function StaffList({ initialStaff, locations, admins }: StaffListProps) {
         setIsFormOpen(true);
     };
 
-    const handleFormSubmit = () => {
-        router.refresh();
-    }
-
     const handleDelete = async (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
         setIsDeleting(id);
         try {
             await deleteStaff(id);
             toast({ title: 'Success', description: 'Staff member deleted successfully.' });
-            router.refresh();
+            onStaffChanged();
         } catch (error) {
             toast({ title: 'Error', description: 'Failed to delete staff member.', variant: 'destructive' });
         } finally {
@@ -114,7 +105,13 @@ export function StaffList({ initialStaff, locations, admins }: StaffListProps) {
                 </Button>
             </div>
              {locations.length === 0 && (
-                <p className="text-center text-muted-foreground mb-4">You must add a location before you can add staff.</p>
+                 <Alert variant="default" className="mb-4">
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>No Locations Found</AlertTitle>
+                    <AlertDescription>
+                        You must add a location in the 'Manage Locations' section before you can create a staff member.
+                    </AlertDescription>
+                </Alert>
             )}
             
             <StaffForm
@@ -123,8 +120,8 @@ export function StaffList({ initialStaff, locations, admins }: StaffListProps) {
                 staffMember={editingStaff}
                 locations={locations}
                 admins={admins}
-                allStaff={initialStaff}
-                onSubmitted={handleFormSubmit}
+                allStaff={staff}
+                onSubmitted={onStaffChanged}
             />
 
             <div className="rounded-lg border bg-card">
@@ -213,7 +210,7 @@ export function StaffList({ initialStaff, locations, admins }: StaffListProps) {
                         ) : (
                             <TableRow>
                                 <TableCell colSpan={5} className="text-center h-24">
-                                     {selectedLocation === 'all' && initialStaff.length === 0 ? 'No staff found. Add your first one!' : 'No staff found for this location.'}
+                                     {selectedLocation === 'all' && staff.length === 0 ? 'No staff found. Add your first one!' : 'No staff found for this location.'}
                                 </TableCell>
                             </TableRow>
                         )}

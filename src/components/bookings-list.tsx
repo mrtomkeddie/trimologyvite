@@ -30,16 +30,14 @@ import {
 } from '@/components/ui/dialog';
 import { Separator } from './ui/separator';
 import { Badge } from './ui/badge';
-import { useRouter } from 'next/navigation';
 
 type BookingsListProps = {
-    initialBookings: Booking[];
+    bookings: Booking[];
     locations: Location[];
+    onBookingsChanged: () => void;
 };
 
-export function BookingsList({ initialBookings, locations }: BookingsListProps) {
-    const router = useRouter();
-    const [bookings, setBookings] = React.useState(initialBookings);
+export function BookingsList({ bookings, locations, onBookingsChanged }: BookingsListProps) {
     const [isDeleting, setIsDeleting] = React.useState<string | null>(null);
     const [selectedLocation, setSelectedLocation] = React.useState<string>('all');
     const [selectedBooking, setSelectedBooking] = React.useState<Booking | null>(null);
@@ -51,17 +49,13 @@ export function BookingsList({ initialBookings, locations }: BookingsListProps) 
         try {
             await deleteBooking(id);
             toast({ title: 'Success', description: 'Booking deleted successfully.' });
-            router.refresh();
+            onBookingsChanged();
         } catch (error) {
             toast({ title: 'Error', description: 'Failed to delete booking.', variant: 'destructive' });
         } finally {
             setIsDeleting(null);
         }
     };
-    
-    React.useEffect(() => {
-        setBookings(initialBookings);
-    }, [initialBookings]);
 
     const filteredBookings = React.useMemo(() => {
         if (selectedLocation === 'all') {

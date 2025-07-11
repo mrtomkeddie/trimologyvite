@@ -9,9 +9,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import type { AdminUser, Location, Staff } from '@/lib/types';
 import { useAdmin } from '@/contexts/AdminContext';
+import { useRouter } from 'next/navigation';
 
 export default function ManageAdminsPage() {
     const { adminUser } = useAdmin();
+    const router = useRouter();
     const [admins, setAdmins] = React.useState<AdminUser[]>([]);
     const [staff, setStaff] = React.useState<Staff[]>([]);
     const [locations, setLocations] = React.useState<Location[]>([]);
@@ -43,6 +45,9 @@ export default function ManageAdminsPage() {
         fetchData();
     }, [fetchData]);
 
+    const handleDataChange = () => {
+        fetchData();
+    };
 
     if (loading) {
         return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
@@ -78,6 +83,7 @@ export default function ManageAdminsPage() {
                     locations={locations} 
                     staff={staff}
                     currentUser={adminUser}
+                    onAdminsChanged={handleDataChange}
                 />
             </main>
         </div>

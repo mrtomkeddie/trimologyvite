@@ -41,6 +41,10 @@ export default function ManageBookingsPage() {
         fetchData();
     }, [fetchData]);
 
+    const handleBookingsChanged = () => {
+        fetchData();
+    }
+
 
     if (loading) {
         return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
@@ -80,8 +84,9 @@ export default function ManageBookingsPage() {
             </header>
             <main className="flex-1 p-4 sm:p-6 lg:p-8">
                 <BookingsList 
-                    initialBookings={bookings} 
+                    bookings={bookings} 
                     locations={locations}
+                    onBookingsChanged={handleBookingsChanged}
                 />
             </main>
         </div>

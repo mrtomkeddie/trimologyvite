@@ -18,7 +18,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash2, Edit, Loader2, Clock, PoundSterling, MapPin, Scissors } from 'lucide-react';
+import { PlusCircle, Trash2, Edit, Loader2, Clock, PoundSterling, MapPin, Scissors, Info } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
     Dialog,
@@ -28,16 +28,15 @@ import {
     DialogDescription,
 } from '@/components/ui/dialog';
 import { Badge } from './ui/badge';
-import { useRouter } from 'next/navigation';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
 type ServicesListProps = {
-    initialServices: Service[];
+    services: Service[];
     locations: Location[];
+    onServicesChanged: () => void;
 };
 
-export function ServicesList({ initialServices, locations }: ServicesListProps) {
-    const router = useRouter();
-    const [services, setServices] = React.useState(initialServices);
+export function ServicesList({ services, locations, onServicesChanged }: ServicesListProps) {
     const [isFormOpen, setIsFormOpen] = React.useState(false);
     const [editingService, setEditingService] = React.useState<Service | null>(null);
     const [selectedService, setSelectedService] = React.useState<Service | null>(null);
@@ -46,7 +45,7 @@ export function ServicesList({ initialServices, locations }: ServicesListProps) 
     const { toast } = useToast();
 
     const handleFormSubmit = () => {
-       router.refresh();
+       onServicesChanged();
     };
     
     const handleAddClick = () => {
@@ -66,7 +65,7 @@ export function ServicesList({ initialServices, locations }: ServicesListProps) 
         try {
             await deleteService(id);
             toast({ title: 'Success', description: 'Service deleted successfully.' });
-            router.refresh();
+            onServicesChanged();
         } catch (error) {
             toast({ title: 'Error', description: 'Failed to delete service.', variant: 'destructive' });
         } finally {
@@ -79,10 +78,6 @@ export function ServicesList({ initialServices, locations }: ServicesListProps) 
             setSelectedService(service);
         }
     }
-
-    React.useEffect(() => {
-        setServices(initialServices);
-    }, [initialServices]);
 
     const filteredServices = React.useMemo(() => {
         if (selectedLocation === 'all') {
@@ -116,7 +111,13 @@ export function ServicesList({ initialServices, locations }: ServicesListProps) 
                 </Button>
             </div>
              {locations.length === 0 && (
-                <p className="text-center text-muted-foreground mb-4">You must add a location before you can add services.</p>
+                 <Alert variant="default" className="mb-4">
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>No Locations Found</AlertTitle>
+                    <AlertDescription>
+                        You must add a location in the 'Manage Locations' section before you can create a service.
+                    </AlertDescription>
+                </Alert>
             )}
             
             <ServiceForm

@@ -18,7 +18,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash2, Edit, Loader2, Shield, MapPin, User } from 'lucide-react';
+import { PlusCircle, Trash2, Edit, Loader2, Shield, MapPin, User, Info } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { auth } from '@/lib/firebase';
 import {
@@ -31,17 +31,18 @@ import {
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Separator } from './ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useRouter } from 'next/navigation';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+
 
 type AdminsListProps = {
     initialAdmins: AdminUser[];
     locations: Location[];
     staff: Staff[];
     currentUser: AdminUser | null;
+    onAdminsChanged: () => void;
 };
 
-export function AdminsList({ initialAdmins, locations, staff, currentUser }: AdminsListProps) {
-    const router = useRouter();
+export function AdminsList({ initialAdmins, locations, staff, currentUser, onAdminsChanged }: AdminsListProps) {
     const [isFormOpen, setIsFormOpen] = React.useState(false);
     const [editingAdmin, setEditingAdmin] = React.useState<AdminUser | null>(null);
     const [selectedAdmin, setSelectedAdmin] = React.useState<AdminUser | null>(null);
@@ -63,10 +64,6 @@ export function AdminsList({ initialAdmins, locations, staff, currentUser }: Adm
         }
         return initialAdmins.filter(a => a.locationId === selectedLocation);
     }, [initialAdmins, selectedLocation, isSuperAdmin]);
-
-    const handleFormSubmit = () => {
-       router.refresh();
-    };
     
     const handleAddClick = () => {
         setEditingAdmin(null);
@@ -89,7 +86,7 @@ export function AdminsList({ initialAdmins, locations, staff, currentUser }: Adm
         try {
             await deleteAdmin(id);
             toast({ title: 'Success', description: 'Admin permissions revoked successfully.' });
-            router.refresh();
+            onAdminsChanged();
         } catch (error) {
             toast({ title: 'Error', description: 'Failed to delete admin.', variant: 'destructive' });
         } finally {
@@ -133,7 +130,13 @@ export function AdminsList({ initialAdmins, locations, staff, currentUser }: Adm
             </div>
 
             {isSuperAdmin && locations.length === 0 && (
-                <p className="text-center text-muted-foreground mb-4">You must add a location before you can add a Branch Admin.</p>
+                <Alert variant="default" className="mb-4">
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>No Locations Found</AlertTitle>
+                    <AlertDescription>
+                        You must add a location in the 'Manage Locations' section before you can create a Branch Admin.
+                    </AlertDescription>
+                </Alert>
             )}
             
             <AdminForm
@@ -143,7 +146,7 @@ export function AdminsList({ initialAdmins, locations, staff, currentUser }: Adm
                 locations={locations}
                 staff={staff}
                 allAdmins={initialAdmins}
-                onSubmitted={handleFormSubmit}
+                onSubmitted={onAdminsChanged}
                 currentUser={currentUser}
             />
 
