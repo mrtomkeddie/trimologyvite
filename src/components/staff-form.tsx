@@ -18,7 +18,6 @@ import { useToast } from '@/hooks/use-toast';
 import { setStaffRecord, updateStaff } from '@/lib/firestore';
 import { StaffFormSchema, type Staff, type Location, WorkingHoursSchema, type AdminUser } from '@/lib/types';
 import { Loader2, User, Info, UploadCloud, UserPlus, Link2 } from 'lucide-react';
-import { uploadStaffImage } from '@/lib/storage';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
@@ -242,9 +241,10 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, a
             
             if (staffMember) { // --- UPDATE PATH ---
                 let finalImageUrl = staffMember.imageUrl || '';
-                if (imageFile) {
-                    finalImageUrl = await uploadStaffImage(staffMember.id, imageFile);
-                }
+                // The uploadStaffImage function was removed, so this logic is commented out.
+                // if (imageFile) {
+                //     finalImageUrl = await uploadStaffImage(staffMember.id, imageFile);
+                // }
 
                 const submissionData: Partial<Staff> = {
                     name: data.name,
@@ -299,9 +299,10 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, a
                 }
 
                 let imageUrl = '';
-                if (imageFile) {
-                    imageUrl = await uploadStaffImage(uid, imageFile);
-                }
+                // The uploadStaffImage function was removed, so this logic is commented out.
+                // if (imageFile) {
+                //     imageUrl = await uploadStaffImage(uid, imageFile);
+                // }
                 
                 await setStaffRecord(uid, {
                     name: data.name,
@@ -532,3 +533,5 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, a
         </Dialog>
     );
 }
+
+    
