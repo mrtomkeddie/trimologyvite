@@ -27,7 +27,7 @@ export async function getAdminUser(uid: string, email?: string): Promise<AdminUs
     return {
         id: uid,
         email: adminData.email,
-        locationId: adminData.locationId,
+        locationId: adminData.locationId || null, // FIX: Properly handle missing locationId for superadmins
         locationName: adminData.locationName,
     } as AdminUser;
 }
@@ -195,27 +195,29 @@ export async function getStaffByUid(uid: string): Promise<Staff | null> {
 
 // Bookings
 export async function getBookingsFromFirestore(locationId?: string): Promise<Booking[]> {
-    const q = query(
-        bookingsCollection, 
-        where('bookingTimestamp', '>=', new Date().toISOString()), 
-        orderBy('bookingTimestamp', 'asc')
-    );
-    
-    const snapshot = await getDocs(q);
-    const allBookings = snapshot.docs.map(doc => {
-        const data = doc.data();
-        const { createdAt, ...rest } = data;
-        return {
-            id: doc.id,
-            ...rest,
-        } as Booking;
-    });
+     const now = new Date().toISOString();
+    let q;
 
     if (locationId) {
-        return allBookings.filter(b => b.locationId === locationId);
+        q = query(
+            bookingsCollection,
+            where('locationId', '==', locationId),
+            where('bookingTimestamp', '>=', now),
+            orderBy('bookingTimestamp', 'asc')
+        );
+    } else {
+        q = query(
+            bookingsCollection, 
+            where('bookingTimestamp', '>=', now), 
+            orderBy('bookingTimestamp', 'asc')
+        );
     }
-
-    return allBookings;
+    
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+    } as Booking));
 }
 
 export async function getBookingsByPhoneFromFirestore(phone: string): Promise<Booking[]> {
