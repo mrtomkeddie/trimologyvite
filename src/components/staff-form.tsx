@@ -172,6 +172,11 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, a
                 form.setValue('email', admin.email);
                 form.setValue('name', form.getValues('name') || admin.email.split('@')[0]);
                 form.setValue('id', admin.id); // Set the UID to link the profile
+                if (!admin.locationId) { // Super admin
+                    form.setValue('locationId', 'superadmin');
+                } else {
+                    form.setValue('locationId', admin.locationId);
+                }
             }
         } else {
              if (!staffMember) { // only reset if creating new, not editing
@@ -229,8 +234,10 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, a
 
     const onSubmit = async (data: StaffFormValues) => {
         setIsSubmitting(true);
-        const location = locations.find(l => l.id === data.locationId);
-        if (!location) {
+        const isSuperAdminStaff = data.locationId === 'superadmin';
+        const location = isSuperAdminStaff ? null : locations.find(l => l.id === data.locationId);
+
+        if (!isSuperAdminStaff && !location) {
             toast({ title: 'Error', description: 'Invalid location selected.', variant: 'destructive' });
             setIsSubmitting(false);
             return;
@@ -250,8 +257,8 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, a
                     name: data.name,
                     email: data.email,
                     specialization: data.specialization || '',
-                    locationId: data.locationId,
-                    locationName: location.name,
+                    locationId: isSuperAdminStaff ? 'superadmin' : data.locationId,
+                    locationName: isSuperAdminStaff ? 'All Locations' : location!.name,
                     imageUrl: finalImageUrl,
                     workingHours: data.workingHours,
                 };
@@ -307,8 +314,8 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, a
                 await setStaffRecord(uid, {
                     name: data.name,
                     specialization: data.specialization || '',
-                    locationId: data.locationId,
-                    locationName: location.name,
+                    locationId: isSuperAdminStaff ? 'superadmin' : data.locationId,
+                    locationName: isSuperAdminStaff ? 'All Locations' : location!.name,
                     email: data.email,
                     imageUrl: imageUrl,
                     workingHours: data.workingHours,
@@ -333,6 +340,9 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, a
 
     const isCreating = !staffMember;
     const isLinkingAdmin = isCreating && !!linkExistingAdminId;
+    const linkedAdminDetails = isLinkingAdmin ? admins.find(a => a.id === linkExistingAdminId) : null;
+    const isLinkedAdminSuper = linkedAdminDetails && !linkedAdminDetails.locationId;
+    const isEditingSuperAdminStaff = staffMember && staffMember.locationId === 'superadmin';
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -364,7 +374,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, a
                                                     <SelectItem value="new-user">-- Create New Staff User --</SelectItem>
                                                     {adminsNotStaff.map(admin => (
                                                         <SelectItem key={admin.id} value={admin.id}>
-                                                            {admin.email}
+                                                            {admin.email} {!admin.locationId && '(Super Admin)'}
                                                         </SelectItem>
                                                     ))}
                                                 </SelectContent>
@@ -447,18 +457,22 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, a
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Location</FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLinkedAdminSuper || isEditingSuperAdminStaff}>
                                                 <FormControl>
                                                     <SelectTrigger>
                                                     <SelectValue placeholder="Assign to a location..." />
                                                     </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
-                                                    {locations.map((location) => (
-                                                    <SelectItem key={location.id} value={location.id}>
-                                                        {location.name}
-                                                    </SelectItem>
-                                                    ))}
+                                                    {isLinkedAdminSuper || isEditingSuperAdminStaff ? (
+                                                        <SelectItem value="superadmin">All Locations (Super Admin)</SelectItem>
+                                                    ) : (
+                                                        locations.map((location) => (
+                                                        <SelectItem key={location.id} value={location.id}>
+                                                            {location.name}
+                                                        </SelectItem>
+                                                        ))
+                                                    )}
                                                 </SelectContent>
                                                 </Select>
                                                 <FormMessage />
