@@ -547,5 +547,3 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, a
         </Dialog>
     );
 }
-
-    
