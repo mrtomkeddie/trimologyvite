@@ -1,14 +1,15 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
   
-    // Helper function to check if the user is an admin
+    // Helper function to check for Admin role
     function isAdmin() {
       return exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
     
-    // Anyone can read locations, services, and staff for booking purposes
+    // locations, services, staff can be read by anyone
     match /locations/{locationId} {
       allow read: if true;
       allow write: if isAdmin();
@@ -18,25 +19,28 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
-
+    
     match /staff/{staffId} {
       allow read: if true;
       allow write: if isAdmin();
+      
+      // Staff can read their own schedule
+      match /bookings/{bookingId} {
+        allow get: if request.auth.uid == staffId;
+      }
     }
     
-    // Anyone can create a booking.
-    // Only admins can view all bookings or delete them.
-    // Staff can view their own bookings.
-    // Clients can view their own bookings by phone number.
+    // bookings can be created by anyone, but only managed by admins
+    // or read by the user who booked it or the staff member assigned
     match /bookings/{bookingId} {
       allow read: if isAdmin() 
-                  || request.auth.uid == resource.data.staffId
-                  || (request.query.limit == 1 && request.query.where[0][2] == resource.data.clientPhone);
+                  || request.resource.data.clientPhone == request.query.phone
+                  || request.resource.data.staffId == request.auth.uid;
       allow create: if true;
       allow update, delete: if isAdmin();
     }
 
-    // Only admins can read, write, or query the admins collection
+    // Admins can read/write the admins collection
     match /admins/{adminId} {
       allow read, write: if isAdmin();
     }
