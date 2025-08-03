@@ -1,0 +1,21 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper function to check if a user is an admin
+    function isAdmin() {
+      return exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+  
+    // Allow admins to upload staff images
+    match /staff/{userId}/{fileName} {
+      allow write: if isAdmin() && request.auth.uid == userId;
+    }
+    
+    // Allow anyone to read staff images
+    match /staff/{userId}/{fileName} {
+      allow read: if true;
+    }
+  }
+}
