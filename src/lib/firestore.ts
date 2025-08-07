@@ -15,8 +15,8 @@ const bookingsCollection = collection(adminDb, 'bookings');
 const adminsCollection = collection(adminDb, 'admins');
 
 // Admins
-export async function getAdminUser(uid: string, email?: string): Promise<AdminUser | null> {
-    const adminDocRef = adminDb.collection('admins').doc(uid);
+export async function getAdminUser(uid: string): Promise<AdminUser | null> {
+    const adminDocRef = adminsCollection.doc(uid);
     const adminDoc = await adminDocRef.get();
 
     if (!adminDoc.exists) {
