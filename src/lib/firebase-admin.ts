@@ -4,7 +4,6 @@ import { cert, getApps, initializeApp, getApp, App } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
-// dotenv is loaded via instrumentation.ts, no need to call config() here.
 
 declare global {
   // Avoid re-init during hot reload
