@@ -2,6 +2,8 @@
 'use client';
 
 import * as React from 'react';
+import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,43 +11,60 @@ import { LogOut, Calendar, Clock, User as UserIcon, PoundSterling, Loader2 } fro
 import type { Staff, Booking } from '@/lib/types';
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getStaff, getBookingsByStaffId } from '@/lib/data';
+import { getStaffByUid, getBookingsByStaffId } from '@/lib/firestore'; // Changed to firestore
 
 export default function MySchedulePage() {
     const router = useRouter();
+    const [user, setUser] = React.useState<User | null>(null);
     const [staff, setStaff] = React.useState<Staff | null>(null);
     const [bookings, setBookings] = React.useState<Booking[]>([]);
     const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState<string | null>(null);
 
     React.useEffect(() => {
-        const fetchDummyData = async () => {
-            const allStaff = await getStaff();
-            const staffMember = allStaff.find(s => s.id === 'staff_1');
-            if (staffMember) {
-                setStaff(staffMember);
-                const staffBookings = await getBookingsByStaffId(staffMember.id);
-                const upcomingBookings = staffBookings
-                    .filter(b => new Date(b.bookingTimestamp) >= new Date())
-                    .sort((a, b) => new Date(a.bookingTimestamp).getTime() - new Date(b.bookingTimestamp).getTime());
-                setBookings(upcomingBookings);
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            if (currentUser) {
+                setUser(currentUser);
+                try {
+                    const staffMember = await getStaffByUid(currentUser.uid);
+                    if (staffMember) {
+                        setStaff(staffMember);
+                        const staffBookings = await getBookingsByStaffId(staffMember.id);
+                        const upcomingBookings = staffBookings
+                            .filter(b => new Date(b.bookingTimestamp) >= new Date())
+                            .sort((a, b) => new Date(a.bookingTimestamp).getTime() - new Date(b.bookingTimestamp).getTime());
+                        setBookings(upcomingBookings);
+                    } else {
+                        setError("Could not find your staff profile. Please contact an admin.");
+                    }
+                } catch (e) {
+                    setError("Failed to fetch your schedule.");
+                } finally {
+                    setLoading(false);
+                }
+            } else {
+                router.push('/staff/login');
             }
-            setLoading(false);
-        };
+        });
 
-        fetchDummyData();
-    }, []);
+        return () => unsubscribe();
+    }, [router]);
 
-    const handleLogout = () => {
-        // In dummy mode, this returns to the home page.
+    const handleLogout = async () => {
+        await signOut(auth);
         router.push('/');
     };
     
     if (loading) {
         return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
     }
+    
+    if (error) {
+        return <div>Error: {error}</div>;
+    }
 
     if (!staff) {
-        return <div>Error: Dummy staff member with ID 'staff_1' not found. Please check `src/lib/data.ts`.</div>
+        return <div>No staff profile found for the logged-in user.</div>
     }
 
     return (
