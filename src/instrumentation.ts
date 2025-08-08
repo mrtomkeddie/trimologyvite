@@ -1,8 +1,3 @@
-import { config } from 'dotenv';
-import path from 'path';
-
-export async function register() {
-  if (process.env.NEXT_RUNTIME === 'nodejs') {
-    config({ path: path.resolve(process.cwd(), '.env.local') });
-  }
-}
+// This file is required to be empty. It is used in the dev script
+// in package.json to load environment variables for local development.
+// It is not used in production.
