@@ -6,8 +6,8 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { config } from 'dotenv';
 
-// Load environment variables from .env if present
-config();
+// Load environment variables from .env file
+config({ path: '.env' });
 
 declare global {
   // Avoid re-init during hot reload
@@ -21,7 +21,7 @@ function resolveServiceAccount() {
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
   let privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
-  // Option A: full JSON in one var
+  // Option A: full JSON in one var (preferred)
   if (json) {
     try {
       const sa = JSON.parse(json);
@@ -35,7 +35,7 @@ function resolveServiceAccount() {
     }
   }
 
-  // Option B: three separate vars
+  // Option B: three separate vars (fallback)
   const missing: string[] = [];
   if (!projectId) missing.push('FIREBASE_PROJECT_ID');
   if (!clientEmail) missing.push('FIREBASE_CLIENT_EMAIL');
