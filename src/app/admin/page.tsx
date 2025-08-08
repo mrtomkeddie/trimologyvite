@@ -21,12 +21,11 @@ const DUMMY_AUTH_USER_ID = 'super_admin_user';
 
 // --- DO NOT EDIT BELOW THIS LINE ---
 
-const DUMMY_ADMIN_USER = DUMMY_ADMIN_USERS.find(u => u.id === DUMMY_AUTH_USER_ID);
-const DUMMY_AUTH_USER = DUMMY_STAFF.find(u => u.id === DUMMY_AUTH_USER_ID);
-
-
 export default function AdminPage() {
   
+  const DUMMY_ADMIN_USER = DUMMY_ADMIN_USERS.find(u => u.id === DUMMY_AUTH_USER_ID);
+  const DUMMY_AUTH_USER = DUMMY_STAFF.find(u => u.id === DUMMY_AUTH_USER_ID);
+
   if (!DUMMY_ADMIN_USER || !DUMMY_AUTH_USER) {
      return <div>Error: Dummy admin user not found. Please check the ID in `/src/app/admin/page.tsx`.</div>
   }
