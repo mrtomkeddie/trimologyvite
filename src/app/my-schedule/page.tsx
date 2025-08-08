@@ -2,75 +2,36 @@
 'use client';
 
 import * as React from 'react';
-import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
+import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ShieldAlert, LogOut, Calendar, Clock, User as UserIcon, PoundSterling } from 'lucide-react';
-import { getStaffByUid, getBookingsByStaffId } from '@/lib/firestore';
+import { LogOut, Calendar, Clock, User as UserIcon, PoundSterling } from 'lucide-react';
 import type { Staff, Booking } from '@/lib/types';
 import { format } from 'date-fns';
-import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useRouter } from 'next/navigation';
+import { DUMMY_STAFF, DUMMY_BOOKINGS } from '@/lib/data';
+
+// --- DUMMY DATA SETUP ---
+const DUMMY_STAFF_MEMBER = DUMMY_STAFF.find(s => s.id === 'staff_1');
+const DUMMY_STAFF_BOOKINGS = DUMMY_BOOKINGS.filter(b => b.staffId === 'staff_1');
+// --- END DUMMY DATA ---
 
 export default function MySchedulePage() {
-    const router = useRouter();
-    const [user, setUser] = React.useState<User | null>(null);
-    const [staff, setStaff] = React.useState<Staff | null>(null);
-    const [bookings, setBookings] = React.useState<Booking[]>([]);
-    const [loading, setLoading] = React.useState(true);
-    const [error, setError] = React.useState<string | null>(null);
-
-    React.useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-            if (currentUser) {
-                setUser(currentUser);
-                try {
-                    const staffProfile = await getStaffByUid(currentUser.uid);
-                    if (staffProfile) {
-                        setStaff(staffProfile);
-                        const upcomingBookings = await getBookingsByStaffId(staffProfile.id);
-                        setBookings(upcomingBookings);
-                    } else {
-                        throw new Error("You are not authorized to view this page.");
-                    }
-                } catch (e) {
-                    setError(e instanceof Error ? e.message : "Failed to fetch staff data.");
-                } finally {
-                    setLoading(false);
-                }
-            } else {
-                router.push('/staff/login');
-            }
-        });
-        return () => unsubscribe();
-    }, [router]);
+    
+    // This page now uses hardcoded dummy data to bypass login.
+    const staff = DUMMY_STAFF_MEMBER;
+    const bookings = DUMMY_STAFF_BOOKINGS;
 
     const handleLogout = async () => {
-        await signOut(auth);
-        // The auth listener will now handle the redirect.
+        // In a real app, this would sign the user out.
+        // For the dummy version, we can just log to the console.
+        console.log("Dummy logout clicked");
+        alert("Logout functionality is disabled in dummy mode.");
     };
-
-    if (loading) {
-        return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
-    }
-
-    if (error || !staff) {
-        return (
-            <div className="flex min-h-screen items-center justify-center bg-background text-center p-4">
-                <div>
-                    <ShieldAlert className="h-16 w-16 text-destructive mx-auto mb-4" />
-                    <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
-                    <p className="text-muted-foreground mb-6">
-                        {error || "You do not have permission to access this page."}
-                    </p>
-                    <Button asChild>
-                        <Link href="/staff/login">Return to Login</Link>
-                    </Button>
-                </div>
-            </div>
-        );
+    
+    if (!staff) {
+        return <div>Error: Dummy staff member not found.</div>
     }
 
     return (
@@ -141,3 +102,4 @@ export default function MySchedulePage() {
         </div>
     );
 }
+
