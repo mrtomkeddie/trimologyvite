@@ -6,7 +6,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { config } from 'dotenv';
 
-// Load environment variables from .env.local
+// Load environment variables from .env if present
 config();
 
 declare global {
@@ -15,7 +15,7 @@ declare global {
   var __FIREBASE_ADMIN_APP__: App | undefined;
 }
 
-function loadServiceAccount() {
+function resolveServiceAccount() {
   const json = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
   const projectId = process.env.FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
@@ -41,9 +41,10 @@ function loadServiceAccount() {
   if (!clientEmail) missing.push('FIREBASE_CLIENT_EMAIL');
   if (!privateKey) missing.push('FIREBASE_PRIVATE_KEY');
 
-  if (missing.length > 0) {
-    console.error('Missing Firebase env vars:', missing.join(', '));
-    return null;
+  if (missing.length) {
+    const msg = `Missing Firebase env vars: ${missing.join(', ')}`;
+    console.error(msg);
+    throw new Error(msg);
   }
 
   privateKey = privateKey!.replace(/\\n/g, '\n');
@@ -55,6 +56,7 @@ function loadServiceAccount() {
   };
 }
 
+
 function getFirebaseAdminApp(): App {
   if (global.__FIREBASE_ADMIN_APP__) return global.__FIREBASE_ADMIN_APP__;
 
@@ -64,12 +66,7 @@ function getFirebaseAdminApp(): App {
     return existing;
   }
 
-  const sa = loadServiceAccount();
-  if (!sa) {
-    throw new Error(
-      'Firebase Admin SDK initialization failed: missing required env vars. Check server logs for which keys are missing.'
-    );
-  }
+  const sa = resolveServiceAccount();
 
   const app = initializeApp({ 
     credential: cert(sa as any),
