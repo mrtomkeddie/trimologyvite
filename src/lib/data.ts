@@ -29,7 +29,7 @@ const DUMMY_STAFF: Staff[] = [
     workingHours: { monday: 'off', tuesday: { start: '09:00', end: '17:00' }, wednesday: { start: '09:00', end: '17:00' }, thursday: { start: '11:00', end: '19:00' }, friday: { start: '09:00', end: '17:00' }, saturday: { start: '10:00', end: '14:00' }, sunday: 'off' },
   },
    {
-    id: 'branch_admin_user', name: 'Charlie (Admin)', specialization: 'Senior Stylist', locationId: 'loc_2', locationName: 'Uptown Cuts', email: 'branchadmin@example.com',
+    id: 'branch_admin_user', name: 'Charlie', specialization: 'Senior Stylist', locationId: 'loc_2', locationName: 'Uptown Cuts', email: 'branchadmin@example.com',
     imageUrl: `https://placehold.co/100x100.png`,
     workingHours: { monday: { start: '09:00', end: '17:00' }, tuesday: { start: '09:00', end: '17:00' }, wednesday: { start: '09:00', end: '17:00' }, thursday: { start: '09:00', end: '17:00' }, friday: { start: '09:00', end: '17:00' }, saturday: 'off', sunday: 'off' },
   },
@@ -88,65 +88,4 @@ export async function getServices(): Promise<Service[]> {
 
 export async function getStaff(): Promise<Staff[]> {
   return DUMMY_STAFF;
-}
-
-// These functions will be used by the app to get data, now pointing to our dummy data.
-export async function getAdminUser(uid: string): Promise<AdminUser | null> {
-    return DUMMY_ADMIN_USERS.find(user => user.id === uid) || null;
-}
-
-export async function getAdminsFromFirestore(locationId?: string): Promise<AdminUser[]> {
-    if (locationId) {
-        return DUMMY_ADMIN_USERS.filter(admin => admin.locationId === locationId || !admin.locationId);
-    }
-    return DUMMY_ADMIN_USERS;
-}
-
-export async function getLocationsFromFirestore(locationId?: string): Promise<Location[]> {
-    if (locationId) {
-        return DUMMY_LOCATIONS.filter(loc => loc.id === locationId);
-    }
-    return DUMMY_LOCATIONS;
-}
-
-export async function getServicesFromFirestore(locationId?: string): Promise<Service[]> {
-    if (locationId) {
-        return DUMMY_SERVICES.filter(service => service.locationId === locationId);
-    }
-    return DUMMY_SERVICES;
-}
-
-export async function getStaffFromFirestore(locationId?: string): Promise<Staff[]> {
-    if (locationId) {
-        return DUMMY_STAFF.filter(staff => staff.locationId === locationId);
-    }
-    return DUMMY_STAFF;
-}
-
-export async function getBookingsFromFirestore(locationId?: string): Promise<Booking[]> {
-    const now = new Date();
-    const upcomingBookings = DUMMY_BOOKINGS.filter(b => new Date(b.bookingTimestamp) >= now);
-
-    if (locationId) {
-        return upcomingBookings.filter(b => b.locationId === locationId);
-    }
-    return upcomingBookings;
-}
-
-export async function getBookingsByPhoneFromFirestore(phone: string): Promise<Booking[]> {
-    return DUMMY_BOOKINGS.filter(b => b.clientPhone === phone);
-}
-
-export async function getBookingsByStaffId(staffId: string): Promise<Booking[]> {
-    return DUMMY_BOOKINGS.filter(b => b.staffId === staffId);
-}
-
-export async function getClientLoyaltyData(locationId?: string): Promise<ClientLoyalty[]> {
-    if (locationId) {
-        return DUMMY_CLIENTS.filter(client => client.locations.some(locName => {
-             const location = DUMMY_LOCATIONS.find(l => l.name === locName);
-             return location?.id === locationId;
-        }));
-    }
-    return DUMMY_CLIENTS;
 }

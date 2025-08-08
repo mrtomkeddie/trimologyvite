@@ -21,6 +21,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, LogIn } from 'lucide-react';
 import Link from 'next/link';
+import { getAdminUser } from '@/lib/firestore';
 
 export function AdminLoginForm() {
   const [email, setEmail] = useState('');
@@ -36,37 +37,16 @@ export function AdminLoginForm() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       // On success, the onAuthStateChanged listener in the layout will handle the redirect.
-      // We don't need to set isLoading to false, as the component will unmount/change.
     } catch (error) {
         const errorCode = (error as any).code;
 
         if (errorCode === 'auth/user-not-found' || errorCode === 'auth/invalid-credential') {
-            // If user not found, try creating them. This is for demo purposes.
-            // Firebase now uses 'auth/invalid-credential' for both user-not-found and wrong-password,
-            // so we try to create an account if login fails for this reason.
-            try {
-                await createUserWithEmailAndPassword(auth, email, password);
-                // On success, the onAuthStateChanged listener will handle redirect.
-            } catch (createError) {
-                const createErrorCode = (createError as any).code;
-                 if (createErrorCode === 'auth/email-already-in-use') {
-                    // This means the user exists, but the initial password attempt was wrong.
-                    toast({
-                        title: 'Login Failed',
-                        description: 'The password you entered is incorrect. Please try again or use "Forgot Password".',
-                        variant: 'destructive',
-                    });
-                } else {
-                     toast({
-                        title: 'Login Failed',
-                        description: 'This email may be in use or the password is too weak (min. 6 characters).',
-                        variant: 'destructive',
-                    });
-                }
-                setIsLoading(false);
-            }
+             toast({
+                title: 'Login Failed',
+                description: 'The email or password you entered is incorrect. Please try again or use "Forgot Password".',
+                variant: 'destructive',
+            });
         } else {
-            // Handle other specific errors
              let errorMessage = 'An unexpected error occurred. Please try again.';
              if (errorCode === 'auth/invalid-api-key' || errorCode === 'auth/api-key-not-valid.-please-pass-a-valid-api-key.') {
                 errorMessage = 'Your Firebase API Key is not configured correctly. Please check your environment variables.';
@@ -76,8 +56,8 @@ export function AdminLoginForm() {
                 description: errorMessage,
                 variant: 'destructive',
             });
-            setIsLoading(false);
         }
+        setIsLoading(false);
     }
   };
 

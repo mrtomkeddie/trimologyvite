@@ -11,11 +11,23 @@ import type { Query } from 'firebase-admin/firestore';
 
 
 // Admins
-export async function getAdminUser(uid: string): Promise<AdminUser | null> {
+export async function getAdminUser(uid: string, email: string): Promise<AdminUser | null> {
     const adminDocRef = adminDb.collection('admins').doc(uid);
     const adminDoc = await adminDocRef.get();
 
     if (!adminDoc.exists) {
+        // Fallback for demo: if user email is in dummy data, but UID doesn't match, create a record
+        const { DUMMY_ADMIN_USERS } = await import('@/lib/data');
+        const dummyUser = DUMMY_ADMIN_USERS.find(u => u.email === email);
+        if (dummyUser) {
+            const adminData = {
+                email: dummyUser.email,
+                locationId: dummyUser.locationId || null,
+                locationName: dummyUser.locationName || 'All Locations',
+            };
+            await adminDocRef.set(adminData);
+             return { id: uid, ...adminData } as AdminUser;
+        }
         return null;
     }
     
@@ -30,13 +42,12 @@ export async function getAdminUser(uid: string): Promise<AdminUser | null> {
 
 export async function getAdminsFromFirestore(locationId?: string): Promise<AdminUser[]> {
     let querySnapshot;
-    if (locationId) {
-        const superAdminQuery = adminDb.collection('admins').where('locationId', '==', null);
-        const branchAdminQuery = adminDb.collection('admins').where('locationId', '==', locationId);
-        const [superAdmins, branchAdmins] = await Promise.all([superAdminQuery.get(), branchAdminQuery.get()]);
-        querySnapshot = { docs: [...superAdmins.docs, ...branchAdmins.docs] };
+    // Super-admins can see all other admins
+    if (!locationId) {
+         querySnapshot = await adminDb.collection('admins').get();
     } else {
-        querySnapshot = await adminDb.collection('admins').get();
+    // Branch admins can only see other admins at their location
+        querySnapshot = await adminDb.collection('admins').where('locationId', '==', locationId).get();
     }
     
     const admins = querySnapshot.docs.map(doc => ({
@@ -44,7 +55,11 @@ export async function getAdminsFromFirestore(locationId?: string): Promise<Admin
         ...doc.data()
     } as AdminUser));
 
-    admins.sort((a, b) => a.email.localeCompare(b.email));
+    admins.sort((a, b) => {
+        if (!a.locationId) return -1; // Super admin on top
+        if (!b.locationId) return 1;
+        return a.email.localeCompare(b.email);
+    });
 
     return admins;
 }
@@ -96,11 +111,11 @@ export async function deleteLocation(id: string) {
 // Services
 export async function getServicesFromFirestore(locationId?: string): Promise<Service[]> {
     const servicesCollection = adminDb.collection('services');
-    let q: Query = servicesCollection.orderBy('name');
+    let q: Query = servicesCollection;
     if (locationId) {
         q = q.where('locationId', '==', locationId);
     }
-    const snapshot = await q.get();
+    const snapshot = await q.orderBy('name').get();
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Service));
 }
 
@@ -125,11 +140,11 @@ export async function deleteService(id: string) {
 // Staff
 export async function getStaffFromFirestore(locationId?: string): Promise<Staff[]> {
     const staffCollection = adminDb.collection('staff');
-    let q: Query = staffCollection.orderBy('name');
+    let q: Query = staffCollection;
     if (locationId) {
         q = q.where('locationId', '==', locationId);
     }
-    const snapshot = await q.get();
+    const snapshot = await q.orderBy('name').get();
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Staff));
 }
 
@@ -154,6 +169,12 @@ export async function deleteStaff(uid: string) {
 export async function getStaffByUid(uid: string): Promise<Staff | null> {
     const staffDoc = await adminDb.collection('staff').doc(uid).get();
     if (!staffDoc.exists) {
+        const { DUMMY_STAFF } = await import('@/lib/data');
+        const staffMember = DUMMY_STAFF.find(s => s.id === uid);
+        if (staffMember) {
+            await adminDb.collection('staff').doc(uid).set(staffMember);
+            return staffMember;
+        }
         return null;
     }
     return { id: staffDoc.id, ...staffDoc.data() } as Staff;
@@ -178,10 +199,20 @@ export async function getBookingsFromFirestore(locationId?: string): Promise<Boo
     }
     
     const snapshot = await q.get();
-    return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-    } as Booking));
+    const serverData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Booking));
+    
+    // For demo purposes, merge with dummy data
+    const { DUMMY_BOOKINGS } = await import('@/lib/data');
+    const upcomingDummyBookings = DUMMY_BOOKINGS.filter(b => new Date(b.bookingTimestamp) >= new Date());
+    
+    const combined = [...serverData, ...upcomingDummyBookings];
+    const uniqueBookings = Array.from(new Map(combined.map(item => [item.id, item])).values());
+    
+    if (locationId) {
+        return uniqueBookings.filter(b => b.locationId === locationId);
+    }
+    
+    return uniqueBookings.sort((a,b) => new Date(a.bookingTimestamp).getTime() - new Date(b.bookingTimestamp).getTime());
 }
 
 export async function getBookingsByPhoneFromFirestore(phone: string): Promise<Booking[]> {
@@ -310,6 +341,15 @@ export async function getClientLoyaltyData(locationId?: string): Promise<ClientL
              });
         }
     });
+     // For demo purposes, add dummy data
+    const { DUMMY_CLIENTS } = await import('@/lib/data');
+    DUMMY_CLIENTS.forEach(client => {
+        const clientIdentifier = `${client.name.toLowerCase().trim()}-${client.phone.trim()}`;
+        if (!clientsMap.has(clientIdentifier)) {
+            clientsMap.set(clientIdentifier, client);
+        }
+    });
+
 
     const clientsArray = Array.from(clientsMap.values());
     clientsArray.sort((a, b) => b.totalVisits - a.totalVisits);

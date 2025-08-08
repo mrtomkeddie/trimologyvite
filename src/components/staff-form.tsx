@@ -140,7 +140,7 @@ import { Switch } from '@/components/ui/switch';
 export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, allStaff, onSubmitted }: StaffFormProps) {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const { toast } = useToast();
-    const [linkExistingAdminId, setLinkExistingAdminId] = React.useState<string | undefined>();
+    const [linkExistingAdminId, setLinkExistingAdminId] = React.useState<string>('new-user');
     
     const form = useForm<StaffFormValues>({
         resolver: zodResolver(StaffFormSchema),
@@ -161,20 +161,18 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, a
     const [imagePreview, setImagePreview] = React.useState<string | null>(null);
 
     const adminsNotStaff = React.useMemo(() => {
-        const staffEmails = new Set(allStaff.map(s => s.email));
-        return admins.filter(a => !staffEmails.has(a.email));
+        const staffEmails = new Set(allStaff.map(s => s.email).filter(Boolean));
+        return admins.filter(a => a.email && !staffEmails.has(a.email));
     }, [admins, allStaff]);
 
     React.useEffect(() => {
-        if (linkExistingAdminId) {
+        if (linkExistingAdminId && linkExistingAdminId !== 'new-user') {
             const admin = admins.find(a => a.id === linkExistingAdminId);
             if (admin) {
                 form.setValue('email', admin.email);
                 form.setValue('name', form.getValues('name') || admin.email.split('@')[0]);
                 form.setValue('id', admin.id); // Set the UID to link the profile
-                if (!admin.locationId) { // Super admin
-                    form.setValue('locationId', 'superadmin');
-                } else {
+                 if (admin.locationId) {
                     form.setValue('locationId', admin.locationId);
                 }
             }
@@ -201,7 +199,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, a
 
     React.useEffect(() => {
         if (isOpen) {
-            setLinkExistingAdminId(undefined); // Reset on open
+            setLinkExistingAdminId('new-user'); // Reset on open
             if (staffMember) {
                 form.reset({
                     id: staffMember.id,
@@ -220,7 +218,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, a
                     id: undefined,
                     name: '',
                     specialization: '',
-                    locationId: '',
+                    locationId: locations.length > 0 ? locations[0].id : '',
                     email: '',
                     password: '',
                     imageUrl: '',
@@ -230,14 +228,13 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, a
                  setImagePreview(null);
             }
         }
-    }, [staffMember, form, isOpen]);
+    }, [staffMember, form, isOpen, locations]);
 
     const onSubmit = async (data: StaffFormValues) => {
         setIsSubmitting(true);
-        const isSuperAdminStaff = data.locationId === 'superadmin';
-        const location = isSuperAdminStaff ? null : locations.find(l => l.id === data.locationId);
+        const location = locations.find(l => l.id === data.locationId);
 
-        if (!isSuperAdminStaff && !location) {
+        if (!location) {
             toast({ title: 'Error', description: 'Invalid location selected.', variant: 'destructive' });
             setIsSubmitting(false);
             return;
@@ -257,8 +254,8 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, a
                     name: data.name,
                     email: data.email,
                     specialization: data.specialization || '',
-                    locationId: isSuperAdminStaff ? 'superadmin' : data.locationId,
-                    locationName: isSuperAdminStaff ? 'All Locations' : location!.name,
+                    locationId: data.locationId,
+                    locationName: location.name,
                     imageUrl: finalImageUrl,
                     workingHours: data.workingHours,
                 };
@@ -314,8 +311,8 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, a
                 await setStaffRecord(uid, {
                     name: data.name,
                     specialization: data.specialization || '',
-                    locationId: isSuperAdminStaff ? 'superadmin' : data.locationId,
-                    locationName: isSuperAdminStaff ? 'All Locations' : location!.name,
+                    locationId: data.locationId,
+                    locationName: location.name,
                     email: data.email,
                     imageUrl: imageUrl,
                     workingHours: data.workingHours,
@@ -339,11 +336,8 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, a
     };
 
     const isCreating = !staffMember;
-    const isLinkingAdmin = isCreating && !!linkExistingAdminId;
-    const linkedAdminDetails = isLinkingAdmin ? admins.find(a => a.id === linkExistingAdminId) : null;
-    const isLinkedAdminSuper = linkedAdminDetails && !linkedAdminDetails.locationId;
-    const isEditingSuperAdminStaff = staffMember && staffMember.locationId === 'superadmin';
-
+    const isLinkingAdmin = isCreating && linkExistingAdminId !== 'new-user';
+    
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogContent className="sm:max-w-2xl p-0">
@@ -457,22 +451,18 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, a
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Location</FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLinkedAdminSuper || isEditingSuperAdminStaff}>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value} disabled={isLinkingAdmin}>
                                                 <FormControl>
                                                     <SelectTrigger>
                                                     <SelectValue placeholder="Assign to a location..." />
                                                     </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
-                                                    {isLinkedAdminSuper || isEditingSuperAdminStaff ? (
-                                                        <SelectItem value="superadmin">All Locations (Super Admin)</SelectItem>
-                                                    ) : (
-                                                        locations.map((location) => (
+                                                    {locations.map((location) => (
                                                         <SelectItem key={location.id} value={location.id}>
                                                             {location.name}
                                                         </SelectItem>
-                                                        ))
-                                                    )}
+                                                    ))}
                                                 </SelectContent>
                                                 </Select>
                                                 <FormMessage />

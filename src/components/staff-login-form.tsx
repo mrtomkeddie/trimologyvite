@@ -40,36 +40,19 @@ export function StaffLoginForm() {
         const errorCode = (error as any).code;
         
         if (errorCode === 'auth/user-not-found' || errorCode === 'auth/invalid-credential') {
-            // If user not found, try creating them. This is for demo purposes.
-            try {
-                await createUserWithEmailAndPassword(auth, email, password);
-                // On success, the onAuthStateChanged listener will handle redirect.
-            } catch (createError) {
-                 const createErrorCode = (createError as any).code;
-                 if (createErrorCode === 'auth/email-already-in-use') {
-                    // This means the user exists, but the initial password attempt was wrong.
-                    toast({
-                        title: 'Login Failed',
-                        description: 'The password you entered is incorrect. Please try again or use "Forgot Password".',
-                        variant: 'destructive',
-                    });
-                } else {
-                     toast({
-                        title: 'Login Failed',
-                        description: 'This email may be in use or the password is too weak (min. 6 characters).',
-                        variant: 'destructive',
-                    });
-                }
-                setIsLoading(false);
-            }
+             toast({
+                title: 'Login Failed',
+                description: 'The email or password you entered is incorrect. Please try again or use "Forgot Password".',
+                variant: 'destructive',
+            });
         } else {
             toast({
                 title: 'Login Failed',
                 description: 'Invalid credentials. Please try again.',
                 variant: 'destructive',
             });
-            setIsLoading(false);
         }
+        setIsLoading(false);
     }
   };
 

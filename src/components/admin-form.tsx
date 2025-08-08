@@ -36,7 +36,7 @@ type AdminFormProps = {
 
 export function AdminForm({ isOpen, setIsOpen, admin, locations, staff, allAdmins, onSubmitted, currentUser }: AdminFormProps) {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
-    const [selectedStaffId, setSelectedStaffId] = React.useState<string | undefined>();
+    const [selectedStaffId, setSelectedStaffId] = React.useState<string>('new-user');
     const { toast } = useToast();
     
     const form = useForm<AdminFormValues>({
@@ -56,7 +56,7 @@ export function AdminForm({ isOpen, setIsOpen, admin, locations, staff, allAdmin
 
     React.useEffect(() => {
         if (isOpen) {
-            setSelectedStaffId(undefined); // Reset on open
+            setSelectedStaffId('new-user'); // Reset on open
             if (admin) { // Editing an existing admin
                 form.reset({
                     email: admin.email,
@@ -66,12 +66,12 @@ export function AdminForm({ isOpen, setIsOpen, admin, locations, staff, allAdmin
             } else { // Adding a new admin
                 form.reset({
                     email: '',
-                    locationId: currentUser.locationId || '',
+                    locationId: currentUser.locationId || (locations.length > 0 ? locations[0].id : ''),
                     password: '',
                 });
             }
         }
-    }, [admin, form, isOpen, currentUser.locationId]);
+    }, [admin, form, isOpen, currentUser.locationId, locations]);
 
      React.useEffect(() => {
         // When a staff member is selected from the dropdown
@@ -239,7 +239,7 @@ export function AdminForm({ isOpen, setIsOpen, admin, locations, staff, allAdmin
                                 <FormItem>
                                     <FormLabel>Email</FormLabel>
                                     <FormControl>
-                                        <Input type="email" placeholder="user@example.com" {...field} disabled={!isCreatingNewAdmin || isPromotingStaff} />
+                                        <Input type="email" placeholder="user@example.com" {...field} disabled={!!admin || isPromotingStaff} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -264,7 +264,7 @@ export function AdminForm({ isOpen, setIsOpen, admin, locations, staff, allAdmin
                                             onValueChange={field.onChange} 
                                             value={field.value} 
                                             defaultValue={field.value}
-                                            disabled={!isCurrentUserSuperAdmin}
+                                            disabled={!isCurrentUserSuperAdmin && !!currentUser.locationId}
                                         >
                                         <FormControl>
                                             <SelectTrigger>

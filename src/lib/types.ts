@@ -73,7 +73,7 @@ export type NewBooking = Omit<Booking, 'id' | 'createdAt'>;
 export const AdminUserSchema = z.object({
   id: z.string(), // This is the UID from Firebase Auth
   email: z.string().email(),
-  locationId: z.string().optional(), // If not present, they are a super-admin
+  locationId: z.string().nullable().optional(), // If not present, they are a super-admin
   locationName: z.string().optional(),
 });
 export type AdminUser = z.infer<typeof AdminUserSchema>;
@@ -152,7 +152,7 @@ export const StaffFormSchema = z.object({
   password: z.string().optional(),
   workingHours: StaffWorkingHoursSchema.optional(),
 }).superRefine((data, ctx) => {
-    // When creating a brand new user (no pre-existing ID), email and password are required.
+    // When creating a brand new user (no pre-existing ID from linking an admin), email and password are required.
     if (!data.id) { 
         if (!data.email) {
             ctx.addIssue({
@@ -176,10 +176,6 @@ export const AdminFormSchema = z.object({
   email: z.string().email('Please enter a valid email.'),
   locationId: z.string({ required_error: "Please assign a location." }),
   password: z.string().optional(),
-}).superRefine((data, ctx) => {
-    // When creating a new admin (no ID yet), password is required
-    // This logic is tricky with superRefine because we don't have an ID field.
-    // We handle the password requirement logic inside the form submission instead.
 });
 
 
