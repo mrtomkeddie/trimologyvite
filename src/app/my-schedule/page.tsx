@@ -2,8 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { signOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LogOut, Calendar, Clock, User as UserIcon, PoundSterling } from 'lucide-react';
@@ -13,25 +12,23 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DUMMY_STAFF, DUMMY_BOOKINGS } from '@/lib/data';
 
 // --- DUMMY DATA SETUP ---
+// This page now uses a hardcoded dummy staff member to bypass login.
 const DUMMY_STAFF_MEMBER = DUMMY_STAFF.find(s => s.id === 'staff_1');
-const DUMMY_STAFF_BOOKINGS = DUMMY_BOOKINGS.filter(b => b.staffId === 'staff_1');
+const DUMMY_STAFF_BOOKINGS = DUMMY_BOOKINGS.filter(b => b.staffId === 'staff_1' && new Date(b.bookingTimestamp) >= new Date());
 // --- END DUMMY DATA ---
 
 export default function MySchedulePage() {
-    
-    // This page now uses hardcoded dummy data to bypass login.
+    const router = useRouter();
     const staff = DUMMY_STAFF_MEMBER;
-    const bookings = DUMMY_STAFF_BOOKINGS;
+    const bookings = DUMMY_STAFF_BOOKINGS.sort((a, b) => new Date(a.bookingTimestamp).getTime() - new Date(b.bookingTimestamp).getTime());
 
-    const handleLogout = async () => {
-        // In a real app, this would sign the user out.
-        // For the dummy version, we can just log to the console.
-        console.log("Dummy logout clicked");
-        alert("Logout functionality is disabled in dummy mode.");
+    const handleLogout = () => {
+        // In dummy mode, this returns to the home page.
+        router.push('/');
     };
     
     if (!staff) {
-        return <div>Error: Dummy staff member not found.</div>
+        return <div>Error: Dummy staff member with ID 'staff_1' not found.</div>
     }
 
     return (
@@ -102,4 +99,3 @@ export default function MySchedulePage() {
         </div>
     );
 }
-
