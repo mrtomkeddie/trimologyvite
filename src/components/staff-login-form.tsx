@@ -21,6 +21,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, LogIn } from 'lucide-react';
 import Link from 'next/link';
+import { DUMMY_STAFF } from '@/lib/data';
 
 export function StaffLoginForm() {
   const [email, setEmail] = useState('');
@@ -38,6 +39,26 @@ export function StaffLoginForm() {
       // On success, the onAuthStateChanged listener in the login page will handle the redirect.
     } catch (error) {
         const errorCode = (error as any).code;
+        
+        // Special handling for demo users: if user doesn't exist, create them
+        const isDummyUser = DUMMY_STAFF.some(u => u.email === email);
+        if (errorCode === 'auth/user-not-found' && isDummyUser) {
+            try {
+                if (password.length < 6) {
+                     toast({ title: 'Password Too Short', description: 'Your password must be at least 6 characters long.', variant: 'destructive'});
+                     setIsLoading(false);
+                     return;
+                }
+                await createUserWithEmailAndPassword(auth, email, password);
+                toast({ title: 'Account Created', description: "We've created a new account for this demo user. You are now logged in." });
+                // The onAuthStateChanged listener will handle the rest.
+                return;
+            } catch (creationError) {
+                 toast({ title: 'Creation Failed', description: 'Could not create demo user account.', variant: 'destructive'});
+                 setIsLoading(false);
+                 return;
+            }
+        }
         
         if (errorCode === 'auth/user-not-found' || errorCode === 'auth/invalid-credential') {
              toast({
