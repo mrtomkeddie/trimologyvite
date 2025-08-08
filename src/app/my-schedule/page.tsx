@@ -5,30 +5,47 @@ import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LogOut, Calendar, Clock, User as UserIcon, PoundSterling } from 'lucide-react';
+import { LogOut, Calendar, Clock, User as UserIcon, PoundSterling, Loader2 } from 'lucide-react';
 import type { Staff, Booking } from '@/lib/types';
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { DUMMY_STAFF, DUMMY_BOOKINGS } from '@/lib/data';
-
-// --- DUMMY DATA SETUP ---
-// This page now uses a hardcoded dummy staff member to bypass login.
-const DUMMY_STAFF_MEMBER = DUMMY_STAFF.find(s => s.id === 'staff_1');
-const DUMMY_STAFF_BOOKINGS = DUMMY_BOOKINGS.filter(b => b.staffId === 'staff_1' && new Date(b.bookingTimestamp) >= new Date());
-// --- END DUMMY DATA ---
+import { getStaff, getBookingsByStaffId } from '@/lib/data';
 
 export default function MySchedulePage() {
     const router = useRouter();
-    const staff = DUMMY_STAFF_MEMBER;
-    const bookings = DUMMY_STAFF_BOOKINGS.sort((a, b) => new Date(a.bookingTimestamp).getTime() - new Date(b.bookingTimestamp).getTime());
+    const [staff, setStaff] = React.useState<Staff | null>(null);
+    const [bookings, setBookings] = React.useState<Booking[]>([]);
+    const [loading, setLoading] = React.useState(true);
+
+    React.useEffect(() => {
+        const fetchDummyData = async () => {
+            const allStaff = await getStaff();
+            const staffMember = allStaff.find(s => s.id === 'staff_1');
+            if (staffMember) {
+                setStaff(staffMember);
+                const staffBookings = await getBookingsByStaffId(staffMember.id);
+                const upcomingBookings = staffBookings
+                    .filter(b => new Date(b.bookingTimestamp) >= new Date())
+                    .sort((a, b) => new Date(a.bookingTimestamp).getTime() - new Date(b.bookingTimestamp).getTime());
+                setBookings(upcomingBookings);
+            }
+            setLoading(false);
+        };
+
+        fetchDummyData();
+    }, []);
 
     const handleLogout = () => {
         // In dummy mode, this returns to the home page.
         router.push('/');
     };
     
+    if (loading) {
+        return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
+    }
+
     if (!staff) {
-        return <div>Error: Dummy staff member with ID 'staff_1' not found.</div>
+        return <div>Error: Dummy staff member with ID 'staff_1' not found. Please check `src/lib/data.ts`.</div>
     }
 
     return (
