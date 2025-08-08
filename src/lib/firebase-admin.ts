@@ -1,5 +1,4 @@
 
-'use server';
 import { cert, getApps, initializeApp, getApp, App } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
@@ -13,11 +12,6 @@ declare global {
 
 function resolveServiceAccount() {
   const json = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-  const projectId = process.env.FIREBASE_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  let privateKey = process.env.FIREBASE_PRIVATE_KEY;
-
-  // Option A: full JSON in one var (preferred)
   if (json) {
     try {
       const sa = JSON.parse(json);
@@ -31,14 +25,18 @@ function resolveServiceAccount() {
     }
   }
 
-  // Option B: three separate vars (fallback)
+  // Fallback to individual variables if JSON is not provided
+  const projectId = process.env.FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+
   const missing: string[] = [];
   if (!projectId) missing.push('FIREBASE_PROJECT_ID');
   if (!clientEmail) missing.push('FIREBASE_CLIENT_EMAIL');
   if (!privateKey) missing.push('FIREBASE_PRIVATE_KEY');
 
-  if (missing.length) {
-    const msg = `Missing Firebase env vars: ${missing.join(', ')}`;
+  if (missing.length > 0) {
+    const msg = `Missing Firebase env vars: ${missing.join(', ')}. Check your .env.local file.`;
     console.error(msg);
     throw new Error(msg);
   }
