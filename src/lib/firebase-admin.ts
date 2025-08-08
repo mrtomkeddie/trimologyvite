@@ -1,31 +1,47 @@
 
 'use server';
-import * as admin from 'firebase-admin';
+import { cert, getApps, initializeApp, getApp } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
+import { getStorage } from 'firebase-admin/storage';
 
-if (!admin.apps.length) {
+const getFirebaseAdmin = () => {
+  const apps = getApps();
+  if (apps.length > 0) {
+    return getApp();
+  }
+
+  const projectId = process.env.FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+
+  if (!projectId || !clientEmail || !privateKey) {
+    throw new Error(
+        'Firebase Admin SDK initialization failed. ' +
+        'Please ensure all FIREBASE_* environment variables are set in your .env.local file. ' +
+        'Refer to .env.example for required variables.'
+    );
+  }
+
+  privateKey = privateKey.replace(/\\n/g, '\n');
+
   try {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        project_id: process.env.FIREBASE_PROJECT_ID,
-        client_email: process.env.FIREBASE_CLIENT_EMAIL,
-        private_key: (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
+    return initializeApp({
+      credential: cert({
+        project_id: projectId,
+        client_email: clientEmail,
+        private_key: privateKey,
       }),
       storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
     });
   } catch (error: any) {
-    console.error(
-      '----------------------------------------------------------------------\n' +
-      'Firebase admin initialization error. This is likely because your\n' +
-      'Firebase service account environment variables are not configured\n' +
-      'correctly in your `.env.local` file. Please ensure FIREBASE_PROJECT_ID,\n' +
-      'FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY are set.\n' +
-      '----------------------------------------------------------------------'
-    );
-    throw error;
+    console.error("Firebase Admin SDK Initialization Error:", error.message);
+    throw new Error(`Firebase Admin SDK initialization failed. Details: ${error.message}`);
   }
-}
+};
 
+const adminApp = getFirebaseAdmin();
 
-export const adminDb = admin.firestore();
-export const adminAuth = admin.auth();
-export const adminStorage = admin.storage();
+export const adminDb = getFirestore(adminApp);
+export const adminAuth = getAuth(adminApp);
+export const adminStorage = getStorage(adminApp);

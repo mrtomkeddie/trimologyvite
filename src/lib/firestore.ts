@@ -7,16 +7,12 @@ import { collection, getDocs as getDocsClient, addDoc, doc, updateDoc, deleteDoc
 import type { Location, Service, Staff, Booking, NewBooking, AdminUser, ClientLoyalty } from './types';
 import { revalidatePath } from 'next/cache';
 import { addDays, startOfDay, endOfDay, subDays, format, isSameDay } from 'date-fns';
+import type { Query } from 'firebase-admin/firestore';
 
-const locationsCollection = collection(adminDb, 'locations');
-const servicesCollection = collection(adminDb, 'services');
-const staffCollection = collection(adminDb, 'staff');
-const bookingsCollection = collection(adminDb, 'bookings');
-const adminsCollection = collection(adminDb, 'admins');
 
 // Admins
 export async function getAdminUser(uid: string): Promise<AdminUser | null> {
-    const adminDocRef = adminsCollection.doc(uid);
+    const adminDocRef = adminDb.collection('admins').doc(uid);
     const adminDoc = await adminDocRef.get();
 
     if (!adminDoc.exists) {
@@ -35,12 +31,12 @@ export async function getAdminUser(uid: string): Promise<AdminUser | null> {
 export async function getAdminsFromFirestore(locationId?: string): Promise<AdminUser[]> {
     let querySnapshot;
     if (locationId) {
-        const superAdminQuery = adminsCollection.where('locationId', '==', null);
-        const branchAdminQuery = adminsCollection.where('locationId', '==', locationId);
+        const superAdminQuery = adminDb.collection('admins').where('locationId', '==', null);
+        const branchAdminQuery = adminDb.collection('admins').where('locationId', '==', locationId);
         const [superAdmins, branchAdmins] = await Promise.all([superAdminQuery.get(), branchAdminQuery.get()]);
         querySnapshot = { docs: [...superAdmins.docs, ...branchAdmins.docs] };
     } else {
-        querySnapshot = await adminsCollection.get();
+        querySnapshot = await adminDb.collection('admins').get();
     }
     
     const admins = querySnapshot.docs.map(doc => ({
@@ -54,23 +50,24 @@ export async function getAdminsFromFirestore(locationId?: string): Promise<Admin
 }
 
 export async function setAdminRecord(uid: string, data: { email: string; locationId: string; locationName: string; }) {
-    await adminsCollection.doc(uid).set(data);
+    await adminDb.collection('admins').doc(uid).set(data);
     revalidatePath('/admin/admins');
 }
 
 export async function updateAdmin(uid: string, data: Partial<Omit<AdminUser, 'id'>>) {
-    await adminsCollection.doc(uid).update(data);
+    await adminDb.collection('admins').doc(uid).update(data);
     revalidatePath('/admin/admins');
 }
 
 export async function deleteAdmin(uid: string) {
-    await adminsCollection.doc(uid).delete();
+    await adminDb.collection('admins').doc(uid).delete();
     revalidatePath('/admin/admins');
 }
 
 
 // Locations
 export async function getLocationsFromFirestore(locationId?: string): Promise<Location[]> {
+    const locationsCollection = adminDb.collection('locations');
     if (locationId) {
         const docRef = await locationsCollection.doc(locationId).get();
         return docRef.exists ? [{ id: docRef.id, ...docRef.data() } as Location] : [];
@@ -81,7 +78,7 @@ export async function getLocationsFromFirestore(locationId?: string): Promise<Lo
 }
 
 export async function addLocation(data: Omit<Location, 'id'>) {
-    await addDoc(collection(db, 'locations'), data); // Use client SDK for user-initiated writes
+    await addDoc(collection(db, 'locations'), data);
     revalidatePath('/admin/locations');
 }
 
@@ -98,7 +95,8 @@ export async function deleteLocation(id: string) {
 
 // Services
 export async function getServicesFromFirestore(locationId?: string): Promise<Service[]> {
-    let q = servicesCollection.orderBy('name');
+    const servicesCollection = adminDb.collection('services');
+    let q: Query = servicesCollection.orderBy('name');
     if (locationId) {
         q = q.where('locationId', '==', locationId);
     }
@@ -126,7 +124,8 @@ export async function deleteService(id: string) {
 
 // Staff
 export async function getStaffFromFirestore(locationId?: string): Promise<Staff[]> {
-    let q = staffCollection.orderBy('name');
+    const staffCollection = adminDb.collection('staff');
+    let q: Query = staffCollection.orderBy('name');
     if (locationId) {
         q = q.where('locationId', '==', locationId);
     }
@@ -153,7 +152,7 @@ export async function deleteStaff(uid: string) {
 }
 
 export async function getStaffByUid(uid: string): Promise<Staff | null> {
-    const staffDoc = await staffCollection.doc(uid).get();
+    const staffDoc = await adminDb.collection('staff').doc(uid).get();
     if (!staffDoc.exists) {
         return null;
     }
@@ -164,7 +163,8 @@ export async function getStaffByUid(uid: string): Promise<Staff | null> {
 // Bookings
 export async function getBookingsFromFirestore(locationId?: string): Promise<Booking[]> {
      const now = new Date().toISOString();
-    let q: admin.firestore.Query<admin.firestore.DocumentData>;
+    const bookingsCollection = adminDb.collection('bookings');
+    let q: Query;
 
     if (locationId) {
         q = bookingsCollection
@@ -221,7 +221,7 @@ export async function getBookingsForStaffOnDate(staffId: string, date: Date): Pr
     const dayStartStr = startOfDay(date).toISOString();
     const dayEndStr = endOfDay(date).toISOString();
     
-    const q = bookingsCollection
+    const q = adminDb.collection('bookings')
         .where('staffId', '==', staffId)
         .where('bookingTimestamp', '>=', dayStartStr)
         .where('bookingTimestamp', '<=', dayEndStr);
@@ -239,7 +239,7 @@ export async function getBookingsForStaffOnDate(staffId: string, date: Date): Pr
 export async function getBookingsForStaffInRange(staffIds: string[], startDate: Date, endDate: Date): Promise<Booking[]> {
     if (staffIds.length === 0) return [];
     
-    const q = bookingsCollection
+    const q = adminDb.collection('bookings')
         .where('staffId', 'in', staffIds)
         .where('bookingTimestamp', '>=', startDate.toISOString())
         .where('bookingTimestamp', '<=', endDate.toISOString());
@@ -250,7 +250,7 @@ export async function getBookingsForStaffInRange(staffIds: string[], startDate: 
 
 
 export async function addBooking(data: NewBooking) {
-    await addDoc(collection(db, 'bookings'), { // Use client SDK for this public action
+    await addDoc(collection(db, 'bookings'), { 
         ...data,
         createdAt: Timestamp.now(),
     });
@@ -259,14 +259,14 @@ export async function addBooking(data: NewBooking) {
 }
 
 export async function deleteBooking(id: string) {
-    await deleteDoc(doc(db, 'bookings', id)); // Use client SDK for admin-initiated action
+    await deleteDoc(doc(db, 'bookings', id));
     revalidatePath('/admin/bookings', 'layout');
     revalidatePath('/my-schedule');
 }
 
 // Client Loyalty
 export async function getClientLoyaltyData(locationId?: string): Promise<ClientLoyalty[]> {
-    let q = bookingsCollection;
+    let q: Query = adminDb.collection('bookings');
     let snapshot;
 
     if (locationId) {
