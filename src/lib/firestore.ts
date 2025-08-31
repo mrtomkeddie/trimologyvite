@@ -3,11 +3,12 @@
 
 import { db } from './firebase';
 import { adminDb } from './firebase-admin';
-import { collection, getDocs as getDocsClient, addDoc, doc, updateDoc, deleteDoc, orderBy, query, Timestamp, where, getDoc, setDoc, limit } from 'firebase/firestore';
+import { collection, getDocs as getDocsClient, addDoc, doc, updateDoc, deleteDoc, orderBy, query, Timestamp, where, getDoc, setDoc, limit, endOfDay } from 'firebase/firestore';
 import type { Location, Service, Staff, Booking, NewBooking, AdminUser, ClientLoyalty } from './types';
 import { revalidatePath } from 'next/cache';
 import { format, parse, addMinutes, getDay, isBefore, isAfter, startOfDay, startOfMonth, endOfMonth, isSameDay, addDays } from 'date-fns';
 import type { Query } from 'firebase-admin/firestore';
+import { DUMMY_ADMIN_USERS, DUMMY_BOOKINGS, DUMMY_CLIENTS, DUMMY_LOCATIONS, DUMMY_SERVICES, DUMMY_STAFF } from './dummy-data';
 
 
 // Admins
@@ -17,7 +18,6 @@ export async function getAdminUser(uid: string, email: string): Promise<AdminUse
 
     if (!adminDoc.exists) {
         // Fallback for demo: if user email is in dummy data, but UID doesn't match, create a record
-        const { DUMMY_ADMIN_USERS } = await import('@/lib/data');
         const dummyUser = DUMMY_ADMIN_USERS.find(u => u.email === email);
         if (dummyUser) {
             const adminData = {
@@ -87,7 +87,6 @@ export async function getLocationsFromFirestore(locationId?: string): Promise<Lo
         const docRef = await locationsCollection.doc(locationId).get();
         if (!docRef.exists) {
             // For demo purposes, add dummy data if collection is empty
-            const { DUMMY_LOCATIONS } = await import('@/lib/data');
             const batch = adminDb.batch();
             DUMMY_LOCATIONS.forEach(loc => {
                 const newDocRef = locationsCollection.doc(loc.id);
@@ -104,7 +103,6 @@ export async function getLocationsFromFirestore(locationId?: string): Promise<Lo
 
     // For demo purposes, add dummy data if collection is empty
     if (snapshot.empty) {
-        const { DUMMY_LOCATIONS } = await import('@/lib/data');
         const batch = adminDb.batch();
         DUMMY_LOCATIONS.forEach(loc => {
             const docRef = locationsCollection.doc(loc.id);
@@ -143,7 +141,6 @@ export async function getServicesFromFirestore(locationId?: string): Promise<Ser
     let snapshot = await q.orderBy('name').get();
 
     if (snapshot.empty && !locationId) {
-        const { DUMMY_SERVICES } = await import('@/lib/data');
         const batch = adminDb.batch();
         DUMMY_SERVICES.forEach(serv => {
             const docRef = servicesCollection.doc(serv.id);
@@ -184,7 +181,6 @@ export async function getStaffFromFirestore(locationId?: string): Promise<Staff[
     let snapshot = await q.orderBy('name').get();
     
     if (snapshot.empty && !locationId) {
-        const { DUMMY_STAFF } = await import('@/lib/data');
         const batch = adminDb.batch();
         DUMMY_STAFF.forEach(s => {
             const docRef = staffCollection.doc(s.id);
@@ -218,7 +214,6 @@ export async function deleteStaff(uid: string) {
 export async function getStaffByUid(uid: string): Promise<Staff | null> {
     const staffDoc = await adminDb.collection('staff').doc(uid).get();
     if (!staffDoc.exists) {
-        const { DUMMY_STAFF } = await import('@/lib/data');
         const staffMember = DUMMY_STAFF.find(s => s.id === uid);
         if (staffMember) {
             await adminDb.collection('staff').doc(uid).set(staffMember);
@@ -251,7 +246,6 @@ export async function getBookingsFromFirestore(locationId?: string): Promise<Boo
     const serverData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Booking));
     
     // For demo purposes, merge with dummy data
-    const { DUMMY_BOOKINGS } = await import('@/lib/data');
     const upcomingDummyBookings = DUMMY_BOOKINGS.filter(b => new Date(b.bookingTimestamp) >= new Date());
     
     const combined = [...serverData, ...upcomingDummyBookings];
@@ -391,7 +385,6 @@ export async function getClientLoyaltyData(locationId?: string): Promise<ClientL
         }
     });
      // For demo purposes, add dummy data
-    const { DUMMY_CLIENTS } = await import('@/lib/data');
     DUMMY_CLIENTS.forEach(client => {
         const clientIdentifier = `${client.name.toLowerCase().trim()}-${client.phone.trim()}`;
         if (!clientsMap.has(clientIdentifier)) {
@@ -534,7 +527,7 @@ export async function createBooking(bookingData: BookingData) {
     // Create an unambiguous UTC timestamp string. This is the core of the fix.
     const datePart = format(bookingData.date, 'yyyy-MM-dd');
     const timePart = bookingData.time;
-    const bookingTimestampString = `${datePart}T${timePart}:00.000Z`;
+    const bookingTimestampString = `${datePart}T${timePart}:00`;
 
     // Create a Date object from this UTC string for calculations.
     const bookingStart = new Date(bookingTimestampString);
@@ -588,7 +581,7 @@ export async function createBooking(bookingData: BookingData) {
         staffId: assignedStaff.id,
         staffName: assignedStaff.name,
         staffImageUrl: assignedStaff.imageUrl || '',
-        bookingTimestamp: bookingTimestampString, // Store the unambiguous UTC string
+        bookingTimestamp: bookingStart.toISOString(), // Store as full ISO string
         clientName: bookingData.clientName,
         clientPhone: bookingData.clientPhone,
         clientEmail: bookingData.clientEmail || '',

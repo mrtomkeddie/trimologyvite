@@ -1,6 +1,5 @@
 
 import type { Service, Staff, Location, AdminUser, Booking, ClientLoyalty } from './types';
-import { getServicesFromFirestore, getStaffFromFirestore, getLocationsFromFirestore, getClientLoyaltyData as getClientLoyaltyDataFromFirestore } from './firestore';
 
 // --- DUMMY DATA DEFINITIONS ---
 
@@ -73,19 +72,3 @@ export const DUMMY_CLIENTS: ClientLoyalty[] = [
     { id: 'client_2', name: 'Jane Smith', phone: '444-555-6666', email: 'jane@smith.com', totalVisits: 3, lastVisit: new Date().toISOString(), locations: ['Uptown Cuts'] },
     { id: 'client_3', name: 'Peter Jones', phone: '777-888-9999', email: 'peter@jones.com', totalVisits: 1, lastVisit: new Date().toISOString(), locations: ['Downtown Barbers'] },
 ];
-
-export async function getServices(): Promise<Service[]> {
-  return getServicesFromFirestore();
-}
-
-export async function getStaff(): Promise<Staff[]> {
-  return getStaffFromFirestore();
-}
-
-export async function getLocations(): Promise<Location[]> {
-    return getLocationsFromFirestore();
-}
-
-export async function getClientLoyaltyData(): Promise<ClientLoyalty[]> {
-    return getClientLoyaltyDataFromFirestore();
-}

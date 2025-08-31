@@ -21,7 +21,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, LogIn } from 'lucide-react';
 import Link from 'next/link';
-import { DUMMY_STAFF } from '@/lib/data';
+import { DUMMY_STAFF } from '@/lib/dummy-data';
 
 export function StaffLoginForm() {
   const [email, setEmail] = useState('');
@@ -49,6 +49,8 @@ export function StaffLoginForm() {
                      setIsLoading(false);
                      return;
                 }
+                // Create the user in Firebase Auth. The `getStaffByUid` will handle
+                // creating their profile in Firestore on the first successful login.
                 await createUserWithEmailAndPassword(auth, email, password);
                 toast({ title: 'Account Created', description: "We've created a new account for this demo user. You are now logged in." });
                 // The onAuthStateChanged listener will handle the rest.

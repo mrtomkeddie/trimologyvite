@@ -21,7 +21,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, LogIn } from 'lucide-react';
 import Link from 'next/link';
-import { DUMMY_ADMIN_USERS } from '@/lib/data';
+import { DUMMY_ADMIN_USERS } from '@/lib/dummy-data';
 import { getAdminUser } from '@/lib/firestore';
 
 export function AdminLoginForm() {
@@ -36,12 +36,15 @@ export function AdminLoginForm() {
     e.preventDefault();
     setIsLoading(true);
     try {
+      // First, try to sign in with the provided credentials.
       await signInWithEmailAndPassword(auth, email, password);
       // On success, the onAuthStateChanged listener in the layout will handle the redirect.
+      // We don't need to do anything else here.
     } catch (error) {
         const errorCode = (error as any).code;
 
-        // Special handling for demo users: if user doesn't exist, create them
+        // Special handling for demo users: if the user doesn't exist, create them.
+        // This makes the demo experience smoother.
         const isDummyUser = DUMMY_ADMIN_USERS.some(u => u.email === email);
         if (errorCode === 'auth/user-not-found' && isDummyUser) {
             try {
@@ -50,6 +53,8 @@ export function AdminLoginForm() {
                      setIsLoading(false);
                      return;
                 }
+                // Create the user in Firebase Auth. The `getAdminUser` function will handle
+                // creating their profile in Firestore on the first successful login.
                 await createUserWithEmailAndPassword(auth, email, password);
                  toast({ title: 'Account Created', description: "We've created a new account for this demo user. You are now logged in." });
                 // The onAuthStateChanged listener will handle the rest.
@@ -61,6 +66,7 @@ export function AdminLoginForm() {
             }
         }
         
+        // Handle standard login errors
         if (errorCode === 'auth/user-not-found' || errorCode === 'auth/invalid-credential') {
              toast({
                 title: 'Login Failed',
@@ -68,6 +74,7 @@ export function AdminLoginForm() {
                 variant: 'destructive',
             });
         } else {
+             // Handle other potential Firebase errors (e.g., network issues, misconfigurations)
              let errorMessage = 'An unexpected error occurred. Please try again.';
              if (errorCode === 'auth/invalid-api-key' || errorCode === 'auth/api-key-not-valid.-please-pass-a-valid-api-key.') {
                 errorMessage = 'Your Firebase API Key is not configured correctly. Please check your environment variables.';

@@ -26,23 +26,31 @@ export default function MySchedulePage() {
             if (currentUser) {
                 setUser(currentUser);
                 try {
+                    // Fetch the staff profile linked to this user's UID
                     const staffMember = await getStaffByUid(currentUser.uid);
                     if (staffMember) {
                         setStaff(staffMember);
+                        // Once we have the staff profile, fetch their upcoming bookings
                         const staffBookings = await getBookingsByStaffId(staffMember.id);
+                        
+                        // Filter for only upcoming appointments and sort them chronologically
                         const upcomingBookings = staffBookings
                             .filter(b => new Date(b.bookingTimestamp) >= new Date())
                             .sort((a, b) => new Date(a.bookingTimestamp).getTime() - new Date(b.bookingTimestamp).getTime());
+
                         setBookings(upcomingBookings);
                     } else {
+                        // This user is logged in, but has no staff profile.
                         setError("Could not find your staff profile. Please contact an admin.");
                     }
                 } catch (e) {
+                    console.error("Error fetching staff schedule:", e);
                     setError("Failed to fetch your schedule.");
                 } finally {
                     setLoading(false);
                 }
             } else {
+                // No user is logged in, redirect to the login page.
                 router.push('/staff/login');
             }
         });
@@ -60,10 +68,27 @@ export default function MySchedulePage() {
     }
     
     if (error) {
-        return <div>Error: {error}</div>;
+        return (
+             <div className="flex flex-col h-screen w-full items-center justify-center p-4">
+                <Card className="max-w-md">
+                    <CardHeader>
+                        <CardTitle>Error</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p>{error}</p>
+                    </CardContent>
+                    <CardFooter>
+                         <Button onClick={handleLogout} variant="outline">
+                            Return to Login
+                        </Button>
+                    </CardFooter>
+                </Card>
+            </div>
+        );
     }
 
     if (!staff) {
+        // This case should be covered by the error state, but as a fallback:
         return <div>No staff profile found for the logged-in user.</div>
     }
 

@@ -20,9 +20,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   React.useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
+        // Wait for the user object to be fully populated, especially the email.
         if (!user.email) {
           console.log("AdminLayout: Auth user object is not fully loaded yet, waiting...");
-          return;
+          return; // This might be too defensive, but can prevent race conditions.
         }
         
         setError(null);
@@ -31,20 +32,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           if (fetchedAdminUser) {
             setAdminUser(fetchedAdminUser);
           } else {
+            // This case means the user is logged in with Firebase Auth, but is not in our 'admins' collection.
             setError("You are not authorized to access this part of the application.");
-            setAdminUser(null);
+            setAdminUser(null); // Explicitly set to null on failure
           }
         } catch (e) {
+          console.error("AdminLayout Error:", e);
           setError(e instanceof Error ? e.message : "Failed to verify admin status.");
           setAdminUser(null);
         } finally {
           setLoading(false); 
         }
       } else {
+        // User is not logged in.
+        // Only show an error if they are trying to access a protected page.
+        // The /admin page itself is the login page and should not show an access denied error.
         if (pathname !== '/admin' && pathname !== '/staff/login') {
             setError("Please log in to continue.");
         } else {
-            setError(null); 
+            setError(null); // Clear error on login pages
         }
         setAdminUser(null);
         setLoading(false);
@@ -52,10 +58,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     });
 
     return () => unsubscribe();
-  }, []); // Removed pathname dependency to prevent re-running on every navigation
+  }, []); // Pathname dependency removed to prevent re-running on every navigation. Logic handles it internally.
 
   const contextValue = { adminUser, loading };
 
+  // For the login page, we just provide the context and render children.
+  // The login page itself will handle what to show based on the context.
   if (pathname === '/admin') {
       return (
           <AdminContext.Provider value={contextValue}>
@@ -64,6 +72,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       );
   }
 
+  // For all other admin pages, we enforce the auth check.
   if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -87,6 +96,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
+  // If everything is fine, provide context to the protected child pages.
   return (
       <AdminContext.Provider value={contextValue}>
           {children}
