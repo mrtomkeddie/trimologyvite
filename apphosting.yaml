@@ -1,7 +1,0 @@
-# Settings to manage and configure a Firebase App Hosting backend.
-# https://firebase.google.com/docs/app-hosting/configure
-
-runConfig:
-  # Setting maxInstances to 0 will scale down all running instances,
-  # effectively unpublishing the app until this value is increased.
-  maxInstances: 0

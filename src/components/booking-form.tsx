@@ -36,7 +36,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookingFormSchema, type Service, type Staff, type Location } from '@/lib/types';
-import { getSuggestedTimes, createBooking, getUnavailableDays } from '@/lib/actions';
+import { getSuggestedTimes, createBooking, getUnavailableDays } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 

@@ -1,5 +1,5 @@
 
-import { getLocations, getServices, getStaff } from '@/lib/data';
+import { getLocationsFromFirestore, getServicesFromFirestore, getStaffFromFirestore } from '@/lib/firestore';
 import { WalkinForm } from '@/components/walk-in-form';
 import Image from 'next/image';
 import { AlertCircle } from 'lucide-react';
@@ -10,9 +10,9 @@ export default async function CheckinPage({ params }: { params: { locationId: st
 
   // Fetch all data in parallel
   const [allLocations, allServices, allStaff] = await Promise.all([
-    getLocations(),
-    getServices(),
-    getStaff(),
+    getLocationsFromFirestore(),
+    getServicesFromFirestore(),
+    getStaffFromFirestore(),
   ]);
 
   const location = allLocations.find(l => l.id === locationId);

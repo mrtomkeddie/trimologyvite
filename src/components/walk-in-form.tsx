@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Service, Location, Staff } from '@/lib/types';
-import { createBooking } from '@/lib/actions';
+import { createBooking } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 const WalkinFormSchema = z.object({

@@ -1,15 +1,15 @@
 
 import type { Service, Staff, Location, AdminUser, Booking, ClientLoyalty } from './types';
-// Removed firestore imports as we are now using dummy data.
+import { getServicesFromFirestore, getStaffFromFirestore, getLocationsFromFirestore, getClientLoyaltyData as getClientLoyaltyDataFromFirestore } from './firestore';
 
 // --- DUMMY DATA DEFINITIONS ---
 
-const DUMMY_LOCATIONS: Location[] = [
+export const DUMMY_LOCATIONS: Location[] = [
   { id: 'loc_1', name: 'Downtown Barbers', address: '123 Main St, Anytown, USA', phone: '555-1234', email: 'contact@downtown.co' },
   { id: 'loc_2', name: 'Uptown Cuts', address: '456 Oak Ave, Anytown, USA', phone: '555-5678', email: 'contact@uptown.co' },
 ];
 
-const DUMMY_SERVICES: Service[] = [
+export const DUMMY_SERVICES: Service[] = [
   { id: 'serv_1', name: 'Classic Haircut', duration: 45, price: 30, locationId: 'loc_1', locationName: 'Downtown Barbers' },
   { id: 'serv_2', name: 'Beard Trim', duration: 20, price: 15, locationId: 'loc_1', locationName: 'Downtown Barbers' },
   { id: 'serv_3', name: 'Hot Towel Shave', duration: 30, price: 25, locationId: 'loc_1', locationName: 'Downtown Barbers' },
@@ -17,7 +17,7 @@ const DUMMY_SERVICES: Service[] = [
   { id: 'serv_5', name: 'Coloring', duration: 90, price: 75, locationId: 'loc_2', locationName: 'Uptown Cuts' },
 ];
 
-const DUMMY_STAFF: Staff[] = [
+export const DUMMY_STAFF: Staff[] = [
   {
     id: 'staff_1', name: 'Alice', specialization: 'Master Barber', locationId: 'loc_1', locationName: 'Downtown Barbers', email: 'staff@example.com',
     imageUrl: `https://placehold.co/100x100.png`,
@@ -74,18 +74,18 @@ export const DUMMY_CLIENTS: ClientLoyalty[] = [
     { id: 'client_3', name: 'Peter Jones', phone: '777-888-9999', email: 'peter@jones.com', totalVisits: 1, lastVisit: new Date().toISOString(), locations: ['Downtown Barbers'] },
 ];
 
-
-// --- MOCK API FUNCTIONS ---
-// These functions now return the dummy data instead of fetching from Firestore.
-
-export async function getLocations(): Promise<Location[]> {
-  return DUMMY_LOCATIONS;
-}
-
 export async function getServices(): Promise<Service[]> {
-  return DUMMY_SERVICES;
+  return getServicesFromFirestore();
 }
 
 export async function getStaff(): Promise<Staff[]> {
-  return DUMMY_STAFF;
+  return getStaffFromFirestore();
+}
+
+export async function getLocations(): Promise<Location[]> {
+    return getLocationsFromFirestore();
+}
+
+export async function getClientLoyaltyData(): Promise<ClientLoyalty[]> {
+    return getClientLoyaltyDataFromFirestore();
 }

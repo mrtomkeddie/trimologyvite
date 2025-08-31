@@ -1,6 +1,7 @@
 
+
 import { BookingForm } from '@/components/booking-form';
-import { getServices, getStaff, getLocations } from '@/lib/data';
+import { getServicesFromFirestore, getStaffFromFirestore, getLocationsFromFirestore } from '@/lib/firestore';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -9,9 +10,9 @@ import { History } from 'lucide-react';
 export default async function Home() {
   // Fetch data in parallel to improve initial page load time.
   const [locations, services, staff] = await Promise.all([
-    getLocations(),
-    getServices(),
-    getStaff(),
+    getLocationsFromFirestore(),
+    getServicesFromFirestore(),
+    getStaffFromFirestore(),
   ]);
 
   return (
