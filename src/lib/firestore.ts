@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -303,6 +304,7 @@ export function BookingForm({ locations, services, staff }: BookingFormProps) {
                                     )}
                                   >
                                     {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                                    }
                                     <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                   </Button>
                                 </FormControl>
