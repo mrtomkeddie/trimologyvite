@@ -1,241 +1,106 @@
-'use client';
-import * as React from 'react';
-import type { Service, Location } from '@/lib/types';
-import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ServiceForm } from '@/components/service-form';
-import { deleteService } from '@/lib/dummy-service';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash2, Edit, Loader2, Clock, PoundSterling, MapPin, Scissors, Info } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-} from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import React, { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { getLocations, getServices, getStaff } from '@/lib/dummy-service'
+import { BookingForm } from '@/components/booking-form'
+import { Button } from '@/components/ui/button'
+import { Loader2, Calendar, Users } from 'lucide-react'
+import type { Location, Service, Staff } from '@/lib/types'
 
-type ServicesListProps = {
-    services: Service[];
-    locations: Location[];
-    onServicesChanged: () => void;
-};
+export default function HomePage() {
+  const [locations, setLocations] = useState<Location[]>([])
+  const [services, setServices] = useState<Service[]>([])
+  const [staff, setStaff] = useState<Staff[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-export function ServicesList({ services, locations, onServicesChanged }: ServicesListProps) {
-    const [isFormOpen, setIsFormOpen] = React.useState(false);
-    const [editingService, setEditingService] = React.useState<Service | null>(null);
-    const [selectedService, setSelectedService] = React.useState<Service | null>(null);
-    const [isDeleting, setIsDeleting] = React.useState<string | null>(null);
-    const [selectedLocation, setSelectedLocation] = React.useState<string>('all');
-    const { toast } = useToast();
-
-    const handleFormSubmit = () => {
-       onServicesChanged();
-    };
-    
-    const handleAddClick = () => {
-        setEditingService(null);
-        setIsFormOpen(true);
-    };
-
-    const handleEditClick = (e: React.MouseEvent, service: Service) => {
-        e.stopPropagation();
-        setEditingService(service);
-        setIsFormOpen(true);
-    };
-
-    const handleDelete = async (e: React.MouseEvent, id: string) => {
-        e.stopPropagation();
-        setIsDeleting(id);
-        try {
-            await deleteService(id);
-            toast({ title: 'Success', description: 'Service deleted successfully.' });
-            onServicesChanged();
-        } catch (error) {
-            toast({ title: 'Error', description: 'Failed to delete service.', variant: 'destructive' });
-        } finally {
-            setIsDeleting(null);
-        }
-    };
-    
-    const handleRowClick = (service: Service) => {
-        if (window.innerWidth < 768) { // Only trigger pop-up on mobile
-            setSelectedService(service);
-        }
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [fetchedLocations, fetchedServices, fetchedStaff] = await Promise.all([
+          getLocations(),
+          getServices(),
+          getStaff(),
+        ])
+        setLocations(fetchedLocations)
+        setServices(fetchedServices)
+        setStaff(fetchedStaff)
+      } catch (e) {
+        setError('Failed to load booking data')
+        console.error(e)
+      } finally {
+        setLoading(false)
+      }
     }
 
-    const filteredServices = React.useMemo(() => {
-        if (selectedLocation === 'all') {
-            return services;
-        }
-        return services.filter(s => s.locationId === selectedLocation);
-    }, [services, selectedLocation]);
+    fetchData()
+  }, [])
 
+  if (loading) {
     return (
-        <div className="w-full max-w-6xl mx-auto">
-            <div className="flex flex-wrap gap-4 justify-between items-center mb-4">
-                 <div className="w-full sm:w-auto max-w-xs">
-                    <Select onValueChange={setSelectedLocation} value={selectedLocation}>
-                        <SelectTrigger>
-                            <div className="flex items-center gap-2">
-                                <MapPin className="h-4 w-4 text-muted-foreground" />
-                                <SelectValue placeholder="Filter by location..." />
-                            </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Locations</SelectItem>
-                            {locations.map(location => (
-                                <SelectItem key={location.id} value={location.id}>{location.name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <Button onClick={handleAddClick} disabled={locations.length === 0}>
-                    <PlusCircle className="mr-2" />
-                    Add Service
-                </Button>
-            </div>
-             {locations.length === 0 && (
-                 <Alert variant="default" className="mb-4">
-                    <Info className="h-4 w-4" />
-                    <AlertTitle>No Locations Found</AlertTitle>
-                    <AlertDescription>
-                        You must add a location in the 'Manage Locations' section before you can create a service.
-                    </AlertDescription>
-                </Alert>
-            )}
-            
-            <ServiceForm
-                isOpen={isFormOpen}
-                setIsOpen={setIsFormOpen}
-                service={editingService}
-                locations={locations}
-                onSubmitted={handleFormSubmit}
-            />
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+      </div>
+    )
+  }
 
-            <div className="rounded-lg border bg-card">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Name</TableHead>
-                            <TableHead className="hidden sm:table-cell">Location</TableHead>
-                            <TableHead className="hidden md:table-cell">Duration</TableHead>
-                            <TableHead>Price</TableHead>
-                            <TableHead className="text-right w-[120px]">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {filteredServices.length > 0 ? (
-                            filteredServices.map(service => (
-                                <TableRow key={service.id} onClick={() => handleRowClick(service)} className="md:cursor-default cursor-pointer">
-                                    <TableCell className="font-medium">{service.name}</TableCell>
-                                    <TableCell className="hidden sm:table-cell">
-                                         <div className="flex items-center gap-2">
-                                            <MapPin className="h-4 w-4 text-muted-foreground" />
-                                            {service.locationName}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="hidden md:table-cell">
-                                        <div className="flex items-center gap-2">
-                                            <Clock className="h-4 w-4 text-muted-foreground" />
-                                            {service.duration} min
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-2">
-                                            <PoundSterling className="h-4 w-4 text-muted-foreground" />
-                                            {service.price.toFixed(2)}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex gap-2 justify-end">
-                                            <Button variant="ghost" size="icon" onClick={(e) => handleEditClick(e, service)}>
-                                                <Edit className="h-4 w-4" />
-                                            </Button>
-                                            
-                                            <AlertDialog>
-                                                 <AlertDialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon" disabled={isDeleting === service.id} onClick={(e) => e.stopPropagation()}>
-                                                        {isDeleting === service.id ? <Loader2 className="animate-spin" /> : <Trash2 className="h-4 w-4 text-destructive" />}
-                                                    </Button>
-                                                </AlertDialogTrigger>
-                                                <AlertDialogContent>
-                                                    <AlertDialogHeader>
-                                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                        <AlertDialogDescription>
-                                                            This action cannot be undone. This will permanently delete the service.
-                                                        </AlertDialogDescription>
-                                                    </AlertDialogHeader>
-                                                    <AlertDialogFooter>
-                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={(e) => handleDelete(e, service.id)}>
-                                                            Delete
-                                                        </AlertDialogAction>
-                                                    </AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        ) : (
-                             <TableRow>
-                                <TableCell colSpan={5} className="text-center h-24">
-                                    {selectedLocation === 'all' && services.length === 0 ? 'No services found. Add your first one!' : 'No services found for this location.'}
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
-
-            <Dialog open={!!selectedService} onOpenChange={(open) => !open && setSelectedService(null)}>
-                <DialogContent className="sm:max-w-md">
-                    {selectedService && (
-                        <>
-                            <DialogHeader>
-                                <div className="flex items-start justify-between">
-                                    <div>
-                                        <DialogTitle className="text-2xl font-headline">{selectedService.name}</DialogTitle>
-                                        <DialogDescription>
-                                           Service Details
-                                        </DialogDescription>
-                                    </div>
-                                    <Badge variant="outline" className="text-lg">£{selectedService.price.toFixed(2)}</Badge>
-                                </div>
-                            </DialogHeader>
-                            <div className="grid gap-4 pt-4">
-                                 <div className="flex items-center gap-3 text-sm">
-                                    <MapPin className="h-4 w-4 text-primary" />
-                                    <span>{selectedService.locationName}</span>
-                                </div>
-                                <div className="flex items-center gap-3 text-sm">
-                                    <Clock className="h-4 w-4 text-primary" />
-                                    <span>{selectedService.duration} minutes</span>
-                                </div>
-                            </div>
-                        </>
-                    )}
-                </DialogContent>
-            </Dialog>
-
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background text-center p-4">
+        <div>
+          <h1 className="text-2xl font-bold mb-2">Error</h1>
+          <p className="text-muted-foreground mb-6">{error}</p>
         </div>
-    );
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex min-h-dvh w-full flex-col items-center bg-background">
+      <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary/5 via-transparent to-accent/5 -z-10" />
+      
+      <header className="w-full flex items-center justify-between p-4 sm:p-6 lg:p-8">
+        <div className="flex items-center gap-4">
+          <img 
+            src="/trimology-logo.png" 
+            alt="Trimology Logo" 
+            className="w-32 h-auto sm:w-40"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="outline">
+            <Link to="/my-visits">
+              <Calendar className="mr-2 h-4 w-4" />
+              My Visits
+            </Link>
+          </Button>
+        </div>
+      </header>
+
+      <main className="flex-1 w-full max-w-5xl flex flex-col items-center px-4 sm:px-6 lg:px-8 pb-8">
+        <div className="w-full max-w-2xl">
+          <BookingForm 
+            locations={locations}
+            services={services}
+            staff={staff}
+          />
+        </div>
+      </main>
+
+      <footer className="w-full border-t bg-muted/50 p-4 sm:p-6">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <span>© 2025 Trimology. All rights reserved.</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <Link to="/staff/login" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+              Staff Login
+            </Link>
+            <Link to="/admin" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+              Admin Login
+            </Link>
+          </div>
+        </div>
+      </footer>
+    </div>
+  )
 }
-
-
-export default ServicesList

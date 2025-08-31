@@ -1,10 +1,9 @@
-
 'use client';
 import * as React from 'react';
 import type { Service, Location } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ServiceForm } from './service-form';
+import { ServiceForm } from '@/components/service-form';
 import { deleteService } from '@/lib/dummy-service';
 import {
   AlertDialog,
@@ -27,8 +26,8 @@ import {
     DialogTitle,
     DialogDescription,
 } from '@/components/ui/dialog';
-import { Badge } from './ui/badge';
-import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 type ServicesListProps = {
     services: Service[];
