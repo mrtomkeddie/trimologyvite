@@ -4,9 +4,6 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
-import { createUserWithEmailAndPassword, getAuth } from 'firebase/auth';
-import { app as mainApp, firebaseConfig } from '@/lib/firebase';
-import { initializeApp, getApp, deleteApp } from 'firebase/app';
 
 
 import { Button } from '@/components/ui/button';
@@ -15,7 +12,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { setAdminRecord, updateAdmin } from '@/lib/firestore';
+import { setAdminRecord, updateAdmin } from '@/lib/supabase-service';
+import { useAuth } from '@/contexts/AuthContext';
 import { AdminFormSchema, type AdminUser, type Location, type Staff } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -38,6 +36,7 @@ export function AdminForm({ isOpen, setIsOpen, admin, locations, staff, allAdmin
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [selectedStaffId, setSelectedStaffId] = React.useState<string>('new-user');
     const { toast } = useToast();
+    const { signUp } = useAuth();
     
     const form = useForm<AdminFormValues>({
         resolver: zodResolver(AdminFormSchema),
@@ -149,13 +148,12 @@ export function AdminForm({ isOpen, setIsOpen, admin, locations, staff, allAdmin
                         return;
                     }
 
-                    const tempAppName = `temp-user-creation-${Date.now()}`;
-                    const tempApp = initializeApp(firebaseConfig, tempAppName);
-                    const tempAuth = getAuth(tempApp);
 
                     try {
-                        const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email, data.password);
-                        const uid = userCredential.user.uid;
+                        const { data: authData } = await signUp(data.email, data.password);
+                        const uid = authData.user?.id;
+                        
+                        if (!uid) throw new Error('Failed to create user account');
 
                         const submissionData = {
                             email: data.email,
@@ -165,8 +163,8 @@ export function AdminForm({ isOpen, setIsOpen, admin, locations, staff, allAdmin
                         
                         await setAdminRecord(uid, submissionData);
                         toast({ title: 'Success', description: 'Branch Admin added successfully.' });
-                    } finally {
-                        await deleteApp(tempApp);
+                    } catch (authError) {
+                        throw authError;
                     }
                 }
             }

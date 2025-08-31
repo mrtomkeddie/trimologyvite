@@ -1,11 +1,10 @@
 
 'use client';
-import { signOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import type { User } from 'firebase/auth';
+import type { User } from '@supabase/supabase-js';
 import { LogOut, Scissors, Users, QrCode, ArrowRight, Key, CalendarDays, Shield, Heart } from 'lucide-react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import * as React from 'react';
 import type { AdminUser } from '@/lib/types';
 
@@ -17,8 +16,10 @@ type AdminDashboardProps = {
 
 export function AdminDashboard({ user, adminUser }: AdminDashboardProps) {
 
+  const { signOut } = useAuth();
+
   const handleLogout = async () => {
-    await signOut(auth);
+    await signOut();
   };
   
   // Super admins are identified by NOT having a locationId.
@@ -41,6 +42,7 @@ export function AdminDashboard({ user, adminUser }: AdminDashboardProps) {
         <main className="flex-1 p-4 sm:px-6 space-y-8">
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                  <Link href="/admin/bookings" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
+                <Link to="/admin/bookings" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
                     <div className="p-6 flex flex-col justify-between h-full">
                         <div>
                             <div className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -57,6 +59,7 @@ export function AdminDashboard({ user, adminUser }: AdminDashboardProps) {
                     </div>
                 </Link>
                 <Link href="/admin/clients" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
+                <Link to="/admin/clients" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
                     <div className="p-6 flex flex-col justify-between h-full">
                         <div>
                             <div className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -73,6 +76,7 @@ export function AdminDashboard({ user, adminUser }: AdminDashboardProps) {
                     </div>
                 </Link>
                 <Link href="/admin/locations" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
+                <Link to="/admin/locations" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
                     <div className="p-6 flex flex-col justify-between h-full">
                         <div>
                             <div className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -89,6 +93,7 @@ export function AdminDashboard({ user, adminUser }: AdminDashboardProps) {
                     </div>
                 </Link>
                 <Link href="/admin/services" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
+                <Link to="/admin/services" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
                     <div className="p-6 flex flex-col justify-between h-full">
                         <div>
                             <div className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -105,6 +110,7 @@ export function AdminDashboard({ user, adminUser }: AdminDashboardProps) {
                     </div>
                 </Link>
                 <Link href="/admin/staff" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
+                <Link to="/admin/staff" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
                     <div className="p-6 flex flex-col justify-between h-full">
                         <div>
                             <div className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -122,6 +128,7 @@ export function AdminDashboard({ user, adminUser }: AdminDashboardProps) {
                 </Link>
                 
                 <Link href="/admin/admins" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
+                <Link to="/admin/admins" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
                     <div className="p-6 flex flex-col justify-between h-full">
                         <div>
                             <div className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -139,6 +146,7 @@ export function AdminDashboard({ user, adminUser }: AdminDashboardProps) {
                 </Link>
                 
                 <Link href="/admin/settings" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
+                <Link to="/admin/settings" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
                      <div className="p-6 flex flex-col justify-between h-full">
                         <div>
                             <div className="flex flex-row items-center justify-between space-y-0 pb-2">

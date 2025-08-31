@@ -1,9 +1,8 @@
 
 'use client';
 
-import { useState } from 'react';
-import { signInWithEmailAndPassword, sendPasswordResetEmail, createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import React, { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,9 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, LogIn } from 'lucide-react';
-import Link from 'next/link';
-import { DUMMY_ADMIN_USERS } from '@/lib/dummy-data';
-import { getAdminUser } from '@/lib/firestore';
+import { Link } from 'react-router-dom';
 
 export function AdminLoginForm() {
   const [email, setEmail] = useState('');
@@ -31,79 +28,38 @@ export function AdminLoginForm() {
   const [resetEmail, setResetEmail] = useState('');
   const [isResetting, setIsResetting] = useState(false);
   const { toast } = useToast();
+  const { signIn, signUp, resetPassword } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      // First, try to sign in with the provided credentials.
-      await signInWithEmailAndPassword(auth, email, password);
-      // On success, the onAuthStateChanged listener in the layout will handle the redirect.
-      // We don't need to do anything else here.
+      await signIn(email, password);
     } catch (error) {
-        const errorCode = (error as any).code;
-
-        // Special handling for demo users: if the user doesn't exist, create them.
-        // This makes the demo experience smoother.
-        const isDummyUser = DUMMY_ADMIN_USERS.some(u => u.email === email);
-        if (errorCode === 'auth/user-not-found' && isDummyUser) {
-            try {
-                if (password.length < 6) {
-                     toast({ title: 'Password Too Short', description: 'Your password must be at least 6 characters long.', variant: 'destructive'});
-                     setIsLoading(false);
-                     return;
-                }
-                // Create the user in Firebase Auth. The `getAdminUser` function will handle
-                // creating their profile in Firestore on the first successful login.
-                await createUserWithEmailAndPassword(auth, email, password);
-                 toast({ title: 'Account Created', description: "We've created a new account for this demo user. You are now logged in." });
-                // The onAuthStateChanged listener will handle the rest.
-                return;
-            } catch (creationError) {
-                 toast({ title: 'Creation Failed', description: 'Could not create demo user account.', variant: 'destructive'});
-                 setIsLoading(false);
-                 return;
-            }
-        }
-        
-        // Handle standard login errors
-        if (errorCode === 'auth/user-not-found' || errorCode === 'auth/invalid-credential') {
-             toast({
-                title: 'Login Failed',
-                description: 'The email or password you entered is incorrect. Please try again or use "Forgot Password".',
-                variant: 'destructive',
-            });
-        } else {
-             // Handle other potential Firebase errors (e.g., network issues, misconfigurations)
-             let errorMessage = 'An unexpected error occurred. Please try again.';
-             if (errorCode === 'auth/invalid-api-key' || errorCode === 'auth/api-key-not-valid.-please-pass-a-valid-api-key.') {
-                errorMessage = 'Your Firebase API Key is not configured correctly. Please check your environment variables.';
-            }
-            toast({
-                title: 'Login Failed',
-                description: errorMessage,
-                variant: 'destructive',
-            });
-        }
-        setIsLoading(false);
+      toast({
+        title: 'Login Failed',
+        description: 'The email or password you entered is incorrect. Please try again or use "Forgot Password".',
+        variant: 'destructive',
+      });
+      setIsLoading(false);
     }
   };
 
   const handlePasswordReset = async () => {
     if (!resetEmail) {
-        toast({ title: 'Error', description: 'Please enter your email address.', variant: 'destructive' });
-        return;
+      toast({ title: 'Error', description: 'Please enter your email address.', variant: 'destructive' });
+      return;
     }
     setIsResetting(true);
     try {
-        await sendPasswordResetEmail(auth, resetEmail);
-        toast({ title: 'Password Reset Email Sent', description: 'Check your inbox for instructions to reset your password.' });
-        document.getElementById('close-reset-dialog')?.click();
+      await resetPassword(resetEmail);
+      toast({ title: 'Password Reset Email Sent', description: 'Check your inbox for instructions to reset your password.' });
+      document.getElementById('close-reset-dialog')?.click();
     } catch (error) {
-        toast({ title: 'Error', description: 'Could not send password reset email. Please check the address and try again.', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Could not send password reset email. Please check the address and try again.', variant: 'destructive' });
     } finally {
-        setIsResetting(false);
-        setResetEmail('');
+      setIsResetting(false);
+      setResetEmail('');
     }
   };
 
@@ -177,7 +133,7 @@ export function AdminLoginForm() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-             <Link href="/" className="text-sm text-muted-foreground hover:text-primary transition-colors mt-2">
+             <Link to="/" className="text-sm text-muted-foreground hover:text-primary transition-colors mt-2">
                 &larr; Return to Home
             </Link>
           </CardFooter>

@@ -1,41 +1,46 @@
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { useAdmin } from '@/contexts/AdminContext'
-import { getClientLoyaltyData, getLocations } from '@/lib/supabase-service'
+import { getServices, getLocations } from '@/lib/supabase-service'
+import { ServicesList } from '@/components/services-list'
 import { ArrowLeft, Loader2, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import type { ClientLoyalty, Location } from '@/lib/types'
-import { ClientsList } from '@/components/clients-list-component'
+import type { Service, Location } from '@/lib/types'
 
-export default function AdminClientsPage() {
+export default function AdminServicesPage() {
   const { adminUser } = useAdmin()
-  const [clients, setClients] = useState<ClientLoyalty[]>([])
+  const [services, setServices] = useState<Service[]>([])
   const [locations, setLocations] = useState<Location[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchData = React.useCallback(async () => {
+  const fetchData = useCallback(async () => {
     if (!adminUser) return
+    
     setLoading(true)
     setError(null)
     try {
-      const [fetchedClients, fetchedLocations] = await Promise.all([
-        getClientLoyaltyData(adminUser.locationId || undefined),
+      const [fetchedServices, fetchedLocations] = await Promise.all([
+        getServices(adminUser.locationId || undefined),
         getLocations(adminUser.locationId || undefined),
       ])
-      setClients(fetchedClients)
+      setServices(fetchedServices)
       setLocations(fetchedLocations)
     } catch (e) {
-      setError("Failed to fetch client data. Please try refreshing the page.")
+      setError("Failed to fetch service data. Please try refreshing the page.")
       console.error(e)
     } finally {
       setLoading(false)
     }
   }, [adminUser])
-
-  React.useEffect(() => {
+      
+  useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  const handleServicesChanged = () => {
+    fetchData()
+  }
 
   if (!adminUser) {
     return <Navigate to="/admin" replace />
@@ -71,10 +76,14 @@ export default function AdminClientsPage() {
             <span className="sr-only">Back to Admin</span>
           </Link>
         </Button>
-        <h1 className="font-headline text-xl font-semibold">Client Loyalty</h1>
+        <h1 className="font-headline text-xl font-semibold">Manage Services</h1>
       </header>
       <main className="flex-1 p-4 sm:p-6 lg:p-8">
-        <ClientsList initialClients={clients} locations={locations} />
+        <ServicesList 
+          services={services} 
+          locations={locations} 
+          onServicesChanged={handleServicesChanged}
+        />
       </main>
     </div>
   )

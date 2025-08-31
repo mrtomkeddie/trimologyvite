@@ -5,7 +5,7 @@ import type { AdminUser, Location, Staff } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AdminForm } from './admin-form';
-import { deleteAdmin } from '@/lib/firestore';
+import { deleteAdmin } from '@/lib/supabase-service';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,7 +20,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, Trash2, Edit, Loader2, Shield, MapPin, User, Info } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { auth } from '@/lib/firebase';
+import { useAuth } from '@/contexts/AuthContext';
 import {
     Dialog,
     DialogContent,
@@ -48,7 +48,8 @@ export function AdminsList({ initialAdmins, locations, staff, currentUser, onAdm
     const [selectedAdmin, setSelectedAdmin] = React.useState<AdminUser | null>(null);
     const [isDeleting, setIsDeleting] = React.useState<string | null>(null);
     const { toast } = useToast();
-    const currentUserId = auth.currentUser?.uid;
+    const { user } = useAuth();
+    const currentUserId = user?.id;
     const [selectedLocation, setSelectedLocation] = React.useState<string>('all');
 
     if (!currentUser) return null;

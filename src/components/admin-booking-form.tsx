@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import type { z } from 'zod';
@@ -36,7 +36,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { AdminBookingFormSchema, type Service, type Staff, type Location, type AdminUser } from '@/lib/types';
-import { getSuggestedTimes, createBooking, getUnavailableDays } from '@/lib/firestore';
+import { getSuggestedTimes, createBooking, getUnavailableDays } from '@/lib/supabase-service';
 import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
@@ -50,7 +50,7 @@ type AdminBookingFormProps = {
 };
 
 export function AdminBookingForm({ adminUser, locations, services, staff }: AdminBookingFormProps) {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [suggestedTimes, setSuggestedTimes] = React.useState<string[]>([]);
   const [isLoadingTimes, setIsLoadingTimes] = React.useState(false);
@@ -165,7 +165,7 @@ export function AdminBookingForm({ adminUser, locations, services, staff }: Admi
     try {
       await createBooking(data);
       toast({ title: "Success", description: "Booking created successfully."});
-      router.push('/admin/bookings');
+      navigate('/admin/bookings');
     } catch(e) {
       const errorMessage = e instanceof Error ? e.message : "Something went wrong. Please try again.";
       toast({ title: "Booking Failed", description: errorMessage, variant: 'destructive' })

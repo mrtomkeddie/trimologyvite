@@ -4,9 +4,6 @@ import * as React from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
-import { createUserWithEmailAndPassword, getAuth } from 'firebase/auth';
-import { app as mainApp, firebaseConfig } from '@/lib/firebase';
-import { initializeApp, getApp, deleteApp } from 'firebase/app';
 
 
 import { Button } from '@/components/ui/button';
@@ -15,7 +12,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription as FormDesc } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { setStaffRecord, updateStaff } from '@/lib/firestore';
+import { addStaff, updateStaff } from '@/lib/supabase-service';
+import { useAuth } from '@/contexts/AuthContext';
 import { StaffFormSchema, type Staff, type Location, WorkingHoursSchema, type AdminUser } from '@/lib/types';
 import { Loader2, User, Info, UploadCloud, UserPlus, Link2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -140,6 +138,7 @@ import { Switch } from '@/components/ui/switch';
 export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, allStaff, onSubmitted }: StaffFormProps) {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const { toast } = useToast();
+    const { signUp } = useAuth();
     const [linkExistingAdminId, setLinkExistingAdminId] = React.useState<string>('new-user');
     
     const form = useForm<StaffFormValues>({
@@ -274,25 +273,17 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, a
                         setIsSubmitting(false);
                         return;
                     }
-                    const tempAppName = `temp-user-creation-${Date.now()}`;
-                    const tempApp = initializeApp(firebaseConfig, tempAppName);
-                    const tempAuth = getAuth(tempApp);
                     try {
-                        const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email, data.password);
-                        uid = userCredential.user.uid;
+                        const { data: authData } = await signUp(data.email, data.password);
+                        uid = authData.user?.id;
                     } catch (error) {
-                        if (error instanceof Error && (error as any).code === 'auth/email-already-in-use') {
-                             toast({
-                                title: 'Email Already In Use',
-                                description: "This email is already registered. If they are an admin, please use the 'Link to Existing Admin' option.",
-                                variant: 'destructive',
-                            });
-                            setIsSubmitting(false);
-                            return;
-                        }
-                        throw error; // re-throw other errors
-                    } finally {
-                         await deleteApp(tempApp);
+                        toast({
+                            title: 'Email Already In Use',
+                            description: "This email is already registered. If they are an admin, please use the 'Link to Existing Admin' option.",
+                            variant: 'destructive',
+                        });
+                        setIsSubmitting(false);
+                        return;
                     }
                 }
                 
@@ -308,7 +299,8 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, a
                 //     imageUrl = await uploadStaffImage(uid, imageFile);
                 // }
                 
-                await setStaffRecord(uid, {
+                await addStaff({
+                    id: uid,
                     name: data.name,
                     specialization: data.specialization || '',
                     locationId: data.locationId,
@@ -316,6 +308,7 @@ export function StaffForm({ isOpen, setIsOpen, staffMember, locations, admins, a
                     email: data.email,
                     imageUrl: imageUrl,
                     workingHours: data.workingHours,
+                    userId: uid,
                 });
                 toast({ title: 'Success', description: 'Staff member added successfully.'});
             }

@@ -1,5 +1,3 @@
-
-
 import { z } from 'zod';
 
 export const LocationSchema = z.object({
@@ -39,7 +37,7 @@ export const WorkingHoursSchema = z.object({
 export type WorkingHours = z.infer<typeof WorkingHoursSchema>;
 
 export const StaffSchema = z.object({
-  id: z.string(), // This will be the UID from Firebase Auth
+  id: z.string(),
   name: z.string(),
   specialization: z.string().optional().or(z.literal('')),
   locationId: z.string(),
@@ -47,6 +45,7 @@ export const StaffSchema = z.object({
   email: z.string().email().optional().or(z.literal('')),
   imageUrl: z.string().url().optional().or(z.literal('')),
   workingHours: WorkingHoursSchema.optional(),
+  userId: z.string().optional(),
 });
 export type Staff = z.infer<typeof StaffSchema>;
 
@@ -65,15 +64,15 @@ export const BookingSchema = z.object({
     clientName: z.string(),
     clientPhone: z.string(),
     clientEmail: z.string().optional(),
-    createdAt: z.any().optional(), // Allow timestamp for reads, but exclude from serializable types
 });
 export type Booking = z.infer<typeof BookingSchema>;
-export type NewBooking = Omit<Booking, 'id' | 'createdAt'>;
+export type NewBooking = Omit<Booking, 'id'>;
 
 export const AdminUserSchema = z.object({
-  id: z.string(), // This is the UID from Firebase Auth
+  id: z.string(),
+  userId: z.string(),
   email: z.string().email(),
-  locationId: z.string().nullable().optional(), // If not present, they are a super-admin
+  locationId: z.string().nullable().optional(),
   locationName: z.string().optional(),
 });
 export type AdminUser = z.infer<typeof AdminUserSchema>;
@@ -88,7 +87,6 @@ export const ClientLoyaltySchema = z.object({
     locations: z.array(z.string()), // Array of location names
 });
 export type ClientLoyalty = z.infer<typeof ClientLoyaltySchema>;
-
 
 export const BookingFormSchema = z.object({
     locationId: z.string({ required_error: 'Please select a location.' }),
@@ -133,7 +131,7 @@ const StaffWorkingHoursSchema = WorkingHoursSchema.superRefine((workingHours, ct
 });
 
 export const StaffFormSchema = z.object({
-  id: z.string().optional(), // Used to hold the UID when editing or linking an admin
+  id: z.string().optional(),
   name: z.string().min(2, 'Name must be at least 2 characters.'),
   specialization: z.string().optional().or(z.literal('')),
   imageUrl: z.string().url().optional().or(z.literal('')),
@@ -152,7 +150,6 @@ export const StaffFormSchema = z.object({
   password: z.string().optional(),
   workingHours: StaffWorkingHoursSchema.optional(),
 }).superRefine((data, ctx) => {
-    // When creating a brand new user (no pre-existing ID from linking an admin), email and password are required.
     if (!data.id) { 
         if (!data.email) {
             ctx.addIssue({
@@ -171,13 +168,11 @@ export const StaffFormSchema = z.object({
     }
 });
 
-
 export const AdminFormSchema = z.object({
   email: z.string().email('Please enter a valid email.'),
   locationId: z.string({ required_error: "Please assign a location." }),
   password: z.string().optional(),
 });
-
 
 export const LocationFormSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),

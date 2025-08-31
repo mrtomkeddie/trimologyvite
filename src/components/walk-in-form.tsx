@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Service, Location, Staff } from '@/lib/types';
-import { createBooking } from '@/lib/firestore';
+import { createBooking } from '@/lib/supabase-service';
 import { useToast } from '@/hooks/use-toast';
 
 const WalkinFormSchema = z.object({
@@ -48,7 +48,7 @@ type WalkinFormProps = {
 };
 
 export function WalkinForm({ location, services, staff }: WalkinFormProps) {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -79,7 +79,7 @@ export function WalkinForm({ location, services, staff }: WalkinFormProps) {
       };
 
       await createBooking(bookingData);
-      router.push('/booking-confirmation');
+      navigate('/booking-confirmation');
     } catch(e) {
       const errorMessage = e instanceof Error ? e.message : "Something went wrong. Please try again or see a staff member.";
       toast({

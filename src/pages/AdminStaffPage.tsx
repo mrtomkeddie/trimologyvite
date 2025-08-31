@@ -1,41 +1,49 @@
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { useAdmin } from '@/contexts/AdminContext'
-import { getClientLoyaltyData, getLocations } from '@/lib/supabase-service'
+import { getStaff, getLocations, getAdmins } from '@/lib/supabase-service'
+import { StaffList } from '@/components/staff-list'
 import { ArrowLeft, Loader2, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import type { ClientLoyalty, Location } from '@/lib/types'
-import { ClientsList } from '@/components/clients-list-component'
+import type { Staff, Location, AdminUser } from '@/lib/types'
 
-export default function AdminClientsPage() {
+export default function AdminStaffPage() {
   const { adminUser } = useAdmin()
-  const [clients, setClients] = useState<ClientLoyalty[]>([])
+  const [staff, setStaff] = useState<Staff[]>([])
   const [locations, setLocations] = useState<Location[]>([])
+  const [admins, setAdmins] = useState<AdminUser[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
-  const fetchData = React.useCallback(async () => {
+  
+  const fetchData = useCallback(async () => {
     if (!adminUser) return
+    
     setLoading(true)
     setError(null)
     try {
-      const [fetchedClients, fetchedLocations] = await Promise.all([
-        getClientLoyaltyData(adminUser.locationId || undefined),
+      const [fetchedStaff, fetchedLocations, fetchedAdmins] = await Promise.all([
+        getStaff(adminUser.locationId || undefined),
         getLocations(adminUser.locationId || undefined),
+        getAdmins(adminUser.locationId || undefined),
       ])
-      setClients(fetchedClients)
+      setStaff(fetchedStaff)
       setLocations(fetchedLocations)
+      setAdmins(fetchedAdmins)
     } catch (e) {
-      setError("Failed to fetch client data. Please try refreshing the page.")
+      setError("Failed to fetch staff data. Please try refreshing the page.")
       console.error(e)
     } finally {
       setLoading(false)
     }
   }, [adminUser])
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  const handleDataChanged = () => {
+    fetchData()
+  }
 
   if (!adminUser) {
     return <Navigate to="/admin" replace />
@@ -61,7 +69,7 @@ export default function AdminClientsPage() {
       </div>
     )
   }
-
+  
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:px-6">
@@ -71,10 +79,15 @@ export default function AdminClientsPage() {
             <span className="sr-only">Back to Admin</span>
           </Link>
         </Button>
-        <h1 className="font-headline text-xl font-semibold">Client Loyalty</h1>
+        <h1 className="font-headline text-xl font-semibold">Manage Staff</h1>
       </header>
       <main className="flex-1 p-4 sm:p-6 lg:p-8">
-        <ClientsList initialClients={clients} locations={locations} />
+        <StaffList 
+          staff={staff} 
+          locations={locations}
+          admins={admins} 
+          onStaffChanged={handleDataChanged}
+        />
       </main>
     </div>
   )

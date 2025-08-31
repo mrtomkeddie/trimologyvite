@@ -5,7 +5,7 @@ import type { Service, Location } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ServiceForm } from './service-form';
-import { deleteService } from '@/lib/firestore';
+import { deleteService } from '@/lib/supabase-service';
 import {
   AlertDialog,
   AlertDialogAction,
