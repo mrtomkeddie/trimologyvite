@@ -1,22 +1,15 @@
-
-'use server';
-
 import { db } from './firebase';
-import { adminDb } from './firebase-admin';
-import { collection, getDocs as getDocsClient, addDoc, doc, updateDoc, deleteDoc, orderBy, query, Timestamp, where, getDoc, setDoc, limit, endOfDay } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, orderBy, query, Timestamp, where, getDoc, setDoc, writeBatch } from 'firebase/firestore';
 import type { Location, Service, Staff, Booking, NewBooking, AdminUser, ClientLoyalty } from './types';
-import { revalidatePath } from 'next/cache';
 import { format, parse, addMinutes, getDay, isBefore, isAfter, startOfDay, startOfMonth, endOfMonth, isSameDay, addDays } from 'date-fns';
-import type { Query } from 'firebase-admin/firestore';
 import { DUMMY_ADMIN_USERS, DUMMY_BOOKINGS, DUMMY_CLIENTS, DUMMY_LOCATIONS, DUMMY_SERVICES, DUMMY_STAFF } from './dummy-data';
 
 
 // Admins
 export async function getAdminUser(uid: string, email: string): Promise<AdminUser | null> {
-    const adminDocRef = adminDb.collection('admins').doc(uid);
-    const adminDoc = await adminDocRef.get();
+    const adminDoc = await getDoc(doc(db, 'admins', uid));
 
-    if (!adminDoc.exists) {
+    if (!adminDoc.exists()) {
         // Fallback for demo: if user email is in dummy data, but UID doesn't match, create a record
         const dummyUser = DUMMY_ADMIN_USERS.find(u => u.email === email);
         if (dummyUser) {
@@ -25,7 +18,7 @@ export async function getAdminUser(uid: string, email: string): Promise<AdminUse
                 locationId: dummyUser.locationId || null,
                 locationName: dummyUser.locationName || 'All Locations',
             };
-            await adminDocRef.set(adminData);
+            await setDoc(doc(db, 'admins', uid), adminData);
              return { id: uid, ...adminData } as AdminUser;
         }
         return null;
@@ -40,16 +33,15 @@ export async function getAdminUser(uid: string, email: string): Promise<AdminUse
     } as AdminUser;
 }
 
-export async function getAdminsFromFirestore(locationId?: string): Promise<AdminUser[]> {
-    let querySnapshot;
+export async function getAdmins(locationId?: string): Promise<AdminUser[]> {
+    let q = query(collection(db, 'admins'));
     // Super-admins can see all other admins
-    if (!locationId) {
-         querySnapshot = await adminDb.collection('admins').get();
-    } else {
+    if (locationId) {
     // Branch admins can only see other admins at their location
-        querySnapshot = await adminDb.collection('admins').where('locationId', '==', locationId).get();
+        q = query(collection(db, 'admins'), where('locationId', '==', locationId));
     }
     
+    const querySnapshot = await getDocs(q);
     const admins = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -65,31 +57,28 @@ export async function getAdminsFromFirestore(locationId?: string): Promise<Admin
 }
 
 export async function setAdminRecord(uid: string, data: { email: string; locationId: string; locationName: string; }) {
-    await adminDb.collection('admins').doc(uid).set(data);
-    revalidatePath('/admin/admins');
+    await setDoc(doc(db, 'admins', uid), data);
 }
 
 export async function updateAdmin(uid: string, data: Partial<Omit<AdminUser, 'id'>>) {
-    await adminDb.collection('admins').doc(uid).update(data);
-    revalidatePath('/admin/admins');
+    await updateDoc(doc(db, 'admins', uid), data);
 }
 
 export async function deleteAdmin(uid: string) {
-    await adminDb.collection('admins').doc(uid).delete();
-    revalidatePath('/admin/admins');
+    await deleteDoc(doc(db, 'admins', uid));
 }
 
 
 // Locations
-export async function getLocationsFromFirestore(locationId?: string): Promise<Location[]> {
-    const locationsCollection = adminDb.collection('locations');
+export async function getLocations(locationId?: string): Promise<Location[]> {
+    const locationsCollection = collection(db, 'locations');
     if (locationId) {
-        const docRef = await locationsCollection.doc(locationId).get();
-        if (!docRef.exists) {
+        const docRef = await getDoc(doc(db, 'locations', locationId));
+        if (!docRef.exists()) {
             // For demo purposes, add dummy data if collection is empty
-            const batch = adminDb.batch();
+            const batch = writeBatch(db);
             DUMMY_LOCATIONS.forEach(loc => {
-                const newDocRef = locationsCollection.doc(loc.id);
+                const newDocRef = doc(locationsCollection, loc.id);
                 batch.set(newDocRef, loc);
             });
             await batch.commit();
@@ -98,18 +87,18 @@ export async function getLocationsFromFirestore(locationId?: string): Promise<Lo
         }
         return [{ id: docRef.id, ...docRef.data() } as Location];
     }
-    const q = locationsCollection.orderBy('name');
-    let snapshot = await q.get();
+    const q = query(locationsCollection, orderBy('name'));
+    let snapshot = await getDocs(q);
 
     // For demo purposes, add dummy data if collection is empty
     if (snapshot.empty) {
-        const batch = adminDb.batch();
+        const batch = writeBatch(db);
         DUMMY_LOCATIONS.forEach(loc => {
-            const docRef = locationsCollection.doc(loc.id);
+            const docRef = doc(locationsCollection, loc.id);
             batch.set(docRef, loc);
         });
         await batch.commit();
-        snapshot = await q.get();
+        snapshot = await getDocs(q);
     }
     
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Location));
@@ -117,37 +106,34 @@ export async function getLocationsFromFirestore(locationId?: string): Promise<Lo
 
 export async function addLocation(data: Omit<Location, 'id'>) {
     await addDoc(collection(db, 'locations'), data);
-    revalidatePath('/admin/locations');
 }
 
 export async function updateLocation(id: string, data: Partial<Omit<Location, 'id'>>) {
     await updateDoc(doc(db, 'locations', id), data);
-    revalidatePath('/admin/locations');
 }
 
 export async function deleteLocation(id: string) {
     await deleteDoc(doc(db, 'locations', id));
-    revalidatePath('/admin/locations');
 }
 
 
 // Services
-export async function getServicesFromFirestore(locationId?: string): Promise<Service[]> {
-    const servicesCollection = adminDb.collection('services');
-    let q: Query = servicesCollection;
+export async function getServices(locationId?: string): Promise<Service[]> {
+    const servicesCollection = collection(db, 'services');
+    let q = query(servicesCollection, orderBy('name'));
     if (locationId) {
-        q = q.where('locationId', '==', locationId);
+        q = query(servicesCollection, where('locationId', '==', locationId), orderBy('name'));
     }
-    let snapshot = await q.orderBy('name').get();
+    let snapshot = await getDocs(q);
 
     if (snapshot.empty && !locationId) {
-        const batch = adminDb.batch();
+        const batch = writeBatch(db);
         DUMMY_SERVICES.forEach(serv => {
-            const docRef = servicesCollection.doc(serv.id);
+            const docRef = doc(servicesCollection, serv.id);
             batch.set(docRef, serv);
         });
         await batch.commit();
-        snapshot = await q.orderBy('name').get();
+        snapshot = await getDocs(q);
     }
 
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Service));
@@ -155,68 +141,56 @@ export async function getServicesFromFirestore(locationId?: string): Promise<Ser
 
 export async function addService(data: { name: string; duration: number; price: number; locationId: string; locationName: string; }) {
     await addDoc(collection(db, 'services'), data);
-    revalidatePath('/admin/services');
-    revalidatePath('/');
 }
 
 export async function updateService(id: string, data: { name: string; duration: number; price: number; locationId: string; locationName: string; }) {
     await updateDoc(doc(db, 'services', id), data);
-    revalidatePath('/admin/services');
-    revalidatePath('/');
 }
 
 export async function deleteService(id: string) {
     await deleteDoc(doc(db, 'services', id));
-    revalidatePath('/admin/services');
-    revalidatePath('/');
 }
 
 // Staff
-export async function getStaffFromFirestore(locationId?: string): Promise<Staff[]> {
-    const staffCollection = adminDb.collection('staff');
-    let q: Query = staffCollection;
+export async function getStaff(locationId?: string): Promise<Staff[]> {
+    const staffCollection = collection(db, 'staff');
+    let q = query(staffCollection, orderBy('name'));
     if (locationId) {
-        q = q.where('locationId', '==', locationId);
+        q = query(staffCollection, where('locationId', '==', locationId), orderBy('name'));
     }
-    let snapshot = await q.orderBy('name').get();
+    let snapshot = await getDocs(q);
     
     if (snapshot.empty && !locationId) {
-        const batch = adminDb.batch();
+        const batch = writeBatch(db);
         DUMMY_STAFF.forEach(s => {
-            const docRef = staffCollection.doc(s.id);
+            const docRef = doc(staffCollection, s.id);
             batch.set(docRef, s);
         });
         await batch.commit();
-        snapshot = await q.orderBy('name').get();
+        snapshot = await getDocs(q);
     }
 
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Staff));
 }
 
-export async function setStaffRecord(uid: string, data: Omit<Staff, 'id'>) {
-    await setDoc(doc(db, 'staff', uid), data);
-    revalidatePath('/admin/staff');
-    revalidatePath('/');
+export async function addStaff(data: Omit<Staff, 'id'>) {
+    await setDoc(doc(db, 'staff', data.id), data);
 }
 
 export async function updateStaff(uid: string, data: Partial<Omit<Staff, 'id'>>) {
     await updateDoc(doc(db, 'staff', uid), data);
-    revalidatePath('/admin/staff');
-    revalidatePath('/');
 }
 
 export async function deleteStaff(uid: string) {
     await deleteDoc(doc(db, 'staff', uid));
-    revalidatePath('/admin/staff');
-    revalidatePath('/');
 }
 
-export async function getStaffByUid(uid: string): Promise<Staff | null> {
-    const staffDoc = await adminDb.collection('staff').doc(uid).get();
-    if (!staffDoc.exists) {
+export async function getStaffByUserId(uid: string): Promise<Staff | null> {
+    const staffDoc = await getDoc(doc(db, 'staff', uid));
+    if (!staffDoc.exists()) {
         const staffMember = DUMMY_STAFF.find(s => s.id === uid);
         if (staffMember) {
-            await adminDb.collection('staff').doc(uid).set(staffMember);
+            await setDoc(doc(db, 'staff', uid), staffMember);
             return staffMember;
         }
         return null;
@@ -224,25 +198,29 @@ export async function getStaffByUid(uid: string): Promise<Staff | null> {
     return { id: staffDoc.id, ...staffDoc.data() } as Staff;
 }
 
+export async function setStaffRecord(uid: string, data: Omit<Staff, 'id'>) {
+    await setDoc(doc(db, 'staff', uid), data);
+}
+
 
 // Bookings
-export async function getBookingsFromFirestore(locationId?: string): Promise<Booking[]> {
+export async function getBookings(locationId?: string): Promise<Booking[]> {
      const now = new Date().toISOString();
-    const bookingsCollection = adminDb.collection('bookings');
-    let q: Query;
+    const bookingsCollection = collection(db, 'bookings');
+    let q;
 
     if (locationId) {
-        q = bookingsCollection
-            .where('locationId', '==', locationId)
-            .where('bookingTimestamp', '>=', now)
-            .orderBy('bookingTimestamp', 'asc');
+        q = query(bookingsCollection,
+            where('locationId', '==', locationId),
+            where('bookingTimestamp', '>=', now),
+            orderBy('bookingTimestamp', 'asc'));
     } else {
-        q = bookingsCollection
-            .where('bookingTimestamp', '>=', now)
-            .orderBy('bookingTimestamp', 'asc');
+        q = query(bookingsCollection,
+            where('bookingTimestamp', '>=', now),
+            orderBy('bookingTimestamp', 'asc'));
     }
     
-    const snapshot = await q.get();
+    const snapshot = await getDocs(q);
     const serverData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Booking));
     
     // For demo purposes, merge with dummy data
@@ -258,10 +236,10 @@ export async function getBookingsFromFirestore(locationId?: string): Promise<Boo
     return uniqueBookings.sort((a,b) => new Date(a.bookingTimestamp).getTime() - new Date(b.bookingTimestamp).getTime());
 }
 
-export async function getBookingsByPhoneFromFirestore(phone: string): Promise<Booking[]> {
+export async function getBookingsByPhone(phone: string): Promise<Booking[]> {
     const q = query(collection(db, 'bookings'), where('clientPhone', '==', phone), orderBy('bookingTimestamp', 'desc'));
 
-    const snapshot = await getDocsClient(q);
+    const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => {
         const data = doc.data();
         const { createdAt, ...rest } = data;
@@ -275,13 +253,13 @@ export async function getBookingsByPhoneFromFirestore(phone: string): Promise<Bo
 export async function getBookingsByStaffId(staffId: string): Promise<Booking[]> {
     const nowString = new Date().toISOString();
     
-    const q = query(collection(db, 'bookings'), 
+    const q = query(collection(db, 'bookings'),
         where('staffId', '==', staffId), 
         where('bookingTimestamp', '>=', nowString),
         orderBy('bookingTimestamp', 'asc')
     );
     
-    const snapshot = await getDocsClient(q);
+    const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => {
         const { createdAt, ...data } = doc.data();
         return {
@@ -293,14 +271,16 @@ export async function getBookingsByStaffId(staffId: string): Promise<Booking[]> 
 
 export async function getBookingsForStaffOnDate(staffId: string, date: Date): Promise<Booking[]> {
     const dayStartStr = startOfDay(date).toISOString();
-    const dayEndStr = endOfDay(date).toISOString();
+    const dayEnd = new Date(date);
+    dayEnd.setHours(23, 59, 59, 999);
+    const dayEndStr = dayEnd.toISOString();
     
-    const q = adminDb.collection('bookings')
-        .where('staffId', '==', staffId)
-        .where('bookingTimestamp', '>=', dayStartStr)
-        .where('bookingTimestamp', '<=', dayEndStr);
+    const q = query(collection(db, 'bookings'),
+        where('staffId', '==', staffId),
+        where('bookingTimestamp', '>=', dayStartStr),
+        where('bookingTimestamp', '<=', dayEndStr));
 
-    const snapshot = await q.get();
+    const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => {
         const { createdAt, ...data } = doc.data();
         return {
@@ -313,12 +293,12 @@ export async function getBookingsForStaffOnDate(staffId: string, date: Date): Pr
 export async function getBookingsForStaffInRange(staffIds: string[], startDate: Date, endDate: Date): Promise<Booking[]> {
     if (staffIds.length === 0) return [];
     
-    const q = adminDb.collection('bookings')
-        .where('staffId', 'in', staffIds)
-        .where('bookingTimestamp', '>=', startDate.toISOString())
-        .where('bookingTimestamp', '<=', endDate.toISOString());
+    const q = query(collection(db, 'bookings'),
+        where('staffId', 'in', staffIds),
+        where('bookingTimestamp', '>=', startDate.toISOString()),
+        where('bookingTimestamp', '<=', endDate.toISOString()));
 
-    const snapshot = await q.get();
+    const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Booking));
 }
 
@@ -328,25 +308,22 @@ export async function addBooking(data: NewBooking) {
         ...data,
         createdAt: Timestamp.now(),
     });
-    revalidatePath('/admin/bookings', 'layout');
-    revalidatePath('/my-schedule');
 }
 
 export async function deleteBooking(id: string) {
     await deleteDoc(doc(db, 'bookings', id));
-    revalidatePath('/admin/bookings', 'layout');
-    revalidatePath('/my-schedule');
 }
 
 // Client Loyalty
 export async function getClientLoyaltyData(locationId?: string): Promise<ClientLoyalty[]> {
-    let q: Query = adminDb.collection('bookings');
+    let q = query(collection(db, 'bookings'));
     let snapshot;
 
     if (locationId) {
-        snapshot = await q.where('locationId', '==', locationId).get();
+        q = query(collection(db, 'bookings'), where('locationId', '==', locationId));
+        snapshot = await getDocs(q);
     } else {
-        snapshot = await q.get();
+        snapshot = await getDocs(q);
     }
 
     const allBookings = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()} as Booking));
@@ -474,7 +451,7 @@ export async function getSuggestedTimes(
     locationId: string,
 ) {
     if (staffId === 'any') {
-        const allStaffAtLocation = (await getStaffFromFirestore()).filter(s => s.locationId === locationId);
+        const allStaffAtLocation = (await getStaff()).filter(s => s.locationId === locationId);
         const allAvailableSlots = new Set<string>();
 
         const timePromises = allStaffAtLocation.map(staffMember => 
@@ -488,7 +465,7 @@ export async function getSuggestedTimes(
         return { success: true, times: sortedSlots };
     }
 
-    const allStaff = await getStaffFromFirestore();
+    const allStaff = await getStaff();
     const staffMember = allStaff.find(s => s.id === staffId);
     
     if (!staffMember) return { success: true, times: [] };
@@ -515,9 +492,9 @@ export async function createBooking(bookingData: BookingData) {
         throw new Error("Missing required booking information.");
     }
      
-    const allLocations = await getLocationsFromFirestore();
-    const allServices = await getServicesFromFirestore();
-    const allStaff = await getStaffFromFirestore();
+    const allLocations = await getLocations();
+    const allServices = await getServices();
+    const allStaff = await getStaff();
 
     const location = allLocations.find(l => l.id === bookingData.locationId);
     const service = allServices.find(s => s.id === bookingData.serviceId);
@@ -609,12 +586,12 @@ const hasConflictWithFetchedBookings = (bookings: Booking[], start: Date, end: D
 
 export async function getUnavailableDays(month: Date, serviceId: string, staffId: string, locationId: string) {
     try {
-        const allServices = await getServicesFromFirestore();
+        const allServices = await getServices();
         const service = allServices.find(s => s.id === serviceId);
         if (!service) return { success: false, unavailableDays: [] };
         
         const serviceDuration = service.duration;
-        const allStaff = await getStaffFromFirestore();
+        const allStaff = await getStaff();
         const staffToCheck = staffId === 'any'
             ? allStaff.filter(s => s.locationId === locationId)
             : allStaff.filter(s => s.id === staffId);

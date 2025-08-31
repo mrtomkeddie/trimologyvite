@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { useAdmin } from '@/contexts/AdminContext'
-import { getBookings, getLocations } from '@/lib/supabase-service'
+import { getBookings, getLocations } from '@/lib/firestore'
 import { BookingsList } from '@/components/bookings-list'
 import { ArrowLeft, PlusCircle, Loader2, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'

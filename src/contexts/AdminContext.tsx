@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { useAuth } from './AuthContext'
-import { getAdminUser } from '@/lib/supabase-service'
+import { getAdminUser } from '@/lib/firestore'
 import type { AdminUser } from '@/lib/types'
 
 interface AdminContextType {

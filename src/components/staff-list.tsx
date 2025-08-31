@@ -5,7 +5,7 @@ import type { Staff, Location, AdminUser } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { StaffForm } from './staff-form';
-import { deleteStaff } from '@/lib/supabase-service';
+import { deleteStaff } from '@/lib/firestore';
 import {
   AlertDialog,
   AlertDialogAction,

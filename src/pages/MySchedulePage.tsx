@@ -7,7 +7,7 @@ import { LogOut, Calendar, Clock, User as UserIcon, PoundSterling, Loader2 } fro
 import type { Staff, Booking } from '@/lib/types'
 import { format } from 'date-fns'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { getStaffByUserId, getBookingsByStaffId } from '@/lib/supabase-service'
+import { getStaffByUserId, getBookingsByStaffId } from '@/lib/firestore'
 
 export default function MySchedulePage() {
   const navigate = useNavigate()

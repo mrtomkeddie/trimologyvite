@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { BookingForm } from '@/components/booking-form'
-import { getServices, getStaff, getLocations } from '@/lib/supabase-service'
+import { getServices, getStaff, getLocations } from '@/lib/firestore'
 import { Button } from '@/components/ui/button'
 import { History, Loader2 } from 'lucide-react'
 import type { Location, Service, Staff } from '@/lib/types'

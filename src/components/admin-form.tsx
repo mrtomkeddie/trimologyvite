@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { setAdminRecord, updateAdmin } from '@/lib/supabase-service';
+import { setAdminRecord, updateAdmin } from '@/lib/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { AdminFormSchema, type AdminUser, type Location, type Staff } from '@/lib/types';
 import { Loader2 } from 'lucide-react';

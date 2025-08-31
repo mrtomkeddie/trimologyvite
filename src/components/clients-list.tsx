@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { useAdmin } from '@/contexts/AdminContext'
-import { getClientLoyaltyData, getLocations } from '@/lib/supabase-service'
+import { getClientLoyaltyData, getLocations } from '@/lib/firestore'
 import { ArrowLeft, Loader2, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { ClientLoyalty, Location } from '@/lib/types'
