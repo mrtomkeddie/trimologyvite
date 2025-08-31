@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { useAdmin } from '@/contexts/AdminContext'
-import { getLocations } from '@/lib/firestore'
+import { getLocations } from '@/lib/dummy-service'
 import type { Location } from '@/lib/types'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"

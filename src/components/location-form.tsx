@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { addLocation, updateLocation } from '@/lib/firestore';
+import { addLocation, updateLocation } from '@/lib/dummy-service';
 import { LocationFormSchema, type Location } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 

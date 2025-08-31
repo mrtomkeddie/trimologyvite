@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { addService, updateService } from '@/lib/firestore';
+import { addService, updateService } from '@/lib/dummy-service';
 import { ServiceFormSchema, type Service, type Location } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 

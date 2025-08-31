@@ -4,7 +4,7 @@ import * as React from 'react';
 import type { Booking, Location } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { deleteBooking } from '@/lib/firestore';
+import { deleteBooking } from '@/lib/dummy-service';
 import {
   AlertDialog,
   AlertDialogAction,
