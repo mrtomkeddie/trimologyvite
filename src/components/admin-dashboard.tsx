@@ -41,7 +41,6 @@ export function AdminDashboard({ user, adminUser }: AdminDashboardProps) {
         </header>
         <main className="flex-1 p-4 sm:px-6 space-y-8">
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                 <Link href="/admin/bookings" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
                 <Link to="/admin/bookings" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
                     <div className="p-6 flex flex-col justify-between h-full">
                         <div>
@@ -58,7 +57,6 @@ export function AdminDashboard({ user, adminUser }: AdminDashboardProps) {
                         </div>
                     </div>
                 </Link>
-                <Link href="/admin/clients" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
                 <Link to="/admin/clients" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
                     <div className="p-6 flex flex-col justify-between h-full">
                         <div>
@@ -75,7 +73,6 @@ export function AdminDashboard({ user, adminUser }: AdminDashboardProps) {
                         </div>
                     </div>
                 </Link>
-                <Link href="/admin/locations" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
                 <Link to="/admin/locations" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
                     <div className="p-6 flex flex-col justify-between h-full">
                         <div>
@@ -92,7 +89,6 @@ export function AdminDashboard({ user, adminUser }: AdminDashboardProps) {
                         </div>
                     </div>
                 </Link>
-                <Link href="/admin/services" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
                 <Link to="/admin/services" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
                     <div className="p-6 flex flex-col justify-between h-full">
                         <div>
@@ -109,7 +105,6 @@ export function AdminDashboard({ user, adminUser }: AdminDashboardProps) {
                         </div>
                     </div>
                 </Link>
-                <Link href="/admin/staff" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
                 <Link to="/admin/staff" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
                     <div className="p-6 flex flex-col justify-between h-full">
                         <div>
@@ -127,7 +122,6 @@ export function AdminDashboard({ user, adminUser }: AdminDashboardProps) {
                     </div>
                 </Link>
                 
-                <Link href="/admin/admins" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
                 <Link to="/admin/admins" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
                     <div className="p-6 flex flex-col justify-between h-full">
                         <div>
@@ -145,7 +139,6 @@ export function AdminDashboard({ user, adminUser }: AdminDashboardProps) {
                     </div>
                 </Link>
                 
-                <Link href="/admin/settings" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
                 <Link to="/admin/settings" className="block rounded-xl border bg-card text-card-foreground shadow hover:bg-accent/50 transition-colors">
                      <div className="p-6 flex flex-col justify-between h-full">
                         <div>
@@ -171,7 +164,4 @@ export function AdminDashboard({ user, adminUser }: AdminDashboardProps) {
         </main>
     </div>
   );
-}
-
-  )
 }
