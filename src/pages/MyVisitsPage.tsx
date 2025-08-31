@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Loader2, Search, Phone, Calendar, Clock, User as UserIcon, PoundSterling, ArrowLeft } from 'lucide-react'
 import { format } from 'date-fns'
-import { getBookingsByPhone } from '@/lib/firestore'
+import { getBookingsByPhone } from '@/lib/dummy-service'
 
 export default function MyVisitsPage() {
   const [phone, setPhone] = useState('')

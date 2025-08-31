@@ -1,11 +1,10 @@
-
 'use client';
 import * as React from 'react';
 import type { Service, Location } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ServiceForm } from './service-form';
-import { deleteService } from '@/lib/supabase-service';
+import { deleteService } from '@/lib/dummy-service';
 import {
   AlertDialog,
   AlertDialogAction,

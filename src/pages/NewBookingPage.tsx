@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { useAdmin } from '@/contexts/AdminContext'
-import { getLocations, getServices, getStaff } from '@/lib/firestore'
+import { getLocations, getServices, getStaff } from '@/lib/dummy-service'
 import { AdminBookingForm } from '@/components/admin-booking-form'
 import { ArrowLeft, Loader2, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { getLocations, getServices, getStaff } from '@/lib/firestore'
+import { getLocations, getServices, getStaff } from '@/lib/dummy-service'
 import { WalkinForm } from '@/components/walk-in-form'
 import { AlertCircle, Loader2 } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
