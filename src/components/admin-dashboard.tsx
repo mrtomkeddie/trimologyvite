@@ -172,3 +172,6 @@ export function AdminDashboard({ user, adminUser }: AdminDashboardProps) {
     </div>
   );
 }
+
+  )
+}
