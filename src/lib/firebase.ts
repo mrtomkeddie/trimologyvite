@@ -10,7 +10,7 @@ export const firebaseConfig = {
   projectId: "trimology",
   appId: "1:170094637668:web:73f711de3dd200ff11e571",
   storageBucket: "trimology.appspot.com",
-  apiKey: "AIzaSyBUZq9DtKvHSeyWOWOQTp_D7g8i4OOYQMM",
+  apiKey: "",
   authDomain: "trimology.firebaseapp.com",
   messagingSenderId: "170094637668",
 };
